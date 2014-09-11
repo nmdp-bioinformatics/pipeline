@@ -24,13 +24,13 @@ USING pipeline
 ```bash
 /path/to/splitter.bash /path/to/my/compliant/directory/of/data  [ DEBUG ]
 ```
-    note that DEBUG is an optional flag and will GREATLY increase the verbosity of the tools
-    _any_ string value will activate the debugging.
+    - note that DEBUG is an optional flag and will GREATLY increase the verbosity of the tools _any_ string value will activate the debugging.
 
   - check the result files in final/
   - intermediate files are stored in intermediate/ and can safely be deleted after processing has completed
 
 DEBUGGING
 ========
-completion times, STDOUT and STDERR messages are stored in files named timedata.[0-9]+ -- that is, timedata, followed by a numeric string derived from the PID of the splitter.bash script.
-all timedata files may safely be removed after  run validation.
+Elapsed times, STDOUT and STDERR messages are stored in files named timedata.[0-9]+ -- that is, timedata, followed by a numeric string derived from the PID of the splitter.bash script. 
+
+All timedata files may safely be removed after  run validation.
