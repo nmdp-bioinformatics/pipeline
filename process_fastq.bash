@@ -20,7 +20,6 @@
 #
 #    > http://www.gnu.org/licenses/lgpl.html
 #
-
 SOURCEFILE=$1
 DEBUG=$2
 
@@ -54,11 +53,6 @@ fi
 
 if [[ $(which SSAKE) == "" ]]; then
 	echo "could not find SSAKE.  You must install the SSAKE package."
-	let ABORT=ABORT+1
-fi
-
-if [[ $(which makeFastaFileFromScaffolds.pl) == "" ]]; then
-	echo "could not find makeFastaFileFromScaffolds.pl -- this should have been installed as part of the SSAKE package."
 	let ABORT=ABORT+1
 fi
 
@@ -100,21 +94,21 @@ for entry in `cat ${SOURCEFILE}`; do
 
   FILE1=$(echo ${entry} | sed -e 's/RX/R1/g')
   FILE2=$(echo ${entry} | sed -e 's/RX/R2/g')
+  PAIRED=1
 
   echo "Checking ${FILE1} and ${FILE2}"
 
-  if [[ -f ${FILE2} ]];
+  if [[ -f ${FILE2} && ${FILE1} != ${FILE2} ]];
   then
      echo "Found paired reads" 
      ${TOOLDIR}/ngs-fastq-to-ssake -1 ${FILE1} -2 ${FILE2} -o ${intermediate}.ssake.fa --insert-size 500
      sed -e 's/a/A/g' -e 's/c/C/g' -e 's/g/G/g' -e 's/t/T/g' -e 's/n/N/g' -e 's/^>.*$/>reformatted:500/' ${intermediate}.ssake.fa > $SSAKE_FA
   else
+    PAIRED=0
     cp ${FILE1} ${intermediate}.ssake.reformatted.fa
   fi
 
-  SSAKE -f ${SSAKE_FA} -b ${intermediate}.ssake -w 1 -h 1 -p 1 -m 50 -o 30 -c 1 -e 0.90 -k 4 -a 0.1 -x 20
-
-  makeFastaFileFromScaffolds.pl ${SCAFFOLDFILE}
+  SSAKE -f ${SSAKE_FA} -b ${intermediate}.ssake -w 1 -h 1 -p ${PAIRED} -m 50 -o 30 -c 1 -e 0.90 -k 4 -a 0.1 -x 20
 
   echo "REFERENCE = ${REFDIR}/${REFCHR}"
 
@@ -125,10 +119,10 @@ echo > $BOILERPLATE_HEADER << EOF
 #CHROM POS ID REF ALT QUAL FILTER INFO
 EOF
 
-  bwa bwasw ${REFDIR}/${REFCHR} ${intermediate}.ssake.scaffolds.fa | samtools view -Sb - | samtools sort - ${final}.contigs.bwa.sorted
+  bwa bwasw ${REFDIR}/${REFCHR} ${intermediate}.ssake.contigs | samtools view -Sb - | samtools sort - ${final}.contigs.bwa.sorted
   bwa mem ${REFDIR}/${REFCHR} ${FILE1} ${FILE2} | samtools view -Sb - | samtools sort - ${final}.reads.bwa.sorted
   samtools index ${final}.reads.bwa.sorted
-  samtools mpileup -RB -C 0 -Q 0 -f ${REFDIR}/${REFCHR} ${final}.contigs.bwa.sorted.bam | cat $BOILERPLATE_HEADER - | bcftools view -O z -o ${final}.vcf.gz
+  samtools mpileup -RB -C 0 -Q 0 -f ${REFDIR}/${REFCHR}.gz ${final}.contigs.bwa.sorted.bam | cat $BOILERPLATE_HEADER - | bcftools view -O z -o ${final}.vcf.gz
   samtools mpileup -f ${REFDIR}/${REFCHR}.gz ${final}.reads.bwa.sorted.bam
 done
 
