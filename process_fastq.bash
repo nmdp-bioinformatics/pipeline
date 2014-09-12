@@ -32,27 +32,27 @@ if [[ ! -x ${TOOLDIR}/ngs-fastq-to-ssake ]]; then
 	let ABORT=ABORT+1
 fi
 
-if [[ $(which SSAKE)"x" == "x" ]]; then
+if [[ $(which SSAKE) == "" ]]; then
 	echo "could not find SSAKE.  You must install the SSAKE package."
 	let ABORT=ABORT+1
 fi
 
-if [[ $(which makeFastaFileFromScaffolds.pl)"x" == "x" ]]; then
+if [[ $(which makeFastaFileFromScaffolds.pl) == "" ]]; then
 	echo "could not find makeFastaFileFromScaffolds.pl -- this should have been installed as part of the SSAKE package."
 	let ABORT=ABORT+1
 fi
 
-if [[ $(which bwa)"x" == "x" ]]; then
+if [[ $(which bwa) == "" ]]; then
 	echo "could not find bwa -- you can install bwa via homebrew.  Get at least version 0.7.8."
 	let ABORT=ABORT+1
 fi
 
-if [[ $(which samtools)"x" == "x" ]]; then
+if [[ $(which samtools) == "" ]]; then
 	echo "could not find samtools -- you can install samtools via homebrew.  Get at least version 0.1.19."
 	let ABORT=ABORT+1
 fi
 
-if [[ $(which bcfools)"x" == "x" ]]; then
+if [[ $(which bcfools) == "" ]]; then
 	echo "could not find bcftools -- you can install bcftools via homebrew.  Get at least version 0.2.0-rc6."
 	let ABORT=ABORT+1
 fi
