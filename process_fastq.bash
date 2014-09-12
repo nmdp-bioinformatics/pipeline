@@ -52,7 +52,7 @@ if [[ $(which samtools) == "" ]]; then
 	let ABORT=ABORT+1
 fi
 
-if [[ $(which bcfools) == "" ]]; then
+if [[ $(which bcftools) == "" ]]; then
 	echo "could not find bcftools -- you can install bcftools via homebrew.  Get at least version 0.2.0-rc6."
 	let ABORT=ABORT+1
 fi
