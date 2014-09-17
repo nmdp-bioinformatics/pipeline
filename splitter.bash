@@ -25,14 +25,23 @@ MYPID=$$
 DEBUG=0  #change to 1 to increase verbosity and leave workfiles behind
 MASTERWORKFILE=fullfile.$MYPID
 SCRATCHFILE=scratch.$MYPID
-TOOLPATH="./"
+TOOLPATH="$(pwd)"  #default to cwd if not specified
 WORKDIR="$1"  #our data dir is argument one
 DEBUG="$2"  #take debug mode as argument two 
 
-if [[ ${TOOLPATH}"x" == "x" ]]; then 
-  echo "you need to reset TOOLPATH and then comment out the lines which have 'commentme' on them in ${0}"  #commentme
-  exit #commentme
+if [[ "${TOOLPATH}" == "$(pwd)" ]]; then 
+  echo "TOOLPATH is the variable that must contain the path to your workerscript,"
+  echo "which defaults to 'process_fastq.sh'.  This value can be altered by "
+  echo "editing $0 and setting TOOLPATH correctly."
+  echo "You have specified TOOLPATH as ${TOOLPATH}.  Is this REALLY correct? (y|n)"
+  read goahead
+  if [[ ${goahead}"x" != "yx" ]]; then
+    echo "edit splitter.bash to have the desired TOOLPATH.  It should point to"
+    echo "the directory containing process_fastq.bash"
+    exit 1
+  fi
 fi
+export goahead=""
 
 if [[ ${WORKDIR}"x" == "x" ]]; then
   echo "location of work directory MUST be the first argument to this script."
@@ -89,6 +98,7 @@ fi
 
 for DIR in ${INTERM} ${FINAL}; do
   if [[ $(ls ${DIR} | wc -l) -gt 0 ]]; then
+    export goahead=""
     echo "Files already exist in ${DIR} -- enter 'y' to proceed and overwrite:"
     read goahead
     if [[ ${goahead}"x" != "yx" ]]; then
