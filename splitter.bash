@@ -130,7 +130,7 @@ echo "preparing to divide work evenly among ${NUMCPU} cores"
 
 split ${MASTERWORKFILE} -n l/${NUMCPU} -d -e ${MYPID}
 
-## now, time to call the script derived from caleb's script
+## now, time to call the worker script
 
 if [ -f nohup.out ]; then
   rm nohup.out
