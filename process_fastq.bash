@@ -30,7 +30,7 @@ if [[ ${DEBUG}"x" != "x" ]]; then
 fi
 
 TOOLDIR=/opt/nmdp-ngs/bin
-REFDIR=/opt/data/tutorial/reference/grch38_fasta_reference
+REFDIR=/opt/data/tutorial/grch38_fasta_reference
 
 ## note that REFDIR may require customization to your circumstances, as
 ## well as TOOLDIR
