@@ -29,8 +29,8 @@ if [[ ${DEBUG}"x" != "x" ]]; then
   set -x
 fi
 
-TOOLDIR=/mnt/scratch/caleb/ngs-tools-1.0-SNAPSHOT/bin
-REFDIR=/mnt/common/data/reference/grch38/Primary_Assembly/assembled_chromosomes/FASTA
+TOOLDIR=/opt/nmdp-ngs/bin
+REFDIR=/opt/data/tutorial/reference/grch38_fasta_reference
 
 ## note that REFDIR may require customization to your circumstances, as
 ## well as TOOLDIR
@@ -42,8 +42,6 @@ if [[ ! -f ${REFDIR}/${REFCHR} ]]; then
 	echo "without ${REFDIR}/${REFCHR} I cannot proceed."
 	let ABORT=ABORT+1
 fi
-## TODO:  quit pulling things from caleb's $HOME and get ngs-tools installed for real.
-
 
 ###  validate that we have all the tools we need
 if [[ ! -x ${TOOLDIR}/ngs-fastq-to-ssake ]]; then
