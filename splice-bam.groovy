@@ -24,9 +24,9 @@ import java.io.File
 
 import com.google.common.base.Joiner
 
-import net.sf.samtools.SAMFileReader
+import htsjdk.samtools.SAMFileReader
 
-import net.sf.samtools.util.SequenceUtil
+import htsjdk.samtools.util.SequenceUtil
 
 import org.apache.commons.cli.Option
 
