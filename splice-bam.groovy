@@ -76,10 +76,10 @@ exons = [:]
 new File(options.x).each { line ->
   def (index, coordinate) = line.split("\t")
   def locus = FeatureParser.parseLocus(coordinate)
-  exons[index] = builder()
+  exons[index] = Allele.builder()
                   .withContig(locus.getContig())
-                  .withMin(locus.getMin())
-                  .withMax(locus.getMax() + 1)
+                  .withStart(locus.getMin())
+                  .withEnd(locus.getMax() + 1)
                   .build();
 }
 
@@ -97,10 +97,10 @@ new SAMFileReader(new File(options.i)).each { record ->
   }
 
   def name = record.getReadName()  
-  def contig = builder()
+  def contig = Allele.builder()
                  .withContig("chr6")
-                 .withMin(record.getAlignmentStart())
-                 .withMax(record.getAlignmentEnd())
+                 .withStart(record.getAlignmentStart())
+                 .withEnd(record.getAlignmentEnd())
                  .withSequence(sequence)
                  .build();
 
