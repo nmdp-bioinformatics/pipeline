@@ -2,6 +2,9 @@ pipeline
 ========
 This is a prototypical pipeline.  Greater detail on how this works, why it's supposed to work, and much, much more can be found in the wiki at the github page.
 
+[![Build Status](https://travis-ci.org/nmdp-bioinformatics/pipeline.svg?branch=master)](https://travis-ci.org/nmdp-bioinformatics/pipeline)
+
+
 DESCRIPTION
 ========
 splitter is the master script which figures out what files to work on, and divides the workload up -- into one file per core on the machine.  It then starts process_fastq on each of these files.  Note that it isn't particularly clever about dividing up the workloads.  If there are 100 files, and 4 cores, you get 4 files of 25 lines each -- regardless of sample size.  Still, some parallelization is better than none, right?
