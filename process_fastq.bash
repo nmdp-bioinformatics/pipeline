@@ -35,6 +35,7 @@ REFDIR=/opt/data/tutorial/grch38_fasta_reference
 ## note that REFDIR may require customization to your circumstances, as
 ## well as TOOLDIR
 REFCHR=all_chr.fa
+TMPDIR=~/tmp
 
 ABORT=0
 
@@ -74,6 +75,11 @@ if [[ ${ABORT} -gt 0 ]]; then
 	exit 1
 fi
 
+if [[ -d $TMPDIR ]]; then
+	echo "did not find $TMPDIR.  Creating"
+	mkdir -p $TMPDIR || exit 1
+fi
+
 for entry in `cat ${SOURCEFILE}`; do
   path="${entry%/raw/*}"
   base="${entry##*/}"
@@ -110,7 +116,7 @@ for entry in `cat ${SOURCEFILE}`; do
 
   echo "REFERENCE = ${REFDIR}/${REFCHR}"
 
-BOILERPLATE_HEADER=/tmp/boilerplate_header.bcl
+BOILERPLATE_HEADER=$TMPDIR/boilerplate_header.bcl
 echo > $BOILERPLATE_HEADER << EOF
 ##fileformat=VCFv4.2
 ##contig=<ID=gi|568336018|gb|CM000668.2|,length=171115067,assembly=hg19,md5=f126cdf8a6e0c7f379d618ff66beb2da,species="Homo sapiens">
