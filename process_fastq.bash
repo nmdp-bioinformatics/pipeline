@@ -55,6 +55,27 @@ if [[ $(which SSAKE) == "" ]]; then
 	let ABORT=ABORT+1
 fi
 
+#COMMENTS FROM RENE WARREN
+#1. ssake.rb/tasr.rb/hlaminer.rb will be merged in homebrew today (26 sep 2014)
+#2. TASR, which is a targeted assembler derived from SSAKE, reads a database file (eg. HLA allele seqs), deconstruct into kmers that are used to interrogate NGS reads for assembly.
+#    I ran the tutorial data with TASR, using only HLA-I CDS sequences and assembled 3 large contigs, matching the A,B and C predicted alleles each with 100% sequence identity
+#3. HLAminer, in targeted assembly mode uses TASR and produces an ouptut with following highest score/confidence
+# HLA-A
+#        Prediction #1 - A*24
+#               A*24:02P,34168.1141,4.02e-13,124.0
+#
+#HLA-B
+#        Prediction #1 - B*40
+#                B*40:01P,55826.7173,3.57e-50,494.5
+#
+#HLA-C
+#        Prediction #1 - C*03
+#                C*03:04P,56610.9655,8.60e-40,390.7
+#
+#
+#4. Additional assembly tools might be tried: Konnector (URL TBD, soon in homebrew) is a DBG assembler that will assemble only fragments and produce ambiguity scores when discordant allele data assembled, which is a nice feature.  It is also scalable
+#5. If interested in micro assembly of overlapping reads, try abyss-mergepairs (linuxbrew/homebrew), will will output a long pseudoread with corrected bases if there's ground for merging
+
 if [[ $(which bwa) == "" ]]; then
 	echo "could not find bwa -- you can install bwa via homebrew.  Get at least version 0.7.8."
 	let ABORT=ABORT+1
