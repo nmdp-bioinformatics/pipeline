@@ -91,7 +91,7 @@ if [[ $ABORT -gt 0 ]]; then
   exit 1
 fi
 
-if [[ $(ls ${RAWDIR} | grep -c fastq) -eq 0 ]]; then
+if [[ $(find ${RAWDIR} -type f | grep -c fastq) -eq 0 ]]; then
   echo "no fastq files found in ${RAWDIR}.  Aborting."
   exit 1
 fi
