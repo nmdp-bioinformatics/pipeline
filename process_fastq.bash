@@ -75,7 +75,7 @@ if [[ ${ABORT} -gt 0 ]]; then
 	exit 1
 fi
 
-if [[ -d $TMPDIR ]]; then
+if [[ ! -d $TMPDIR ]]; then
 	echo "did not find $TMPDIR.  Creating"
 	mkdir -p $TMPDIR || exit 1
 fi
