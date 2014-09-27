@@ -35,6 +35,9 @@ REFDIR=/opt/data/tutorial/grch38_fasta_reference
 ## note that REFDIR may require customization to your circumstances, as
 ## well as TOOLDIR
 REFCHR=all_chr.fa
+## change above to just chromosome6 (chr6.fa) if you have less than 4GB or
+## memory.  Frankly, we've seen issues even on machines _with_ 4GB, so
+## for safeties sake, make sure you've got more memory.
 TMPDIR=~/tmp
 
 ABORT=0
