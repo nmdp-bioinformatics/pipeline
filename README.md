@@ -32,6 +32,14 @@ USING pipeline
   - check the result files in final/
   - intermediate files are stored in intermediate/ and can safely be deleted after processing has completed
 
+CAVEATS
+========
+This tool requires a fair number of other tools to be installed.  The shell script checks for them, and will try to give you breadcrumbs as to how to solve any of the issues it finds (e.g. where to find bwa).
+
+If your machine/instance has less than 4GB of RAM, you'll want to modify the script so it uses chr6.fa as the reference genomic, install of all_chr.fa.   Make sure those files are indexed.  This script does not do the indexing for you.
+
+This is a work in progress, but we welcome improvements and questions.  Please feel free to file issues in github.
+
 DEBUGGING
 ========
 Elapsed times, STDOUT and STDERR messages are stored in files named timedata.[0-9]+ -- that is, timedata, followed by a numeric string derived from the PID of the splitter.bash script. 
