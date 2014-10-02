@@ -29,12 +29,16 @@ if [[ ${DEBUG}"x" != "x" ]]; then
   set -x
 fi
 
-TOOLDIR=/mnt/scratch/caleb/ngs-tools-1.0-SNAPSHOT/bin
-REFDIR=/mnt/common/data/reference/grch38/Primary_Assembly/assembled_chromosomes/FASTA
+TOOLDIR=/opt/nmdp-ngs/bin
+REFDIR=/opt/data/tutorial/grch38_fasta_reference
 
 ## note that REFDIR may require customization to your circumstances, as
 ## well as TOOLDIR
 REFCHR=all_chr.fa
+## change above to just chromosome6 (chr6.fa) if you have less than 4GB or
+## memory.  Frankly, we've seen issues even on machines _with_ 4GB, so
+## for safeties sake, make sure you've got more memory.
+TMPDIR=~/tmp
 
 ABORT=0
 
@@ -42,8 +46,6 @@ if [[ ! -f ${REFDIR}/${REFCHR} ]]; then
 	echo "without ${REFDIR}/${REFCHR} I cannot proceed."
 	let ABORT=ABORT+1
 fi
-## TODO:  quit pulling things from caleb's $HOME and get ngs-tools installed for real.
-
 
 ###  validate that we have all the tools we need
 if [[ ! -x ${TOOLDIR}/ngs-fastq-to-ssake ]]; then
@@ -55,6 +57,27 @@ if [[ $(which SSAKE) == "" ]]; then
 	echo "could not find SSAKE.  You must install the SSAKE package."
 	let ABORT=ABORT+1
 fi
+
+#COMMENTS FROM RENE WARREN
+#1. ssake.rb/tasr.rb/hlaminer.rb will be merged in homebrew today (26 sep 2014)
+#2. TASR, which is a targeted assembler derived from SSAKE, reads a database file (eg. HLA allele seqs), deconstruct into kmers that are used to interrogate NGS reads for assembly.
+#    I ran the tutorial data with TASR, using only HLA-I CDS sequences and assembled 3 large contigs, matching the A,B and C predicted alleles each with 100% sequence identity
+#3. HLAminer, in targeted assembly mode uses TASR and produces an ouptut with following highest score/confidence
+# HLA-A
+#        Prediction #1 - A*24
+#               A*24:02P,34168.1141,4.02e-13,124.0
+#
+#HLA-B
+#        Prediction #1 - B*40
+#                B*40:01P,55826.7173,3.57e-50,494.5
+#
+#HLA-C
+#        Prediction #1 - C*03
+#                C*03:04P,56610.9655,8.60e-40,390.7
+#
+#
+#4. Additional assembly tools might be tried: Konnector (URL TBD, soon in homebrew) is a DBG assembler that will assemble only fragments and produce ambiguity scores when discordant allele data assembled, which is a nice feature.  It is also scalable
+#5. If interested in micro assembly of overlapping reads, try abyss-mergepairs (linuxbrew/homebrew), will will output a long pseudoread with corrected bases if there's ground for merging
 
 if [[ $(which bwa) == "" ]]; then
 	echo "could not find bwa -- you can install bwa via homebrew.  Get at least version 0.7.8."
@@ -74,6 +97,11 @@ fi
 if [[ ${ABORT} -gt 0 ]]; then
 	echo "exiting due to failures"
 	exit 1
+fi
+
+if [[ ! -d $TMPDIR ]]; then
+	echo "did not find $TMPDIR.  Creating"
+	mkdir -p $TMPDIR || exit 1
 fi
 
 for entry in `cat ${SOURCEFILE}`; do
@@ -112,7 +140,7 @@ for entry in `cat ${SOURCEFILE}`; do
 
   echo "REFERENCE = ${REFDIR}/${REFCHR}"
 
-BOILERPLATE_HEADER=/tmp/boilerplate_header.bcl
+BOILERPLATE_HEADER=$TMPDIR/boilerplate_header.bcl
 echo > $BOILERPLATE_HEADER << EOF
 ##fileformat=VCFv4.2
 ##contig=<ID=gi|568336018|gb|CM000668.2|,length=171115067,assembly=hg19,md5=f126cdf8a6e0c7f379d618ff66beb2da,species="Homo sapiens">
@@ -123,7 +151,7 @@ EOF
   bwa mem ${REFDIR}/${REFCHR} ${FILE1} ${FILE2} | samtools view -Sb - | samtools sort - ${final}.reads.bwa.sorted
   samtools index ${final}.reads.bwa.sorted
   samtools mpileup -RB -C 0 -Q 0 -f ${REFDIR}/${REFCHR}.gz ${final}.contigs.bwa.sorted.bam | cat $BOILERPLATE_HEADER - | bcftools view -O z -o ${final}.vcf.gz
-  samtools mpileup -f ${REFDIR}/${REFCHR}.gz ${final}.reads.bwa.sorted.bam
+  samtools mpileup -f ${REFDIR}/${REFCHR}.gz ${final}.reads.bwa.sorted.bam > ${final}.reads.bwa.sorted.vcf
 done
 
 echo "completed processing file ${SOURCEFILE}"

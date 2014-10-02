@@ -2,6 +2,9 @@ pipeline
 ========
 This is a prototypical pipeline.  Greater detail on how this works, why it's supposed to work, and much, much more can be found in the wiki at the github page.
 
+[![Build Status](https://travis-ci.org/nmdp-bioinformatics/pipeline.svg?branch=master)](https://travis-ci.org/nmdp-bioinformatics/pipeline)
+
+
 DESCRIPTION
 ========
 splitter is the master script which figures out what files to work on, and divides the workload up -- into one file per core on the machine.  It then starts process_fastq on each of these files.  Note that it isn't particularly clever about dividing up the workloads.  If there are 100 files, and 4 cores, you get 4 files of 25 lines each -- regardless of sample size.  Still, some parallelization is better than none, right?
@@ -28,6 +31,14 @@ USING pipeline
 
   - check the result files in final/
   - intermediate files are stored in intermediate/ and can safely be deleted after processing has completed
+
+CAVEATS
+========
+This tool requires a fair number of other tools to be installed.  The shell script checks for them, and will try to give you breadcrumbs as to how to solve any of the issues it finds (e.g. where to find bwa).
+
+If your machine/instance has less than 4GB of RAM, you'll want to modify the script so it uses chr6.fa as the reference genomic, install of all_chr.fa.   Make sure those files are indexed.  This script does not do the indexing for you.
+
+This is a work in progress, but we welcome improvements and questions.  Please feel free to file issues in github.
 
 DEBUGGING
 ========
