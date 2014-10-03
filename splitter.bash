@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash  -x
 
 #
 #    pipeline  Consensus assembly and allele interpretation pipeline.
@@ -28,6 +28,27 @@ SCRATCHFILE=scratch.$MYPID
 TOOLPATH="$(pwd)"  #default to cwd if not specified
 WORKDIR="$1"  #our data dir is argument one
 DEBUG="$2"  #take debug mode as argument two 
+
+#herein, we check to see if we're on osx or redhat or debian
+# osx and debian require some changes as to how we split files
+# into chunks, and how we detect number of CPUs
+if [[ `uname` == "Darwin" ]]; then
+  OS='osx'
+else
+  if [[ -f /etc/debian_version ]]; then
+    OS='linuxDebian'
+  elif [[ -f /etc/redhat-release ]]; then
+    OS='linuxRedHat'
+  else
+    echo "this does not appear to be a version of Linux or OSX that I "
+    echo "recognize.  Proceed?  (results may be unexpected)  (Y|N)"
+    read plowahead
+    if [[ $plowahead"x" != "Yx" ]]; then
+      echo "exiting."
+      exit 1
+    fi
+  fi 
+fi
 
 if [[ "${TOOLPATH}" == "$(pwd)" ]]; then 
   echo "TOOLPATH is the variable that must contain the path to your workerscript,"
@@ -125,10 +146,87 @@ done
 
 sort -u ${SCRATCHFILE} > ${MASTERWORKFILE}
 
-let NUMCPU=$(cat /proc/cpuinfo | grep -cw processor)
+# different unix variants have different ways of recording how many cores
+# are in this cpu.
+case $OS in 
+  osx)
+    let NUMCPU=$(sysctl -n machdep.cpu.core_count)  #OSX is a bit outdated.
+  ;;
+  *)
+    #default is, so far, linux
+    let NUMCPU=$(cat /proc/cpuinfo | grep -cw processor)
+  ;;
+esac
+
 echo "preparing to divide work evenly among ${NUMCPU} cores"
 
-split ${MASTERWORKFILE} -n l/${NUMCPU} -d -e ${MYPID}
+echo "about to check $OS again"
+
+## check number of cores.  if we're 1, we can skip ALL this nonsense
+## likewise if we only have 1 sample.  TODO
+
+SUBFILE_PATTERN=${MYPID}
+## this will get overridden on osx, because osx hasn't been updated since '05.
+
+case $OS in
+  linuxDebian)
+    #debian has an updated split command.  
+    split ${MASTERWORKFILE} -n l/${NUMCPU} -d -e ${SUBFILE_PATTERN}
+    ;;
+  *)
+    echo "ugly case"
+    # this is for darwin, redhat, any other version where we're
+    # not really sure that we get the -n l/ option (chunks)
+
+    LINESINFILE=$(wc -l ${MASTERWORKFILE} | awk '{print $1}')
+    ## above gets the length of our file, using the wc command and 
+    # pulling just the linecount out.
+    let LINESPERSUBFILE=${LINESINFILE}/${NUMCPU}
+    # this splits things out, but if our number doesn't divide evenly
+    # among the number of cores (e.g. we have 26 samples and 8 cores)
+    # we end up with one too many subfiles.
+    #  So, we'll check to see if we have a remainder, and if we
+    # do, then we'll concatenate the contents of the last file
+    # onto the end of the second to last file, and then we'll have
+    # an even number of subfiles.  Note that this is EXACTLY WHAT
+    # using 'chunk' with split does -- but since OSX and RHEL aren't...
+    # up to date, we get to duplicate it by hand.
+
+    # even then, it's not as good.  our worst case is that we have 
+    # x samples per file, but the last file will have 
+    # (x + (num_cores - 1)) files in it.  a modern split is better at
+    # dividing this workload.  PRs welcome to improve this algorithm
+
+    let DIVIDEDEVENLY=${LINESINFILE}%${NUMCPU}
+
+    case $OS in
+      linuxRedHat)
+        split ${MASTERWORKFILE} -l ${LINESPERSUBFILE} -d -e ${SUBFILE_PATTERN}
+        ;;
+      osx)
+        SUBFILE_PATTERN=x
+        rm -f ${SUBFILE_PATTERN}[a-z][a-z]
+	## on OSX, we lose the protection of pid-named subfiles, so we're going to kill 
+        ## any ^x files in an attempt to keep previous runs from munging up current runs
+        split -l ${LINESPERSUBFILE} ${MASTERWORKFILE} 
+	;;
+      default)
+        split -l ${LINESPERSUBFILE} ${MASTERWORKFILE} 
+	;;
+    esac
+
+
+    if [[ ${DIVIDEDEVENLY} -gt 0 ]]; then
+      PENULTIMATE=$(ls ${SUBFILE_PATTERN}* | tail -2 | head -1)
+      ULTIMATE=$(ls ${SUBFILE_PATTERN}* | tail -1 )
+      cat ${ULTIMATE} >> ${PENULTIMATE} && rm $ULTIMATE
+    fi
+
+
+    ;;
+esac
+
+echo "about to call worker"
 
 ## now, time to call the worker script
 
@@ -136,7 +234,7 @@ if [ -f nohup.out ]; then
   rm nohup.out
 fi
 
-for file in $(find . -name "${MYPID}*" -type f -print); do
+for file in $(find . -name "${SUBFILE_PATTERN}*" -type f -print); do
   BASEFILENAME=$(echo ${file} | awk -F\/ '{print $NF}')
   nohup time ${WORKERSCRIPT} ${file} ${DEBUG} >> timedata.${BASEFILENAME} &
 done
