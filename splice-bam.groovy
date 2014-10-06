@@ -172,10 +172,16 @@ if (options.c) {
     def cdna = ""
     exons.each { index, list ->
       best = list.sort { it.sequence.seqString().length() } .first()
+      
       cdna += best.sequence.seqString()
     }
 
     println "${contig}"
+    
+    if(!(options.g.equals("HLA-A") || options.g.equals("HLA-DPB1"))) {
+      cdna = DNATools.reverseComplement(DNATools.createDNA(cdna)).seqString() 
+    }
+
     println "${cdna.toUpperCase()}"
   }
 }
