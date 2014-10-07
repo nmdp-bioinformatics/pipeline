@@ -74,13 +74,7 @@ if (options.b) {
 exons = [:]
 
 new File(options.x).each { line ->
-  def fields = line.split("\t")
-  if(!(fields.size() >= 2)) {
-    println "input file ${options.x} is not properly formatted"
-    System.exit(-1)
-  }
-  def index = fields[0]
-  def coordinate = fields[1]
+  def (index, coordinate) = line.split("\\s+")
   def locus = FeatureParser.parseLocus(coordinate)
   exons[index] = Allele.builder()
                   .withContig(locus.getContig())
