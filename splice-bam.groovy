@@ -74,7 +74,7 @@ if (options.b) {
 exons = [:]
 
 new File(options.x).each { line ->
-  def (index, coordinate) = line.split("\t")
+  def (index, coordinate) = line.split("\\s+")
   def locus = FeatureParser.parseLocus(coordinate)
   exons[index] = Allele.builder()
                   .withContig(locus.getContig())
