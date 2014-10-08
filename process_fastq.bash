@@ -141,11 +141,14 @@ for entry in `cat ${SOURCEFILE}`; do
   echo "REFERENCE = ${REFDIR}/${REFCHR}"
 
 BOILERPLATE_HEADER=$TMPDIR/boilerplate_header.bcl
-echo > $BOILERPLATE_HEADER << EOF
+if [[ ! -f ${BOILERPLATE_HEADER} ]]; then
+# only recreate headerfile if it doesn't exist
+cat > $BOILERPLATE_HEADER << EOF
 ##fileformat=VCFv4.2
 ##contig=<ID=gi|568336018|gb|CM000668.2|,length=171115067,assembly=hg19,md5=f126cdf8a6e0c7f379d618ff66beb2da,species="Homo sapiens">
 #CHROM POS ID REF ALT QUAL FILTER INFO
 EOF
+fi
 
   bwa bwasw ${REFDIR}/${REFCHR} ${intermediate}.ssake.contigs | samtools view -Sb - | samtools sort - ${final}.contigs.bwa.sorted
   bwa mem ${REFDIR}/${REFCHR} ${FILE1} ${FILE2} | samtools view -Sb - | samtools sort - ${final}.reads.bwa.sorted
@@ -153,5 +156,10 @@ EOF
   samtools mpileup -RB -C 0 -Q 0 -f ${REFDIR}/${REFCHR}.gz ${final}.contigs.bwa.sorted.bam | cat $BOILERPLATE_HEADER - | bcftools view -O z -o ${final}.vcf.gz
   samtools mpileup -f ${REFDIR}/${REFCHR}.gz ${final}.reads.bwa.sorted.bam > ${final}.reads.bwa.sorted.vcf
 done
+
+#begin cleanup
+rm -f ${BOILERPLATE_HEADER}
+
+#end cleanup
 
 echo "completed processing file ${SOURCEFILE}"
