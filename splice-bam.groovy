@@ -74,7 +74,7 @@ if (options.b) {
 exons = [:]
 
 new File(options.x).each { line ->
-  def (index, coordinate) = line.split("\t")
+  def (index, coordinate) = line.split("\\s+")
   def locus = FeatureParser.parseLocus(coordinate)
   exons[index] = Allele.builder()
                   .withContig(locus.getContig())
@@ -172,10 +172,16 @@ if (options.c) {
     def cdna = ""
     exons.each { index, list ->
       best = list.sort { it.sequence.seqString().length() } .first()
+      
       cdna += best.sequence.seqString()
     }
 
     println "${contig}"
+    
+    if(!(options.g.equals("HLA-A") || options.g.equals("HLA-DPB1"))) {
+      cdna = DNATools.reverseComplement(DNATools.createDNA(cdna)).seqString() 
+    }
+
     println "${cdna.toUpperCase()}"
   }
 }
