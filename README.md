@@ -40,6 +40,8 @@ If your machine/instance has less than 4GB of RAM, you'll want to modify the scr
 
 This is a work in progress, but we welcome improvements and questions.  Please feel free to file issues in github.
 
+This has been primarily tested on Debian-based Linux systems (Ubuntu 14.04.01 LTS, to be exact).  However, we do try to support other Unix-like operating systems, such as Apple OSX.  If you run into issues on your distribution of choice, please file an issue on github.  OSX, mind you, has some VERY old shell utilities, so it's still a bit prototypical.
+
 DEBUGGING
 ========
 Elapsed times, STDOUT and STDERR messages are stored in files named timedata.[0-9]+ -- that is, timedata, followed by a numeric string derived from the PID of the splitter.bash script. 
