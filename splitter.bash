@@ -1,4 +1,4 @@
-#!/bin/bash  -x
+#!/bin/bash -x
 
 #
 #    pipeline  Consensus assembly and allele interpretation pipeline.
@@ -20,6 +20,36 @@
 #
 #    > http://www.gnu.org/licenses/lgpl.html
 #
+
+function bsd_linespersubfile {
+  # this subroutine receives two arguments:  number of samples
+  # and number of cores.
+  # it then decides how to evenly divide the work into subfiles
+  # checks to see if there are more subfiles than there are cores
+  # and if there are, increases the line count in each subfile
+  # and returns that value.
+
+  # this is to avoid the case where we have more subfiles than cores
+
+  let S=$1  #samples
+  let C=$2  #cores
+  let L=S/C  
+  if [[ ${L} -eq 0 ]]; then
+    let L=1  # we can't have less than one sample per file
+  fi
+  let E=S%C # see if we divided evenly
+  if [[ ${E} -ne 0 ]]; then  # we did not divide evenly.
+    let T=S/L
+    if [[ ${T} -gt ${C} ]]; then  # check to see if files outnumber cores
+      let L=L+1  # increment line-count-per-file by 1
+    fi
+  fi
+  #finally, return how many lines should be in each file
+  return $L
+}
+
+
+
 
 MYPID=$$
 DEBUG=0  #change to 1 to increase verbosity and leave workfiles behind
@@ -70,7 +100,7 @@ if [[ ${WORKDIR}"x" == "x" ]]; then
 fi
 
 if [[ $DEBUG"x" != "x" ]]; then
-	echo "debug mode enabled.  verbosity cranked."
+  echo "debug mode enabled.  verbosity cranked."
   echo "WORKDIR = ${WORKDIR}"
 fi
 
@@ -181,48 +211,29 @@ case $OS in
     LINESINFILE=$(wc -l ${MASTERWORKFILE} | awk '{print $1}')
     ## above gets the length of our file, using the wc command and 
     # pulling just the linecount out.
-    let LINESPERSUBFILE=${LINESINFILE}/${NUMCPU}
-    # this splits things out, but if our number doesn't divide evenly
-    # among the number of cores (e.g. we have 26 samples and 8 cores)
-    # we end up with one too many subfiles.
-    #  So, we'll check to see if we have a remainder, and if we
-    # do, then we'll concatenate the contents of the last file
-    # onto the end of the second to last file, and then we'll have
-    # an even number of subfiles.  Note that this is EXACTLY WHAT
-    # using 'chunk' with split does -- but since OSX and RHEL aren't...
-    # up to date, we get to duplicate it by hand.
 
-    # even then, it's not as good.  our worst case is that we have 
-    # x samples per file, but the last file will have 
-    # (x + (num_cores - 1)) files in it.  a modern split is better at
-    # dividing this workload.  PRs welcome to improve this algorithm
+    # honestly, the algorithm for computing lines per subfile got
+    # complex enough that it's in the function at the top of the file
+    # called "bsd_linespersubfile"
 
-    let DIVIDEDEVENLY=${LINESINFILE}%${NUMCPU}
+    bsd_linespersubfile $samples $cores
+    LINESPERSUBFILE=$?
 
     case $OS in
       linuxRedHat)
-        split ${MASTERWORKFILE} -l ${LINESPERSUBFILE} -d -e ${SUBFILE_PATTERN}
+        split ${MASTERWORKFILE} -l ${LINESPERSUBFILE} -d ${SUBFILE_PATTERN}
         ;;
       osx)
         SUBFILE_PATTERN=x
         rm -f ${SUBFILE_PATTERN}[a-z][a-z]
-	## on OSX, we lose the protection of pid-named subfiles, so we're going to kill 
+        ## on OSX, we lose the protection of pid-named subfiles, so we're going to kill 
         ## any ^x files in an attempt to keep previous runs from munging up current runs
         split -l ${LINESPERSUBFILE} ${MASTERWORKFILE} 
-	;;
+        ;;
       default)
         split -l ${LINESPERSUBFILE} ${MASTERWORKFILE} 
-	;;
+        ;;
     esac
-
-
-    if [[ ${DIVIDEDEVENLY} -gt 0 ]]; then
-      PENULTIMATE=$(ls ${SUBFILE_PATTERN}* | tail -2 | head -1)
-      ULTIMATE=$(ls ${SUBFILE_PATTERN}* | tail -1 )
-      cat ${ULTIMATE} >> ${PENULTIMATE} && rm $ULTIMATE
-    fi
-
-
     ;;
 esac
 
