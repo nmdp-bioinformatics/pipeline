@@ -54,7 +54,7 @@ cli.with {
   m longOpt: 'merge', 'strictly merge overlapping contigs'
   c longOpt: 'cdna', 'output cdna from the same contig (phased consensus sequence) in FASTA format (for interpretation)'
   b longOpt: 'minimum-breadth-of-coverage', args: 1, 'filter contigs less than minimum'
-  v longOpt: 'verbose', 'produce verbose output'
+  v longOpt: 'remove-gaps', 'remove alignment gaps in the filtered consensus sequence'
 }
 
 def options = cli.parse(args)
@@ -181,8 +181,13 @@ if (options.c) {
     if(!(options.g.equals("HLA-A") || options.g.equals("HLA-DPB1"))) {
       cdna = DNATools.reverseComplement(DNATools.createDNA(cdna)).seqString() 
     }
-
-    println "${cdna.toUpperCase()}"
+    
+    if(options.v) {
+      println "${cdna.toUpperCase().replaceAll("~", "")}"
+    } else {
+      println "${cdna.toUpperCase()}"
+    }
+    
   }
 }
 
@@ -200,7 +205,7 @@ def cigarToEditList(record) {
     }
 
     if (element.getOperator().toString().equals("D")) {
-      def replace = DNATools.createDNA(Joiner.on("").join(Collections.nCopies(element.getLength(), "N")));
+      def replace = DNATools.createDNA(Joiner.on("").join(Collections.nCopies(element.getLength(), "~")));
       edits += new Edit(position + element.getLength() - 1, 0, replace)
     }
   }
