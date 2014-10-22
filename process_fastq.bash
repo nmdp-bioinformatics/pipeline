@@ -157,9 +157,4 @@ fi
   samtools mpileup -f ${REFDIR}/${REFCHR}.gz ${final}.reads.bwa.sorted.bam > ${final}.reads.bwa.sorted.vcf
 done
 
-#begin cleanup
-rm -f ${BOILERPLATE_HEADER}
-
-#end cleanup
-
 echo "completed processing file ${SOURCEFILE}"
