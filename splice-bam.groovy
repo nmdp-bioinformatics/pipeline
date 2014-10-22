@@ -54,7 +54,7 @@ cli.with {
   m longOpt: 'merge', 'strictly merge overlapping contigs'
   c longOpt: 'cdna', 'output cdna from the same contig (phased consensus sequence) in FASTA format (for interpretation)'
   b longOpt: 'minimum-breadth-of-coverage', args: 1, 'filter contigs less than minimum'
-  v longOpt: 'remove-gaps', 'remove alignment gaps in the filtered consensus sequence'
+  r longOpt: 'remove-gaps', 'remove alignment gaps in the filtered consensus sequence'
 }
 
 def options = cli.parse(args)
@@ -88,8 +88,13 @@ List<Allele> spliced = []
 def regions = [:]
 
 new SAMFileReader(new File(options.i)).each { record ->
-  def alignment = new Locus("chr6", record.getAlignmentStart(), record.getAlignmentEnd());  
   def edits = cigarToEditList(record)
+  
+  def start = record.getAlignmentStart()
+  def end = record.getAlignmentEnd()
+  
+  def alignment = new Locus("chr6", start, end);  
+  
   def sequence = DNATools.createDNA(new String(record.getReadBases()))
 
   edits.each {
@@ -99,8 +104,8 @@ new SAMFileReader(new File(options.i)).each { record ->
   def name = record.getReadName()  
   def contig = Allele.builder()
                  .withContig("chr6")
-                 .withStart(record.getAlignmentStart())
-                 .withEnd(record.getAlignmentEnd())
+                 .withStart(start)
+                 .withEnd(end)
                  .withSequence(sequence)
                  .build();
 
@@ -178,15 +183,15 @@ if (options.c) {
 
     println "${contig}"
     
+    if(options.r) {
+      cdna = cdna.replaceAll("-", "")
+    }
+    
     if(!(options.g.equals("HLA-A") || options.g.equals("HLA-DPB1"))) {
       cdna = DNATools.reverseComplement(DNATools.createDNA(cdna)).seqString() 
     }
     
-    if(options.v) {
-      println "${cdna.toUpperCase().replaceAll("~", "")}"
-    } else {
-      println "${cdna.toUpperCase()}"
-    }
+    println cdna.toUpperCase()
     
   }
 }
@@ -205,7 +210,7 @@ def cigarToEditList(record) {
     }
 
     if (element.getOperator().toString().equals("D")) {
-      def replace = DNATools.createDNA(Joiner.on("").join(Collections.nCopies(element.getLength(), "~")));
+      def replace = DNATools.createDNA(Joiner.on("").join(Collections.nCopies(element.getLength(), "-")));
       edits += new Edit(position + element.getLength() - 1, 0, replace)
     }
   }
