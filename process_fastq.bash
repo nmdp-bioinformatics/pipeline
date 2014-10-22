@@ -150,7 +150,7 @@ cat > $BOILERPLATE_HEADER << EOF
 EOF
 fi
 
-  bwa bwasw ${REFDIR}/${REFCHR} ${intermediate}.ssake.contigs | samtools view -Sb - | samtools sort - ${final}.contigs.bwa.sorted
+  bwa bwasw -b 1 ${REFDIR}/${REFCHR} ${intermediate}.ssake.contigs | samtools view -Sb - | samtools sort - ${final}.contigs.bwa.sorted
   bwa mem ${REFDIR}/${REFCHR} ${FILE1} ${FILE2} | samtools view -Sb - | samtools sort - ${final}.reads.bwa.sorted
   samtools index ${final}.reads.bwa.sorted
   samtools mpileup -RB -C 0 -Q 0 -f ${REFDIR}/${REFCHR}.gz ${final}.contigs.bwa.sorted.bam | cat $BOILERPLATE_HEADER - | bcftools view -O z -o ${final}.vcf.gz
