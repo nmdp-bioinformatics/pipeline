@@ -216,7 +216,7 @@ case $OS in
     # complex enough that it's in the function at the top of the file
     # called "bsd_linespersubfile"
 
-    bsd_linespersubfile $samples $cores
+    bsd_linespersubfile ${LINESINFILE} ${NUMCPU}
     LINESPERSUBFILE=$?
 
     case $OS in
