@@ -142,7 +142,8 @@ if [[ $ABORT -gt 0 ]]; then
   exit 1
 fi
 
-if [[ $(find ${RAWDIR} -type f | grep -c fastq) -eq 0 ]]; then
+# now, we accept fastq OR fq, but we want that as a suffix.
+if [[ $(find ${RAWDIR} -type f | grep -cie '\(fq\|fastq\)$') -eq 0 ]]; then
   echo "no fastq files found in ${RAWDIR}.  Aborting."
   exit 1
 fi
@@ -164,7 +165,7 @@ rm ${SCRATCHFILE}  2>/dev/null
 if [[ ${DEBUG}"x" != "x" ]]; then
   echo "MASTERWORKFILE = ${MASTERWORKFILE}"
 fi
-for MYIDENTIFIER in $(find ${RAWDIR} -name '*.fastq' -print -type f | sed -e 's/R[12]/RX/g' | uniq); do if [[ ${DEBUG}"x" == "1x" ]]; then
+for MYIDENTIFIER in $(find ${RAWDIR} \( -iname '*.fastq' -o -iname '*.fq' \) -print -type f | sed -e 's/R[12]/RX/g' | uniq); do if [[ ${DEBUG}"x" == "1x" ]]; then
     echo ${MYIDENTIFIER}
   fi
   echo ${MYIDENTIFIER} >> ${SCRATCHFILE}

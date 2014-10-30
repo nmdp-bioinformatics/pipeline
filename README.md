@@ -16,7 +16,7 @@ USING pipeline
  - edit splitter.bash to include the correct path to your copy of the pipeline
     note -- splitter.bash will not run unless you set this value.
  - ensure your data is in the format that splitter and process_fastq expect:
-     - all data files to be processed must be in fastq format, with a filename ending in .fastq
+     - all data files to be processed must be in fastq format, with a filename ending in .fastq or .fq
      - your directory of data must have all fastq files in a subdirectory named raw/ .  Optionally, you can organize your fastq files in subdirectories of raw/, but this may add complexity.
      - avoid having underscores in subdirectory names under raw/
      - any non-fastq files in the raw/ subdirectory will be ignored
