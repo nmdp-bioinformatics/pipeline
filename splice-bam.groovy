@@ -54,6 +54,7 @@ cli.with {
   m longOpt: 'merge', 'strictly merge overlapping contigs'
   c longOpt: 'cdna', 'output cdna from the same contig (phased consensus sequence) in FASTA format (for interpretation)'
   b longOpt: 'minimum-breadth-of-coverage', args: 1, 'filter contigs less than minimum'
+  p longOpt: 'expected-ploidy', args:1, 'maximum number of contigs to output ordered by sequence length, default is Integer.MAX_VALUE, only applies with -c option'
   r longOpt: 'remove-gaps', 'remove alignment gaps in the filtered consensus sequence'
 }
 
@@ -70,6 +71,14 @@ def minimumBreadth = 0
 if (options.b) {
   minimumBreadth = options.b as double
 }
+
+def expectedPloidy = Integer.MAX_VALUE
+
+if (options.p) {
+  expectedPloidy = options.p as int
+}
+
+assert expectedPloidy > 0
 
 exons = [:]
 
@@ -173,6 +182,9 @@ regions.each { region, list ->
 }
 
 if (options.c) {
+  
+  def cdnas = [:]
+  
   contigs.each { contig, exons ->    
     def cdna = ""
     exons.each { index, list ->
@@ -181,8 +193,6 @@ if (options.c) {
       cdna += best.sequence.seqString()
     }
 
-    println "${contig}"
-    
     if(options.r) {
       cdna = cdna.replaceAll("-", "")
     }
@@ -191,8 +201,11 @@ if (options.c) {
       cdna = DNATools.reverseComplement(DNATools.createDNA(cdna)).seqString() 
     }
     
-    println cdna.toUpperCase()
-    
+    cdnas[contig] = cdna.toUpperCase()  
+  }
+  
+  cdnas.sort { a, b -> b.value.length() <=> a.value.length() }.take(expectedPloidy).each {
+    println "${it.key}\n${it.value}"
   }
 }
 
