@@ -52,27 +52,27 @@ for i in $( ls ${OUTPUT_DIR}/HLA-A/*.fa.gz ); do ${TOOLDIR}/ngs-generate-paired-
 
 echo "generating reads for HLA-B..."
 mkdir ${OUTPUT_DIR}/HLA-B
-${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/B_gen.fa.gz -d ${OUTPUT_DIR}/HLA-B -x fa.gz
+${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/B_gen.fasta -d ${OUTPUT_DIR}/HLA-B -x fa.gz
 for i in $( ls ${OUTPUT_DIR}/HLA-B/*.fa.gz ); do ${TOOLDIR}/ngs-generate-paired-end-reads -r $i -1 ${i/.fa.gz/_R1.fq.gz} -2 ${i/.fa.gz/_R2.fq.gz} --mean-length ${MEAN_LENGTH} --length-variation 0 --mean-insert-size ${MEAN_INSERT_SIZE} --insert-size-variation 0 --mean-coverage ${MEAN_COVERAGE} --quality illumina --mutation identity --seed 42; done
 
 echo "generating reads for HLA-C..."
 mkdir ${OUTPUT_DIR}/HLA-C
-${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/C_gen.fa.gz -d ${OUTPUT_DIR}/HLA-C -x fa.gz
+${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/C_gen.fasta -d ${OUTPUT_DIR}/HLA-C -x fa.gz
 for i in $( ls ${OUTPUT_DIR}/HLA-C/*.fa.gz ); do ${TOOLDIR}/ngs-generate-paired-end-reads -r $i -1 ${i/.fa.gz/_R1.fq.gz} -2 ${i/.fa.gz/_R2.fq.gz} --mean-length ${MEAN_LENGTH} --length-variation 0 --mean-insert-size ${MEAN_INSERT_SIZE} --insert-size-variation 0 --mean-coverage ${MEAN_COVERAGE} --quality illumina --mutation identity --seed 42; done
 
 echo "generating reads for HLA-DRB1..."
 mkdir ${OUTPUT_DIR}/HLA-DRB1
-${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/DRB1_gen.fa.gz -d ${OUTPUT_DIR}/HLA-DRB1 -x fa.gz
+${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/DRB1_gen.fasta -d ${OUTPUT_DIR}/HLA-DRB1 -x fa.gz
 for i in $( ls ${OUTPUT_DIR}/HLA-DRB1/*.fa.gz ); do ${TOOLDIR}/ngs-generate-paired-end-reads -r $i -1 ${i/.fa.gz/_R1.fq.gz} -2 ${i/.fa.gz/_R2.fq.gz} --mean-length ${MEAN_LENGTH} --length-variation 0 --mean-insert-size ${MEAN_INSERT_SIZE} --insert-size-variation 0 --mean-coverage ${MEAN_COVERAGE} --quality illumina --mutation identity --seed 42; done
 
 echo "generating reads for HLA-DPB1..."
 mkdir ${OUTPUT_DIR}/HLA-DPB1
-${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/DPB_gen.fa.gz -d ${OUTPUT_DIR}/HLA-DPB1 -x fa.gz
+${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/DPB_gen.fasta -d ${OUTPUT_DIR}/HLA-DPB1 -x fa.gz
 for i in $( ls ${OUTPUT_DIR}/HLA-DBP1/*.fa.gz ); do ${TOOLDIR}/ngs-generate-paired-end-reads -r $i -1 ${i/.fa.gz/_R1.fq.gz} -2 ${i/.fa.gz/_R2.fq.gz} --mean-length ${MEAN_LENGTH} --length-variation 0 --mean-insert-size ${MEAN_INSERT_SIZE} --insert-size-variation 0 --mean-coverage ${MEAN_COVERAGE} --quality illumina --mutation identity --seed 42; done
 
 echo "generating reads for HLA-DQB1..."
 mkdir ${OUTPUT_DIR}/HLA-DQB1
-${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/DQB_gen.fa.gz -d ${OUTPUT_DIR}/HLA-DQB1 -x fa.gz
+${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/DQB_gen.fasta -d ${OUTPUT_DIR}/HLA-DQB1 -x fa.gz
 for i in $( ls ${OUTPUT_DIR}/HLA-DQB1/*.fa.gz ); do ${TOOLDIR}/ngs-generate-paired-end-reads -r $i -1 ${i/.fa.gz/_R1.fq.gz} -2 ${i/.fa.gz/_R2.fq.gz} --mean-length ${MEAN_LENGTH} --length-variation 0 --mean-insert-size ${MEAN_INSERT_SIZE} --insert-size-variation 0 --mean-coverage ${MEAN_COVERAGE} --quality illumina --mutation identity --seed 42; done
 
 echo "done"
