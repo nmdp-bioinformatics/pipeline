@@ -68,7 +68,7 @@ for i in $( ls ${OUTPUT_DIR}/HLA-DRB1/*.fa.gz ); do ${TOOLDIR}/ngs-generate-pair
 echo "generating reads for HLA-DPB1..."
 mkdir ${OUTPUT_DIR}/HLA-DPB1
 ${TOOLDIR}/ngs-split-fasta -i ${REFDIR}/DPB_gen.fasta -d ${OUTPUT_DIR}/HLA-DPB1 -x fa.gz
-for i in $( ls ${OUTPUT_DIR}/HLA-DBP1/*.fa.gz ); do ${TOOLDIR}/ngs-generate-paired-end-reads -r $i -1 ${i/.fa.gz/_R1.fq.gz} -2 ${i/.fa.gz/_R2.fq.gz} --mean-length ${MEAN_LENGTH} --length-variation 0 --mean-insert-size ${MEAN_INSERT_SIZE} --insert-size-variation 0 --mean-coverage ${MEAN_COVERAGE} --quality illumina --mutation identity --seed 42; done
+for i in $( ls ${OUTPUT_DIR}/HLA-DPB1/*.fa.gz ); do ${TOOLDIR}/ngs-generate-paired-end-reads -r $i -1 ${i/.fa.gz/_R1.fq.gz} -2 ${i/.fa.gz/_R2.fq.gz} --mean-length ${MEAN_LENGTH} --length-variation 0 --mean-insert-size ${MEAN_INSERT_SIZE} --insert-size-variation 0 --mean-coverage ${MEAN_COVERAGE} --quality illumina --mutation identity --seed 42; done
 
 echo "generating reads for HLA-DQB1..."
 mkdir ${OUTPUT_DIR}/HLA-DQB1
