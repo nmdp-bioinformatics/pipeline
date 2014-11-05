@@ -217,7 +217,7 @@ def cigarToEditList(record) {
   cigar.getCigarElements().each { element ->
     position += element.getLength();
 
-    if (element.getOperator().toString().equals("I")) {
+    if (element.getOperator().toString().equals("I") || element.getOperator().toString().equals("S")) {
       edits += new Edit(position - element.getLength() + 1, element.getLength(), SymbolList.EMPTY_LIST)
       position -= element.getLength();
     }
