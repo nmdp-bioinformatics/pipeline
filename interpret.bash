@@ -21,7 +21,7 @@
 #
 
 ABORT=0
-TOOLDIR=/Users/int33484/Documents/Projects/Code/ngs/tools/target/ngs-tools-1.5-SNAPSHOT/bin
+TOOLDIR=../ngs/tools/target/ngs-tools-1.5-SNAPSHOT/bin
 SOURCEFILE=$1
 TEMPFILE=temp.fasta
 BREADTH_OF_COVERAGE=0.5
