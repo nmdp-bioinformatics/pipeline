@@ -21,7 +21,7 @@
 #
 
 ABORT=0
-TOOLDIR=../ngs/tools/target/ngs-tools-1.5-SNAPSHOT/bin
+TOOLDIR=/opt/nmdp-ngs/bin
 SOURCEFILE=$1
 TEMPFILE=temp.fasta
 BREADTH_OF_COVERAGE=0.5
