@@ -25,7 +25,7 @@ TOOLDIR=/opt/nmdp-ngs/bin
 SOURCEFILE=$1
 TEMPFILE=temp.fasta
 BREADTH_OF_COVERAGE=0.5
-OUTFILE=interpretation.txt
+OUTFILE=$2
 
 ### validate that we have all the tools we need
 if [[ ! -x ${TOOLDIR}/ngs-filter-consensus ]]; then
