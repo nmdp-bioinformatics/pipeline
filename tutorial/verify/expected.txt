@@ -1,0 +1,5 @@
+./tutorial/final/HLA00664_RX.fq.contigs.bwa.sorted.bam	HLA-DRB1	./tutorial/regions/grch38/hla-drb1/hla-drb1.ars.txt	1	HLA-DRB1*01:01:01	HLA-DRB1*01:01:01
+./tutorial/final/HLA00622_RX.fq.contigs.bwa.sorted.bam	HLA-DQB1	./tutorial/regions/grch38/hla-dqb1/hla-dqb1.ars.txt	1	HLA-DQB1*02:01:01	HLA-DQB1*02:01:01
+./tutorial/final/HLA00401_RX.fq.contigs.bwa.sorted.bam	HLA-C	./tutorial/regions/grch38/hla-c/hla-c.ars.txt	1	HLA-C*01:02:01	HLA-C*01:02:01
+./tutorial/final/HLA00001_RX.fq.contigs.bwa.sorted.bam	HLA-A	./tutorial/regions/grch38/hla-a/hla-a.ars.txt	1	HLA-A*01:01:01:01	HLA-A*01:01:01:01
+./tutorial/final/HLA00132_RX.fq.contigs.bwa.sorted.bam	HLA-B	./tutorial/regions/grch38/hla-b/hla-b.ars.txt	1	HLA-B*07:02:01	HLA-B*07:02:01
