@@ -23,16 +23,16 @@
 OUTPUT_DIR=${1:-.}
 
 ABORT=0
-TOOLDIR=/opt/nmdp-ngs/bin
+TOOLDIR=/opt/ngs-tools/bin
 REFDIR=/mnt/common/data/reference/ipd-imgt-hla
 
 ###  validate that we have all the tools we need
 if [[ ! -x ${TOOLDIR}/ngs-generate-paired-end-reads ]]; then
-	echo "did not find ${TOOLDIR}/ngs-generate-paired-end-reads -- you must install the nmdp-ngs tools."
+	echo "did not find ${TOOLDIR}/ngs-generate-paired-end-reads -- you must install NMDP ngs-tools."
 	let ABORT=ABORT+1
 fi
 if [[ ! -x ${TOOLDIR}/ngs-split-fasta ]]; then
-	echo "did not find ${TOOLDIR}/ngs-split-fasta -- you must install the nmdp-ngs tools."
+	echo "did not find ${TOOLDIR}/ngs-split-fasta -- you must install the NMDP ngs-tools."
 	let ABORT=ABORT+1
 fi
 

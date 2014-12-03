@@ -29,7 +29,7 @@ if [[ ${DEBUG}"x" != "x" ]]; then
   set -x
 fi
 
-TOOLDIR=/opt/nmdp-ngs/bin
+TOOLDIR=/opt/ngs-tools/bin
 REFDIR=/opt/data/tutorial/grch38_fasta_reference
 
 ## note that REFDIR may require customization to your circumstances, as
@@ -49,7 +49,7 @@ fi
 
 ###  validate that we have all the tools we need
 if [[ ! -x ${TOOLDIR}/ngs-fastq-to-ssake ]]; then
-	echo "did not find ${TOOLDIR}/ngs-fastq-to-ssake -- you must install the nmdp-ngs tools."
+	echo "did not find ${TOOLDIR}/ngs-fastq-to-ssake -- you must install NMDP ngs-tools."
 	let ABORT=ABORT+1
 fi
 

@@ -21,7 +21,7 @@
 #
 
 ABORT=0
-TOOLDIR=/opt/nmdp-ngs/bin
+TOOLDIR=/opt/ngs-tools/bin
 SOURCEFILE=$1
 TEMPFILE=temp.fasta
 BREADTH_OF_COVERAGE=0.5
@@ -29,7 +29,7 @@ OUTFILE=$2
 
 ### validate that we have all the tools we need
 if [[ ! -x ${TOOLDIR}/ngs-filter-consensus ]]; then
-  echo "did not find ${TOOLDIR}/ngs-filter-consensus -- you must install the nmdp-ngs tools."
+  echo "did not find ${TOOLDIR}/ngs-filter-consensus -- you must install NMDP ngs-tools."
   let ABORT=ABORT+1
 fi
 
