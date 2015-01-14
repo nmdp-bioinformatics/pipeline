@@ -30,11 +30,11 @@ if [[ ${DEBUG}"x" != "x" ]]; then
 fi
 
 TOOLDIR=/opt/ngs-tools/bin
-REFDIR=/opt/data/tutorial/grch38_fasta_reference
+REFDIR=/mnt/common/data/reference/grch38/seqs_for_alignment_pipelines
 
 ## note that REFDIR may require customization to your circumstances, as
 ## well as TOOLDIR
-REFCHR=all_chr.fa
+REFCHR=GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 ## change above to just chromosome6 (chr6.fa) if you have less than 4GB or
 ## memory.  Frankly, we've seen issues even on machines _with_ 4GB, so
 ## for safeties sake, make sure you've got more memory.
@@ -42,7 +42,7 @@ TMPDIR=~/tmp
 
 ABORT=0
 
-if [[ ! -f ${REFDIR}/${REFCHR} ]]; then
+if [[ ! -f ${REFDIR}/${REFCHR}.gz ]]; then
 	echo "without ${REFDIR}/${REFCHR} I cannot proceed."
 	let ABORT=ABORT+1
 fi
@@ -152,7 +152,7 @@ fi
 
   bwa bwasw -b 1 ${REFDIR}/${REFCHR} ${intermediate}.ssake.contigs | samtools view -Sb - | samtools sort - ${final}.contigs.bwa.sorted
   bwa mem ${REFDIR}/${REFCHR} ${FILE1} ${FILE2} | samtools view -Sb - | samtools sort - ${final}.reads.bwa.sorted
-  samtools index ${final}.reads.bwa.sorted
+  samtools index ${final}.reads.bwa.sorted.bam
   samtools mpileup -RB -C 0 -Q 0 -f ${REFDIR}/${REFCHR}.gz ${final}.contigs.bwa.sorted.bam | cat $BOILERPLATE_HEADER - | bcftools view -O z -o ${final}.vcf.gz
   samtools mpileup -f ${REFDIR}/${REFCHR}.gz ${final}.reads.bwa.sorted.bam > ${final}.reads.bwa.sorted.vcf
 done
