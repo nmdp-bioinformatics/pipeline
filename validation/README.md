@@ -1,46 +1,34 @@
-# ngs-validation-report
+ngs-validation-report
 ========
-This is a prototypical pipeline.  Greater detail on how this works, why it's supposed to work, and much, much more can be found in the wiki at the github page.
+This tool takes in the output of the NGS pipeline and produces a 
 
 [![Build Status](https://travis-ci.org/nmdp-bioinformatics/pipeline.svg?branch=master)](https://travis-ci.org/nmdp-bioinformatics/pipeline)
 
 
-## Description
+Using ngs-validation-report
 ========
+1. Running with no parameters
+```bash
+/path/to/tool/ngs-validation-report
+```
+- If you pass it no parameters then it looks in the current directory for the expected, validated, and observed file.
+- The output directory is defaulted to your current directory and the report title is defaulted to report.
 
-
-## Using ngs-validation-report
-========
-
- - clone the repository to your working directory
- - 
-
- 1. Running with only a input directory
+2. Using only an experiment name
 ```bash
-/path/to/ngs-validation-report -d /path/to/directory/of/data
+/path/to/ngs-validation-report -x ex014
 ```
- 2. Running with only an experiment name
+- 
+3. Using an experiment name and an input directory
 ```bash
-/path/to/ngs-validation-report -d /path/to/directory/of/data
+/path/to/ngs-validation-report -x ex014
 ```
- 3. Running with only an experiment name
-```bash
-/path/to/ngs-validation-report -d /path/to/directory/of/data
-```
- 4. Running with only an experiment name
-```bash
-/path/to/ngs-validation-report -d /path/to/directory/of/data
-```
- 5. Running with only an experiment name
-```bash
-/path/to/ngs-validation-report -d /path/to/directory/of/data
-```
- 6. Running with only an experiment name
+4. Providing the experiment, validated, and observed files.
 ```bash
 /path/to/ngs-validation-report -d /path/to/directory/of/data
 ```
 
-## Output
+Output
 ========
 
 ```
@@ -48,38 +36,44 @@ report/
 ├── index.html
 ├── results.html
 ├── errors.html
-├── errors.html
+├── experiments.html
+├── help.html
+├── log.html
 ├── subjects/
-│   ├── bootstrap.css
-│   ├──
-│   ├── bootstrap.min.css
-│   ├── bootstrap-theme.css
-│   └── bootstrap-theme.min.css
+│   ├── subject1.html
+│   ├── ...
 ├── css/
-│   ├── bootstrap.css
-│   ├──
+│   ├── dashboard.css
 │   ├── bootstrap.min.css
-│   ├── bootstrap-theme.css
-│   └── bootstrap-theme.min.css
+│   └── default.css
 ├── js/
-│   ├── bootstrap.js
+│   ├── Chart.js
+│   ├── docs.min.js
+│   ├── ie-emulation-modes-warning.js
+│   ├── ie10-viewport-bug-workaround.js
+│   ├── ie8-responsive-file-warning.js
+│   ├── init.js
+│   ├── jquery.js
+│   ├── raphael.js
 │   └── bootstrap.min.js
 └── fonts/
-    ├── glyphicons-halflings-regular.eot
-    ├── glyphicons-halflings-regular.svg
-    ├── glyphicons-halflings-regular.ttf
-    └── glyphicons-halflings-regular.woff
+    └── bethematch.jpeg
+
 ```
 
-## Caveats
+Caveats
+========
+
+    The email option will only work if you're on a linux machine with mailx
+    properly installed. This option DOES NOT work with nmdp email addresses
+    from the private cloud. In order to do the allele code expansion you must
+    have LWP::UserAgent installed on your machine. 
+
+Debugging
 ========
 
 
-## Debugging
-========
-
-
-## Copyright and License
+Copyright and License
 =====================
 Code released under the MIT license.
 
