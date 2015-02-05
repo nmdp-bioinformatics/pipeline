@@ -455,7 +455,19 @@ sub loadFiles{
 					$n_typings++;
 				}
 			}
-
+			
+			if(!defined $h_observed_gls{$s_ID}{$s_loc}[0]){
+				print STDERR "No Call: ",join("\t",$s_ID,$s_loc),"\n";
+				print $log_html "No data found for $s_ID at $s_loc!!<br>";
+				$h_counts{LOCUS}{$s_loc}{ERROR}++;
+				$h_counts{LOCUS}{TOTAL}{ERROR}++;
+				$h_locus_verdict{$s_ID}{$s_loc} = "ERROR";
+				$h_errors{$s_ID}{$s_loc}++;
+				$n_error++;
+				#Need to flag this as no calls
+				next;
+			}
+			
 			my $gl = join("+",@{$h_observed_gls{$s_ID}{$s_loc}});
 			my ($g1,$g2) = split(/\+/,$gl);
 			$g1 = !defined $g1 || $g1 !~ /\S/ ? $g2 : $g1;
@@ -464,11 +476,12 @@ sub loadFiles{
 			$g2 =~ /^(\D+\d{0,1})\*/;my $s_locus2 = $1;	
 
 			my $num_typings = keys %{$h_verified{$s_ID}{$s_loc}};
-			if($n_typings == $num_typings && $h_expected_zygosity{$s_ID}{$s_loc} == $h_observed_zygosity{$s_ID}{$s_loc}){
+			if($n_typings == $num_typings){
 				$h_counts{LOCUS}{$s_loc}{PASS}++;
 				$h_counts{LOCUS}{TOTAL}{PASS}++;
 				$h_locus_verdict{$s_ID}{$s_loc} = "PASS";
 				$loc_cnt++;
+
 			}elsif(!defined $h_expected_zygosity{$s_ID}{$s_loc} || !defined $h_observed_zygosity{$s_ID}{$s_loc} 
 				|| $h_expected_zygosity{$s_ID}{$s_loc} != $h_observed_zygosity{$s_ID}{$s_loc} || 
 					$s_locus1 ne $s_loc || $s_locus2 ne $s_loc){
@@ -513,7 +526,8 @@ sub loadFiles{
 
 	foreach my $s_l (keys %{$h_counts{LOCUS}}){
 		$h_counts{LOCUS}{$s_l}{PASS} = 0 if(!defined $h_counts{LOCUS}{$s_l}{PASS});
-		$h_counts{LOCUS}{$s_l}{FAIL} = 0 if(!defined $h_counts{LOCUS}{$s_l}{FAIL});	
+		$h_counts{LOCUS}{$s_l}{FAIL} = 0 if(!defined $h_counts{LOCUS}{$s_l}{FAIL});
+		$h_counts{LOCUS}{$s_l}{ERROR} = 0 if(!defined $h_counts{LOCUS}{$s_l}{ERROR});		
 		$h_counts{ALLELE}{$s_l}{PASS} = 0 if(!defined $h_counts{ALLELE}{$s_l}{PASS});
 		$h_counts{ALLELE}{$s_l}{FAIL} = 0 if(!defined $h_counts{ALLELE}{$s_l}{FAIL});
 		$h_counts{ALLELE}{$s_l}{ERROR} = 0 if(!defined $h_counts{ALLELE}{$s_l}{ERROR});		
@@ -587,7 +601,7 @@ sub isAC{
 sub getGL{
 
 	my($typ1,$typ2) = @_;
-	$typ1 =~ /(\D+\d{0,1)\*/;
+	$typ1 =~ /(\D+\d{0,1})\*/;
 	my $s_gl1 = isAC($typ1) ? ac2gl($1,$typ1) : $typ1;
 	my $s_gl2 = isAC($typ2) ? ac2gl($1,$typ2) : $typ2;
 	return (expand(join("+",sort($s_gl1,$s_gl2))));
@@ -606,6 +620,7 @@ sub getGL{
 sub ac2gl{
 
 	my($loc,$typ) = @_;
+	$typ =~ s/$loc\*//;
 
 	my $ua = new LWP::UserAgent;
     $ua->agent("AlleleCodeClient/0.1");
@@ -924,7 +939,7 @@ sub logHeader{
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="index.html">NGS Validation Report - ex014</a>
+          <a class="navbar-brand" href="index.html">NGS Validation Report - $s_experiment</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
@@ -1048,7 +1063,7 @@ sub helpHtml{
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="index.html">NGS Validation Report - ex014</a>
+          <a class="navbar-brand" href="index.html">NGS Validation Report - $s_experiment</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
@@ -1770,7 +1785,7 @@ sub resultsHeader{
 	            <span class="icon-bar"></span>
 	            <span class="icon-bar"></span>
 	          </button>
-	          <a class="navbar-brand" href="#">NGS Validation Report - ex014 </a>
+	          <a class="navbar-brand" href="#">NGS Validation Report - $s_experiment </a>
 	        </div>
 	        <div id="navbar" class="navbar-collapse collapse">
 	          <ul class="nav navbar-nav navbar-right">
@@ -1827,6 +1842,7 @@ sub resultsBody{
 
 	my ($html, $rh_locus_verdict, $rh_verified, $rh_observed, $ra_subject_pages ) = @_;
 
+	my %h_subject_errors;
 	foreach my $s_ID (keys %$rh_verified){
 		foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
 
@@ -1836,6 +1852,12 @@ sub resultsBody{
 
 				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
 				
+				if(!defined $$ra_subject_pages{$s_ID}){
+					print STDERR "Subject has no valid loci defined!! $s_ID\n" if !defined $h_subject_errors{$s_ID};
+					print $log_html "<br>Subject has no valid loci defined!! <b>$s_ID</b><br>" if !defined $h_subject_errors{$s_ID};
+					$h_subject_errors{$s_ID}++;
+					next;
+				}
 				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
 				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">1$s_ID</a></td>\n";
 				
@@ -2162,7 +2184,7 @@ sub failedHeader{
 	            <span class="icon-bar"></span>
 	            <span class="icon-bar"></span>
 	          </button>
-	          <a class="navbar-brand" href="#">NGS Validation Report - ex014 </a>
+	          <a class="navbar-brand" href="#">NGS Validation Report - $s_experiment</a>
 	        </div>
 	        <div id="navbar" class="navbar-collapse collapse">
 	          <ul class="nav navbar-nav navbar-right">
@@ -2562,7 +2584,7 @@ sub errorsHeader{
 	            <span class="icon-bar"></span>
 	            <span class="icon-bar"></span>
 	          </button>
-	          <a class="navbar-brand" href="#">NGS Validation Report - ex014 </a>
+	          <a class="navbar-brand" href="#">NGS Validation Report - $s_experiment </a>
 	        </div>
 	        <div id="navbar" class="navbar-collapse collapse">
 	          <ul class="nav navbar-nav navbar-right">
@@ -2629,6 +2651,8 @@ sub errorsBody{
 
 				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
 				
+				next if(!defined $$ra_subject_pages{$s_ID});
+
 				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
 				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">1$s_ID</a></td>\n";
 				
