@@ -1,3 +1,6 @@
+/*!
+ * Released under the MIT, BSD, and GPL Licenses.
+ */
 var o = {
 	init: function(){
 		this.diagram();
