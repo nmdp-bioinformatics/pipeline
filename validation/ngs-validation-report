@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/env perl -w
 =head1 NAME
 
     ngs-validation-report
@@ -13,7 +13,7 @@
     -d/--directory        Directory of input files (default = pwd)
     -p/--output           Output directory (default = pwd)
     -m/--email            A list of email addresses seperated by ;
-    -t/--title            Report directory title (default = report)
+    -t/--test             Run in test mode
     -f/--forced           Force overwrite without prompting
     -v/--verbose          (default = 0)
 
@@ -31,30 +31,20 @@
 
 =head1 EXAMPLES
 	
-    ./ngs-validation-report -t example1 -m mhalagan09@gmail.com -v 1 
+    ./ngs-validation-report -t example1 -m example@gmail.com -v 1 
         - Without a input directory 
+        - Will default to the current directory
 
-    ./ngs-validation-report -x ex014 -t example1 -m mhalagan09@gmail.com -v 1
-        - Without a input directory 
+    ./ngs-validation-report -x ex014 -t example1 -m example@gmail.com -v 1
+        - Without a input directory but providing an experiment name and a title
 
-    ./ngs-validation-report -x ex014 -d experiments/ -t example1 -m mhalagan09@gmail.com -v 1
-        - This
-
-    ./ngs-validation-report -d /path/to/files/ -t example1 -m mhalagan09@gmail.com -v 1
-        - This
-
-    ./ngs-validation-report -l -e -o ex014 -t example1 -m mhalagan09@gmail.com -v 1
-        - This 
-
-    ./ngs-validation-report -d /path/to/files/ -l -e -o ex014 -t example1 -m mhalagan09@gmail.com -v 1
-        - This
-
+    ./ngs-validation-report -d experiments/ -t example1 -m example@gmail.com -v 1
+        - With only an input directory
+        - This will take in all of the experiments in the provided directory
 
 =head1 CAVEATS
 	
-    The email option will only work if you're on a linux machine with mailx
-    properly installed. This option DOES NOT work with nmdp email addresses
-    from the private cloud. In order to do the allele code expansion you must
+    In order to do the allele code expansion you must
     have LWP::UserAgent installed on your machine. 
 
 =head1 LICENSE
@@ -78,28 +68,6 @@
 
     > http://www.gnu.org/licenses/lgpl.html
 
-    The MIT License (MIT)
-
-    Copyright (c) 2011-2015 Twitter, Inc
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in
-    all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-    THE SOFTWARE.
-
 =head1 VERSIONS
 	
     Version    Description              Date
@@ -109,18 +77,25 @@
        - Couldn't parse HML
        - Couldn't deal with allele codes 
 
-    0.2       Inital Github release     2015-01-30
-    
-    0.3       Inital Github release     2015-01-30
+    0.2       Inital release to mhalagan-nmdp github page            2015-01-30
+       - This version could parse HML and dealt with allele codes 
 
+    0.3       updated mhalagan-nmdp github page                      2015-02-11
+	   - This version is capable of taking in multiple experiments
+
+	1.0       Version merged with github.com/nmdp-bioinformatics/ngs  2015-02-16 
+	   - Fixed minor perl formatting issues
+	   - Now uses java HML extracter instead of perl
+	   - Added a Makefile.PL and a t/report.t
+	   - Moved the README contents to the pipepline README
 
 =head1 TODO
 	
     - Add match grades
-    - Make experiments page
-    - Classify and document errors
-    - Allow multiple experiments to be submitted
-    - Use java for the HML parsing
+    - Add more detailed comments
+    - Put all of the HTML subroutines in a separate package
+    - Add a test for each individual subroutine
+    - Add to t/report.t
 
 =head1 SUBROUTINES
 	
@@ -150,7 +125,7 @@ BEGIN{
 			-d/--directory        Directory of input files
 			-m/--email            A list of email addresses that the compressed report will be sent to
 			-p/--output           Output directory
-			-t/--title            Title of report directory (default = report)
+			-t/--test             Run in test mode (used in t/report.t)
 			-f/--forced           Force overwrite without prompting (default = 0)
 			-v/--verbose          (default = 0)
 		};
@@ -167,29 +142,30 @@ if($lwp){ # Only LWP if is installed
 	use LWP::UserAgent;
 }
 
-our $VERSION = 0.3;
+our $VERSION = 1.0;
 
 my %h_observed_gls;    # Hash that contains the observed haplotypes
 my %h_observed;        # Hash that contains the observed Alleles
-my %h_expected;        # Hash that contains the observed Alleles
-my %h_verified;        # Hash that contains the observed Alleles
-my %h_counts;          # Hash that contains the observed Alleles
-my %h_locus_verdict;   # Hash that contains the observed Alleles
-my %h_subject_pages;   # Hash that contains the observed Alleles
-my %h_sequence_data;   # Hash that contains the observed Alleles
-my %h_fails;		   # Hash that contains the observed Alleles
-my %h_errors;		   # Hash that contains the observed Alleles	
-my %h_sensitivity;     # Hash that contains the observed Alleles
-my %h_expected_seqs;   # Hash that contains the observed Alleles
-my %h_experiments;
-my %h_qc_verified;
-my %h_qc_expected;
-my %h_qc_zygosity;
-my %h_qc_verdict;
+my %h_expected;        # Hash that contains the expected Alleles
+my %h_verified;        # Hash that contains the verified Alleles
+my %h_counts;          # Hash that contains the counts
+my %h_locus_verdict;   # 
+my %h_subject_pages;   # 
+my %h_sequence_data;   # 
+my %h_fails;		   # 
+my %h_errors;		   # 	
+my %h_sensitivity;     #
+my %h_expected_seqs;   #
+my %h_experiments;     #
+my %h_qc_verified;     #
+my %h_qc_expected;     #
+my %h_qc_zygosity;     #
+my %h_qc_verdict;      #
+my %h_expected_zygosity;
 my $s_subject_page = 1;
 
-our ( $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_forced, $b_verbose) = 
-	(undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0);
+our ( $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_test, $b_forced, $b_verbose) = 
+	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0);
 
 &GetOptions( "experiment|x=s" => \$s_experiment, 
 			"validated|l=s"  => \$s_validated, 
@@ -199,6 +175,7 @@ our ( $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed
 			"directory|d=s"  => \$s_directory,
 			"email|m=s"      => \$s_emails,
 			"forced|f=n"     => \$b_forced,
+			"test|t=n"       => \$b_test,
 			"verbose|v=n"    => \$b_verbose,
 			"help|h"         => \$help
 			);
@@ -340,7 +317,7 @@ foreach my $s_exp (keys %h_experiments){
 	# Creating the index.html file
 	open(my $index_html, ">$report_index") or die "CANT OPEN FILE $! $0";
 	indexHeader($index_html, $s_exp);
-	indexBody($index_html, \%counts, \%sensitivity);
+	indexBody($index_html, \%counts, \%sensitivity) if !$b_test;
 	indexFooter($index_html);
 	close $index_html;
 
@@ -465,8 +442,6 @@ sub loadFiles{
 					$s_glstring = expand(join("+",@{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}}));
 				}
 				$s_glstring =~ s/HLA-//g;
-
-
 				$h_observed{$s_exp}{$s_ID}{$s_loc} = $s_glstring;
 			}
 		}
@@ -498,9 +473,15 @@ sub loadFiles{
 			$h_sensitivity{$s_exp}{HAPLO}{$s_loc}  = $average_haplo;
 		}
 
-		my %h_expected_zygosity;
 		if($s_expected =~ /hml$/){
-			parseHML($s_expected);
+			# my $which_extract_expected = `which ngs-extract-expected`;chomp($which_extract_expected);
+			# if(!defined $which_extract_expected || $which_extract_expected !~ /\S/){
+			# 	print STDERR "Parsing HML with perl!\n" if $b_verbose;
+			# 	perlParseHML($s_expected, $s_exp);
+			# }else{
+			# 	print STDERR "Parsing HML with ngs-extract-expected\n" if $b_verbose;
+			# 	javaParseHML($s_expected, $s_exp);
+			# }
 		}else{
 			open(EXPECTED,$s_expected) or die "CANT OPEN FILE $! $0";
 			while(<EXPECTED>){
@@ -637,6 +618,7 @@ sub loadFiles{
 				}
 
 				if(!defined $h_observed_gls{$s_exp}{$s_ID}{$s_loc}[0]){
+					foreach($s_exp,$s_ID,$s_loc){ chomp($_);}
 					print STDERR "No Call: ",join("\t",$s_exp,$s_ID,$s_loc),"\n" if $b_verbose;
 					print $log_html "No data found for $s_exp $s_ID at $s_loc!!<br>";
 					$h_counts{$s_exp}{LOCUS}{$s_loc}{ERROR}++;
@@ -727,6 +709,7 @@ sub loadFiles{
 
 	}
 
+
 }
 ################################################################################################################
 =head2 validEmail
@@ -744,15 +727,11 @@ sub validEmail{
 	return 0 if !defined $s_emails_list;
 
 	my @a_emails      = split(/;/,$s_emails_list);
-
 	my $valid_emails = 1;
 	foreach my $s_email (@a_emails){
 		$valid_emails = 0 if($s_email !~ /\.com/ || $s_email !~ /\@/);
-		if($s_email =~ /nmdp\.org/){
-			print STDERR "NMDP Email addresses DO NOT WORK!\n";
-			die($USAGE,'Please provide a valid email address!');
-		}
 	}
+
 	return $valid_emails;
 
 }
@@ -864,6 +843,7 @@ sub emailReport{
 =cut
 sub g2p{
 	my $allele    = shift;
+	return $allele if $allele !~ /:/;
 	my @a_alleles = split(/:/,$allele);
 	return join(":",$a_alleles[0],$a_alleles[1]);
 }
@@ -896,9 +876,9 @@ sub expand{
 
 }
 ################################################################################################################
-=head2 parseHML
+=head2 printParams
 
-	Title: parseHML
+	Title: printParams
 	Usage:
 	Function:
 	Returns:
@@ -922,25 +902,37 @@ sub printParams{
 
 }
 ################################################################################################################
-=head2 parseHML
+=head2 perlParseHML
 
-	Title: parseHML
+	Title: perlParseHML
 	Usage:
 	Function:
 	Returns:
 	Args:
 
 =cut
-sub parseHML{
+sub perlParseHML{
 
-	my $hml_file = shift;
+	my ($hml_file, $s_exp) = @_;
 
 	# Initial HML variables
-	my $sample_id; my $center_cde;    my $locus;    my $assembly;  
-	my $contig;    my $start;         my $end;      my $id;
-	my $strand;    my $phasing_group; my $sequence; my $interp_date;
-	my $allele_db; my $db_version;    my $glstring;
-	my $b_seq = 0; my $b_glstring = 0;
+	my $sample_id; 
+	my $center_cde;    
+	my $locus;    
+	my $assembly;  
+	my $contig;   
+	my $start;         
+	my $end;      
+	my $id;
+	my $strand;    
+	my $phasing_group;
+	my $sequence; 
+	my $interp_date;
+	my $allele_db; 
+	my $db_version;    
+	my $glstring;
+	my $b_seq = 0; 
+	my $b_glstring = 0;
 
 	open(HML,$hml_file) or die "CANT OPEN FILE $! $0";
 	while(<HML>){
@@ -968,7 +960,7 @@ sub parseHML{
 				foreach(split(/\|/,$gls)){ $h_gls{$_}++; }
 			}
 			$glstring = join("|",sort keys %h_gls);
-			$h_expected{$sample_id}{$locus} = $glstring;
+			$h_expected{$s_exp}{$sample_id}{$locus} = $glstring;
 			#$h_interp{$sample_id}{$locus}  = $interp_info;
 			next;
 		}
@@ -995,6 +987,39 @@ sub parseHML{
 	}
 	close HML;
 
+
+}
+################################################################################################################
+=head2 perlParseHML
+
+	Title: perlParseHML
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub javaParseHML{
+
+	my ($hml_file, $s_exp) = @_;
+
+	foreach(`ngs-extract-expected -i $hml_file`){
+		chomp($_);
+		my($s_file,$s_loc,$s_ars,$s_het,$s_typ1,$s_typ2) = split(/\t/,$_);
+
+		my @a_file  = split(/\//,$s_file);
+		my @a_ID = split(/\./,$a_file[$#a_file]);
+		my $ID = $a_ID[0];	
+		$s_loc =~ s/HLA-//g;$s_typ1 =~ s/HLA-//g;$s_typ2 =~ s/HLA-//g;
+		next if !defined $s_loc || $s_loc !~ /\S/;
+		next if $s_loc eq "DPB1"; # For now skip DP
+		
+		$s_typ1 = !defined $s_typ1 || $s_typ1 !~ /\S/ ? $s_typ2 : $s_typ1;
+		$s_typ2 = !defined $s_typ2 || $s_typ2 !~ /\S/ ? $s_typ1 : $s_typ2;
+
+		$h_expected{$s_exp}{$ID}{$s_loc} = (isAC($s_typ1) || isAC($s_typ2)) ? (getGL($s_typ1,$s_typ2)) : expand(join("+",sort $s_typ2, $s_typ1));			
+		$h_expected_zygosity{$s_exp}{$ID}{$s_loc} = $s_typ1 eq $s_typ2 ? 1 : 2;
+	}
 
 }
 ################################################################################################################
@@ -1111,7 +1136,6 @@ sub logHeader{
       display:none;
     }
 
-
     </style>
   </head>
 
@@ -1166,8 +1190,6 @@ sub logHeader{
 sub experimentsHtml{
 
 	my $html = shift;
-
-#$h_counts{$s_exp}{ALLELE}{$s_loc}{PASS}
 
 	my $header = 
 		qq{
@@ -1318,10 +1340,13 @@ my $header2 = qq{
       
 	 };
 	 print $html $table;
+
 	 foreach my $s_exp (keys %h_experiments){
+	 	last if $b_test;
 	 	print $html "\t<tr>\n";
 	 	print $html "\t\t<td>$s_exp</td>\n";
-	 	my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
+
+	 	my $total_subjects =  $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
 	 		$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR};
 
 	 	my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
@@ -1429,196 +1454,198 @@ my $charts = qq{
 
 	print $html $charts;
 
-	print $html "<SCRIPT>\n";
+	if(!$b_test){
+		print $html "<SCRIPT>\n";
 
-    ######## 
-    # Subjects JS
-    ########
-	print $html "var barChartData = {\n";
-	print $html "\t\tlabels : [";
-	my $label;
-	foreach my $s_exp (keys %h_experiments){
-		$label .= "\"$s_exp\",";
+	    ######## 
+	    # Subjects JS
+	    ########
+		print $html "var barChartData = {\n";
+		print $html "\t\tlabels : [";
+		my $label;
+		foreach my $s_exp (keys %h_experiments){
+			$label .= "\"$s_exp\",";
+		}
+		$label =~ s/,$//;
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+		my $chart_pass = qq{
+	            fillColor : "#46BFBD",
+	            strokeColor : "#46BFBD",
+	            highlightFill :  "#5AD3D1",
+	            highlightStroke :  "#5AD3D1",
+	        };
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $subject_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$subject_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}.",";
+	    }
+	    $subject_chart =~ s/,$//;
+	    print $html $subject_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    my $chart_fail = qq{
+	            fillColor : "#F7464A",
+	            strokeColor : "#F7464A",
+	            highlightFill: "#FF5A5E",
+	            highlightStroke: "#FF5A5E",
+	        };
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$fail_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_chart =~ s/,$//;
+	    print $html $fail_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+	    my $chart_error = qq{   
+		        fillColor : "#D3D5D6",
+		        strokeColor : "#D3D5D6",
+		        highlightFill :  "#DCDDDE",
+		        highlightStroke :  "#DCDDDE",
+		    };
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$error_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}.",";
+	    }
+	    $error_chart =~ s/,$//;
+	    print $html $error_chart."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
+
+
+	    ######## 
+	    # Locus JS
+	    ########
+	   	print $html "var barChartData2 = {\n";
+		print $html "\t\tlabels : [";
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $locus_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$locus_chart .= $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}.",";
+	    }
+	    $locus_chart =~ s/,$//;
+	    print $html $locus_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_locus;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$fail_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_locus =~ s/,$//;
+	    print $html $fail_locus."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_locus;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$error_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}.",";
+	    }
+	    $error_locus =~ s/,$//;
+	    print $html $error_locus."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
+
+	    ######## 
+	    # Allele JS
+	    ########
+	   	print $html "var barChartData3 = {\n";
+		print $html "\t\tlabels : [";
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $allele_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$allele_chart .= $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}.",";
+	    }
+	    $allele_chart =~ s/,$//;
+	    print $html $allele_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_allele;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$fail_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_allele =~ s/,$//;
+	    print $html $fail_allele."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_allele;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$error_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}.",";
+	    }
+	    $error_allele =~ s/,$//;
+	    print $html $error_allele."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
+
+
+
+		my $js = qq{
+			window.onload = function(){
+
+	        var ctx3 = document.getElementById("canvas").getContext("2d");
+	        window.myBar = new Chart(ctx3).Bar(barChartData, {
+	          responsive : true
+	        });
+
+	        var ctx5 = document.getElementById("canvas2").getContext("2d");
+	        window.myBar = new Chart(ctx5).Bar(barChartData2, {
+	          responsive : true
+	        });
+
+	        var ctx6 = document.getElementById("canvas3").getContext("2d");
+	        window.myBar = new Chart(ctx6).Bar(barChartData3, {
+	          responsive : true
+	        });
+
+
+	      };
+	       </script>
+		};
+		print $html $js;
 	}
-	$label =~ s/,$//;
-	print $html $label."],\n";
-    print $html "\t\tdatasets : [\n";
-   
-
-    #Pass columns
-    print $html "\t\t\t{\n";
-	my $chart_pass = qq{
-            fillColor : "#46BFBD",
-            strokeColor : "#46BFBD",
-            highlightFill :  "#5AD3D1",
-            highlightStroke :  "#5AD3D1",
-        };
-    print $html $chart_pass;
-    print $html "\t\t\tdata : [";
-    my $subject_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$subject_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}.",";
-    }
-    $subject_chart =~ s/,$//;
-    print $html $subject_chart."],\n";
-    print $html "\t\t\t},\n";
-
-    #Fail columns
-    print $html "\t\t\t{\n";
-    my $chart_fail = qq{
-            fillColor : "#F7464A",
-            strokeColor : "#F7464A",
-            highlightFill: "#FF5A5E",
-            highlightStroke: "#FF5A5E",
-        };
-    print $html $chart_fail;    
-    print $html "\t\t\tdata : [";
-    my $fail_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$fail_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}.",";
-    }
-    $fail_chart =~ s/,$//;
-    print $html $fail_chart."],\n";
-    print $html "\t\t\t},\n";
-
-    #Error charts
-    print $html "\t\t\t{\n";   
-    my $chart_error = qq{   
-	        fillColor : "#D3D5D6",
-	        strokeColor : "#D3D5D6",
-	        highlightFill :  "#DCDDDE",
-	        highlightStroke :  "#DCDDDE",
-	    };
-	print $html $chart_error;        
-    print $html "\t\t\tdata : [";
-    my $error_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$error_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}.",";
-    }
-    $error_chart =~ s/,$//;
-    print $html $error_chart."],\n";
-    print $html "\t\t\t}\n";
-    print $html "\t\t]\n";
-    print $html "\t}\n";
-
-
-    ######## 
-    # Locus JS
-    ########
-   	print $html "var barChartData2 = {\n";
-	print $html "\t\tlabels : [";
-	print $html $label."],\n";
-    print $html "\t\tdatasets : [\n";
-   
-    #Pass columns
-    print $html "\t\t\t{\n";
-    print $html $chart_pass;
-    print $html "\t\t\tdata : [";
-    my $locus_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$locus_chart .= $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}.",";
-    }
-    $locus_chart =~ s/,$//;
-    print $html $locus_chart."],\n";
-    print $html "\t\t\t},\n";
-
-    #Fail columns
-    print $html "\t\t\t{\n";
-    print $html $chart_fail;    
-    print $html "\t\t\tdata : [";
-    my $fail_locus;
-    foreach my $s_exp (keys %h_experiments){
-    	$fail_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}.",";
-    }
-    $fail_locus =~ s/,$//;
-    print $html $fail_locus."],\n";
-    print $html "\t\t\t},\n";
-
-    #Error charts
-    print $html "\t\t\t{\n";   
-	print $html $chart_error;        
-    print $html "\t\t\tdata : [";
-    my $error_locus;
-    foreach my $s_exp (keys %h_experiments){
-    	$error_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}.",";
-    }
-    $error_locus =~ s/,$//;
-    print $html $error_locus."],\n";
-    print $html "\t\t\t}\n";
-    print $html "\t\t]\n";
-    print $html "\t}\n";
-
-    ######## 
-    # Allele JS
-    ########
-   	print $html "var barChartData3 = {\n";
-	print $html "\t\tlabels : [";
-	print $html $label."],\n";
-    print $html "\t\tdatasets : [\n";
-   
-    #Pass columns
-    print $html "\t\t\t{\n";
-    print $html $chart_pass;
-    print $html "\t\t\tdata : [";
-    my $allele_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$allele_chart .= $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}.",";
-    }
-    $allele_chart =~ s/,$//;
-    print $html $allele_chart."],\n";
-    print $html "\t\t\t},\n";
-
-    #Fail columns
-    print $html "\t\t\t{\n";
-    print $html $chart_fail;    
-    print $html "\t\t\tdata : [";
-    my $fail_allele;
-    foreach my $s_exp (keys %h_experiments){
-    	$fail_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}.",";
-    }
-    $fail_allele =~ s/,$//;
-    print $html $fail_allele."],\n";
-    print $html "\t\t\t},\n";
-
-    #Error charts
-    print $html "\t\t\t{\n";   
-	print $html $chart_error;        
-    print $html "\t\t\tdata : [";
-    my $error_allele;
-    foreach my $s_exp (keys %h_experiments){
-    	$error_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}.",";
-    }
-    $error_allele =~ s/,$//;
-    print $html $error_allele."],\n";
-    print $html "\t\t\t}\n";
-    print $html "\t\t]\n";
-    print $html "\t}\n";
-
-
-	my $js = qq{
-		window.onload = function(){
-
-        var ctx3 = document.getElementById("canvas").getContext("2d");
-        window.myBar = new Chart(ctx3).Bar(barChartData, {
-          responsive : true
-        });
-
-        var ctx5 = document.getElementById("canvas2").getContext("2d");
-        window.myBar = new Chart(ctx5).Bar(barChartData2, {
-          responsive : true
-        });
-
-        var ctx6 = document.getElementById("canvas3").getContext("2d");
-        window.myBar = new Chart(ctx6).Bar(barChartData3, {
-          responsive : true
-        });
-
-
-      };
-       </script>
-	};
-	print $html $js;
-
 
 	my $footer = qq{
 	<footer>
@@ -4261,14 +4288,18 @@ sub subjectsBody{
 			print $html "\t\t\t<td></td>";
 		}
 		print $html "\t\t\t<td>$$rh_expected{$s_ID}{$s_loc}</td>\n";
+		if(!defined $$rh_expected{$s_ID}{$s_loc}){
+			print STDERR $s_exp,"\t",$s_ID,"\t",$s_loc,"\n";
+		}
 		my @a_expected_haps = split(/\|/,$$rh_expected{$s_ID}{$s_loc});
 
 		my %h_expected_alleles;
 		foreach(@a_expected_haps){
 			my($x,$y) = split(/\+/,$_);
-			$x = g2p($x);
-			$y = g2p($y);
-			$h_expected_alleles{$x}++;$h_expected_alleles{$y}++;
+			$x =defined $x && $x =~ /\S/ ? g2p($x) : undef;
+			$y =defined $y && $y =~ /\S/ ? g2p($y) : undef;
+			$h_expected_alleles{$x}++ if defined $x;
+			$h_expected_alleles{$y}++ if defined $y;
 		}
 
 
