@@ -47,3 +47,64 @@ DEBUGGING
 Elapsed times, STDOUT and STDERR messages are stored in files named timedata.[0-9]+ -- that is, timedata, followed by a numeric string derived from the PID of the splitter.bash script. 
 
 All timedata files may safely be removed after  run validation.
+
+
+ngs-validation-report
+========
+This tool takes in the output of the NGS pipeline and produces a html report of the results. This allows for an easily traversible report for viewing the validation results. 
+
+Using ngs-validation-report
+========
+1) Running with no parameters
+```bash
+/path/to/tool/ngs-validation-report
+```
+
+2) Running with only an experiment name
+```bash
+/path/to/ngs-validation-report -x ex014
+```
+
+3) Running with only an experiment name and an input directory
+```bash
+/path/to/ngs-validation-report -x ex014 -d /path/to/directory/of/data
+```
+
+4) Running with the experiment, validated, and observed files.
+```bash
+/path/to/ngs-validation-report -l ex00_validated.txt -e ex00_expected.hml -o ex00_observed.txt
+```
+
+Output
+========
+
+```
+report/
+├── index.html
+├── results.html
+├── errors.html
+├── experiments.html
+├── help.html
+├── log.html
+├── subjects/
+│   ├── subject1.html
+│   ├── subject2.html
+│   └── ...
+├── css/
+│   ├── dashboard.css
+│   ├── bootstrap.min.css
+│   └── default.css
+├── js/
+│   ├── Chart.js
+│   ├── docs.min.js
+│   ├── ie-emulation-modes-warning.js
+│   ├── ie10-viewport-bug-workaround.js
+│   ├── ie8-responsive-file-warning.js
+│   ├── init.js
+│   ├── jquery.js
+│   ├── raphael.js
+│   └── bootstrap.min.js
+└── img/
+    └── bethematch.jpeg
+
+```

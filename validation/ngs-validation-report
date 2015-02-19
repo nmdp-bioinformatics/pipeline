@@ -1,0 +1,4591 @@
+#!/usr/bin/env perl -w
+=head1 NAME
+
+    ngs-validation-report
+
+=head1 SYNOPSIS
+
+./ngs-validation-report [--experiment] [--validated] [--expected] [--observed] [--email] [--title] [--directory] [--verbose] [--help]
+    -x/--experiment       Experiment number (ex. ex014) 
+    -l/--validated        Output file from ngs-validate-interp
+    -e/--expected         Expected file
+    -o/--observed         Observed file
+    -d/--directory        Directory of input files (default = pwd)
+    -p/--output           Output directory (default = pwd)
+    -m/--email            A list of email addresses seperated by ;
+    -t/--test             Run in test mode
+    -f/--forced           Force overwrite without prompting
+    -v/--verbose          (default = 0)
+
+=head1 AUTHOR     Mike Halagan <mhalagan@nmdp.org>
+    
+    Associate Bioinformatics Scientist
+    3001 Broadway Stree NE
+    Minneapolis, MN 55413
+    ext. 8225
+
+=head1 DESCRIPTION
+
+    This script takes in the output of ngs-validate-interp and the observed file and generates
+    a static HTML website report.
+
+=head1 EXAMPLES
+	
+    ./ngs-validation-report -t example1 -m example@gmail.com -v 1 
+        - Without a input directory 
+        - Will default to the current directory
+
+    ./ngs-validation-report -x ex014 -t example1 -m example@gmail.com -v 1
+        - Without a input directory but providing an experiment name and a title
+
+    ./ngs-validation-report -d experiments/ -t example1 -m example@gmail.com -v 1
+        - With only an input directory
+        - This will take in all of the experiments in the provided directory
+
+=head1 CAVEATS
+	
+    In order to do the allele code expansion you must
+    have LWP::UserAgent installed on your machine. 
+
+=head1 LICENSE
+
+    pipeline  Consensus assembly and allele interpretation pipeline.
+    Copyright (c) 2014 National Marrow Donor Program (NMDP)
+
+    This library is free software; you can redistribute it and/or modify it
+    under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation; either version 3 of the License, or (at
+    your option) any later version.
+
+    This library is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; with out even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+    License for more details.
+ 
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not, write to the Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA.
+
+    > http://www.gnu.org/licenses/lgpl.html
+
+=head1 VERSIONS
+	
+    Version    Description              Date
+
+    0.1        Initial release          2015-01-14
+       - Version that was presented at the NGS meeting
+       - Couldn't parse HML
+       - Couldn't deal with allele codes 
+
+    0.2       Inital release to mhalagan-nmdp github page            2015-01-30
+       - This version could parse HML and dealt with allele codes 
+
+    0.3       updated mhalagan-nmdp github page                      2015-02-11
+	   - This version is capable of taking in multiple experiments
+
+	1.0       Version merged with github.com/nmdp-bioinformatics/ngs  2015-02-16 
+	   - Fixed minor perl formatting issues
+	   - Now uses java HML extracter instead of perl
+	   - Added a Makefile.PL and a t/report.t
+	   - Moved the README contents to the pipepline README
+
+=head1 TODO
+	
+    - Add match grades
+    - Add more detailed comments
+    - Put all of the HTML subroutines in a separate package
+    - Add a test for each individual subroutine
+    - Add to t/report.t
+
+=head1 SUBROUTINES
+	
+=cut
+BEGIN{
+
+	$start_time = time;
+	$working    = `pwd`;chomp($working);
+	$user       = `whoami`;chomp($user);
+	$machine    = `uname`;chomp($machine);
+	$web_template = $working."/template";
+
+	$lwp = 0; # Check to see if the LWP module is installed
+	foreach(@INC){
+		my @inc_files = <$_/*>;
+		foreach my $inc_file (@inc_files){
+			$lwp = 1 if $inc_file =~ /LWP\.pm/;
+		}
+	}
+
+	$USAGE = 
+		qq{./ngs-validation-report [--experiment] [--validated] [--expected] [--observed] [--directory] [--verbose] [--help]
+			-x/--experiment       Experiment number (ex. ex014) 
+			-l/--validated        Output file from ngs-validate-interp
+			-e/--expected         Expected file
+			-o/--observed         Observed file
+			-d/--directory        Directory of input files
+			-m/--email            A list of email addresses that the compressed report will be sent to
+			-p/--output           Output directory
+			-t/--test             Run in test mode (used in t/report.t)
+			-f/--forced           Force overwrite without prompting (default = 0)
+			-v/--verbose          (default = 0)
+		};
+
+
+}
+use strict;
+use warnings;
+use Data::Dumper;
+use Getopt::Long;
+use vars qw($USAGE $machine $lwp $start_time $web_template $user $working);
+if($lwp){ # Only LWP if is installed
+	# This allows the script to still run if it isn't installed
+	use LWP::UserAgent;
+}
+
+our $VERSION = 1.0;
+
+my %h_observed_gls;    # Hash that contains the observed haplotypes
+my %h_observed;        # Hash that contains the observed Alleles
+my %h_expected;        # Hash that contains the expected Alleles
+my %h_verified;        # Hash that contains the verified Alleles
+my %h_counts;          # Hash that contains the counts
+my %h_locus_verdict;   # 
+my %h_subject_pages;   # 
+my %h_sequence_data;   # 
+my %h_fails;		   # 
+my %h_errors;		   # 	
+my %h_sensitivity;     #
+my %h_expected_seqs;   #
+my %h_experiments;     #
+my %h_qc_verified;     #
+my %h_qc_expected;     #
+my %h_qc_zygosity;     #
+my %h_qc_verdict;      #
+my %h_expected_zygosity;
+my $s_subject_page = 1;
+
+our ( $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_test, $b_forced, $b_verbose) = 
+	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0);
+
+&GetOptions( "experiment|x=s" => \$s_experiment, 
+			"validated|l=s"  => \$s_validated, 
+			"expected|e=s"   => \$s_expected,
+			"observed|o=s"   => \$s_observed,
+			"output|p=s"     => \$s_output, 
+			"directory|d=s"  => \$s_directory,
+			"email|m=s"      => \$s_emails,
+			"forced|f=n"     => \$b_forced,
+			"test|t=n"       => \$b_test,
+			"verbose|v=n"    => \$b_verbose,
+			"help|h"         => \$help
+			);
+
+if(defined $help){ # If help flag provided then provide the perl doc and exit
+	exec('perldoc',$0); 
+	die;
+}
+
+$s_directory = $working if(!defined $s_directory || $s_directory !~ /\S/); # If input directory isn't provided it equals pwd
+$s_output    = $working if(!defined $s_output    || $s_output    !~ /\S/);
+
+# Getting all of the files
+if(!defined $s_validated || !defined $s_observed || !defined $s_expected){
+	if(defined $s_experiment){ 
+		my $experiment_files = $s_directory."/".$s_experiment."*";
+		my @a_ex_files  = <$experiment_files>;
+		my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
+		my @a_expected  = grep { $_ =~ /expected/ } @a_ex_files;
+		my @a_validated  = grep { $_ =~ /validated/ } @a_ex_files;
+		$s_observed  = ($#a_observed  == 0 && defined $a_observed[0]) ? $a_observed[0] : undef;
+		$s_expected  = ($#a_expected  == 0 && defined $a_expected[0]) ? $a_expected[0] : undef;
+		$s_validated = ($#a_validated == 0 && defined $a_validated[0]) ? $a_validated[0] : undef;
+		$h_experiments{$s_experiment}{VAL} = $s_validated;
+		$h_experiments{$s_experiment}{OBS} = $s_observed;
+		$h_experiments{$s_experiment}{EXP} = $s_expected;
+	}else{
+		my @a_files = <$s_directory/*.txt>;
+		my %h_exps = map{ $_ =~ /\/(ex\d+)/; $1 => 1 } grep { $_ =~ /\/(ex\d+)/ } @a_files;
+		my @a_experiments = map{ $_ =~ /\/(ex\d+)/; $1 => 1 } grep { $_ =~ /\/(ex\d+)/ } @a_files;
+		my $num_experiments = keys %h_experiments;
+
+ 		foreach my $s_exp (keys %h_exps){
+ 			my @a_ex_files  = <$s_directory/$s_exp*>;
+			my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
+			my @a_expected  = grep { $_ =~ /expected/ } @a_ex_files;
+			my @a_validated  = grep { $_ =~ /validated/ } @a_ex_files;
+			$s_observed   = (defined $a_observed[0]) ? $a_observed[0] : undef;
+			$s_expected   = (defined $a_expected[0]) ? $a_expected[0] : undef;
+			$s_validated  = (defined $a_validated[0]) ? $a_validated[0] : undef;
+
+			if(defined $a_validated[1]){ # Getting the QC files if present
+				my $s_qc_validated = $a_validated[0] =~ /sbt/ ? $a_validated[0] : 
+					($a_validated[1] =~ /sbt/ ? $a_validated[1] : undef);
+				my $s_ngsp_validated = $a_validated[0] =~ /ngsp/ ? $a_validated[0] : 
+					($a_validated[1] =~ /ngsp/ ? $a_validated[1] : undef);
+				$h_experiments{$s_exp}{VAL} = $s_ngsp_validated;
+				$h_experiments{$s_exp}{QCV} = $s_qc_validated;
+
+			}else{
+				$h_experiments{$s_exp}{VAL} = $s_validated;
+			}
+
+			if(defined $a_expected[1]){ # Getting the QC files if present
+				my $s_qc_expected = $a_expected[0] =~ /sbt/ ? $a_expected[0] : 
+					($a_expected[1] =~ /sbt/ ? $a_expected[1] : undef);
+				my $s_ngsp_expected = $a_expected[0] =~ /ngsp/ ? $a_expected[0] : 
+					($a_expected[1] =~ /ngsp/ ? $a_expected[1] : undef);
+				$h_experiments{$s_exp}{EXP} = $s_ngsp_expected;
+				$h_experiments{$s_exp}{QCE} = $s_qc_expected;
+			}else{
+				$h_experiments{$s_exp}{EXP} = $s_expected;
+			}
+
+			$s_experiment = $a_experiments[0];
+			$h_experiments{$s_exp}{OBS} = $s_observed;
+
+ 		}
+	 	
+	}
+}else{
+	# If experiment name isn't provided take it from the files
+	if(!defined $s_experiment){
+		$s_validated =~ /(ex\d+)_/;
+		$s_experiment = $1;
+	}
+	$h_experiments{$s_experiment}{VAL} = $s_validated;
+	$h_experiments{$s_experiment}{OBS} = $s_observed;
+	$h_experiments{$s_experiment}{EXP} = $s_expected;
+}
+
+
+# Use email option or not
+my $b_email = (defined $s_emails && validEmail($s_emails)) ? 1 : 0; 
+
+# Die if the proper files are not provided
+die($USAGE,'Please provide a experiment number or valid validated, observed, and expected files') 
+	if(!defined $s_experiment && (!defined $s_validated || !defined $s_observed || !defined $s_expected));
+
+# Email option is not available on a mac
+die($USAGE,'Email option is NOT AVAILABLE on a mac!') 
+	if($b_email && $machine =~ /Darwin/i); 
+
+&initalize(); # Initialize the report directories
+my $report_directory = $s_output."/report";
+my $help_index       = $report_directory."/help.html";
+my $log_index        = $report_directory."/log.html";
+my $experiment_index = $report_directory."/experiment.html";
+open(my $log_html, ">$log_index") or die "CANT OPEN FILE $! $0";
+open(my $exp_html, ">$experiment_index") or die "CANT OPEN FILE $! $0";
+open(my $help_html, ">$help_index") or die "CANT OPEN FILE $! $0";
+
+&logHeader($log_html);
+&helpHtml($help_html);
+&printParams(); # Prints out what parameters were used
+&loadFiles();   # Load all of the filles
+&experimentsHtml($exp_html);
+
+foreach my $s_exp (keys %h_experiments){
+
+	my $experiment_dir = $report_directory."/".$s_exp;
+	print `mkdir $experiment_dir`;
+	my $report_index     = $report_directory."/".$s_exp."/index.html";
+	my $results_index    = $report_directory."/".$s_exp."/results.html";
+	my $failed_index     = $report_directory."/".$s_exp."/fails.html";
+	my $errors_index     = $report_directory."/".$s_exp."/errors.html";
+	my $qc_index         = $report_directory."/".$s_exp."/qc.html";
+
+	my %counts      = %{$h_counts{$s_exp}};
+	my %sensitivity = %{$h_sensitivity{$s_exp}};
+	my %loc_verdict = %{$h_locus_verdict{$s_exp}};
+	my %qc_verdict;
+	if(defined $h_qc_verdict{$s_exp}){
+		%qc_verdict  = %{$h_qc_verdict{$s_exp}};
+	} 
+	my %qc_expected;
+	if(defined $h_qc_verdict{$s_exp}){
+		%qc_expected  = %{$h_qc_expected{$s_exp}} ;
+	} 
+	my %verified    = %{$h_verified{$s_exp}};
+	my %observed    = %{$h_observed_gls{$s_exp}};
+	my %observed_gl = %{$h_observed{$s_exp}};
+	my %expected    = %{$h_expected{$s_exp}};
+	my %subject     = %{$h_subject_pages{$s_exp}};
+	my %fail        = %{$h_fails{$s_exp}};
+	my %error       = %{$h_errors{$s_exp}};
+	my %seq         = %{$h_sequence_data{$s_exp}};
+
+	# Creating the index.html file
+	open(my $index_html, ">$report_index") or die "CANT OPEN FILE $! $0";
+	indexHeader($index_html, $s_exp);
+	indexBody($index_html, \%counts, \%sensitivity) if !$b_test;
+	indexFooter($index_html);
+	close $index_html;
+
+	# Creating the results.html file
+	open(my $results_html, ">$results_index") or die "CANT OPEN FILE $! $0";
+	resultsHeader($results_html, $s_exp);
+	resultsBody($results_html, $s_exp, \%loc_verdict, \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject);
+	resultsFooter($results_html);
+	close $results_html;
+
+	# Creating the failed.html file
+	open(my $failed_html, ">$failed_index") or die "CANT OPEN FILE $! $0";
+	failedHeader($failed_html, $s_exp);
+	failedBody($failed_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%fail);
+	failedFooter($failed_html);
+	close $failed_html;
+
+	if(defined $h_qc_verdict{$s_exp}){
+		# Creating the qc.html file
+		open(my $qc_html, ">$qc_index") or die "CANT OPEN FILE $! $0";
+		qcHeader($qc_html, $s_exp);
+		qcBody($qc_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%fail);
+		qcFooter($qc_html);
+		close $qc_html;
+	}
+
+	# Creating the failed.html file
+	open(my $errors_html, ">$errors_index") or die "CANT OPEN FILE $! $0";
+	errorsHeader($errors_html, $s_exp);
+	errorsBody($errors_html, $s_exp, \%loc_verdict, \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%error);
+	errorsFooter($errors_html);
+	close $errors_html;
+
+	my $subject_dir = $s_output."/report/".$s_exp."/subjects";
+	print `mkdir $subject_dir`;
+
+	# Creating all of the subjects html files
+	foreach my $s_ID (keys %{$h_subject_pages{$s_exp}}){
+		my $subject_page = $s_output."/report/".$s_exp."/subjects/subject".$h_subject_pages{$s_exp}{$s_ID}.".html";
+		open(my $subject_html, ">$subject_page") or die "CANT OPEN FILE $! $0";
+		subjectsHeader($subject_html, $s_exp,  $s_ID);
+		subjectsBody($subject_html, $s_exp, $s_ID, \%loc_verdict, \%qc_verdict, \%qc_expected, \%expected, \%observed, \%seq );
+		subjectsFooter($subject_html);
+		close $subject_html;
+	}
+
+
+}
+
+logFooter($log_html);
+&emailReport($s_emails) if $b_email; # Email out the report if emails are provided
+print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
+
+
+################################################################################################################
+=head2 loadFiles
+
+        Title:    loadFiles
+        Usage:    loadFiles($s_experiment, $s_validated, $s_expected, $s_observed);
+        Function: This loads all of the data files into the utlized hashes 
+
+=cut
+sub loadFiles{
+
+	foreach my $s_exp (keys %h_experiments){
+
+		$s_observed = $h_experiments{$s_exp}{OBS};
+		$s_expected = $h_experiments{$s_exp}{EXP};
+		$s_validated = $h_experiments{$s_exp}{VAL};
+		my $s_qc_validated = defined $h_experiments{$s_exp}{QCV} ? $h_experiments{$s_exp}{QCV} : undef;
+		my $s_qc_expected  = defined $h_experiments{$s_exp}{QCE} ? $h_experiments{$s_exp}{QCE} : undef;
+
+		my $pervious_locus = "";
+		open(OBSERVED,$s_observed) or die "CANT OPEN FILE $! $0";
+		while(<OBSERVED>){
+			chomp;
+
+			if($_ !~ /HLA/){
+				my($s_id, $s_seq) = split(/\t/,$_);
+				my @a_file  = split(/\//,$s_id); 
+				my @a_ID = split(/\./,$a_file[$#a_file]);
+				my $ID = $a_ID[0];
+				$h_sequence_data{$s_exp}{$ID}{$pervious_locus}{$s_seq}++;
+				next;
+			}
+
+			my($s_id,$s_observe) = split(/\t/,$_);
+			my @a_file  = split(/\//,$s_id); 
+			my @a_ID = split(/\./,$a_file[$#a_file]);
+			my $ID = $a_ID[0];
+			my $gl = join("/",map( g2p($_), split(/\//,$s_observe)));
+			$gl =~ /HLA-(\D+\d{0,1})\*/;
+			my $s_loc = $1 =~ /DRB[3|4|5]/ ? "DRB1" : $1;
+			$pervious_locus = $s_loc;
+			$gl =~ s/HLA-//g;
+			push(@{$h_observed_gls{$s_exp}{$ID}{$s_loc}},$gl);
+
+		}
+		close OBSERVED;
+
+		my %h_observed_zygosity;
+		foreach my $s_ID (keys %{$h_observed_gls{$s_exp}}){
+			$h_subject_pages{$s_exp}{$s_ID} = $s_subject_page++;
+			foreach my $s_loc (keys %{$h_observed_gls{$s_exp}{$s_ID}}){
+				my $s_glstring;
+
+				my $gl = join("+",@{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}});
+				my ($g1,$g2) = split(/\+/,$gl);
+				$g1 = !defined $g1 || $g1 !~ /\S/ ? $g2 : $g1;
+				$g2 = !defined $g2 || $g2 !~ /\S/ ? $g1 : $g2;
+
+				if($g1 eq $g2){
+					$h_observed_zygosity{$s_exp}{$s_ID}{$s_loc} = 1;
+				}else{
+					$h_observed_zygosity{$s_exp}{$s_ID}{$s_loc} = 2;
+				}
+
+				if($#{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}} == 0){
+					$s_glstring = expand(join("+",${$h_observed_gls{$s_exp}{$s_ID}{$s_loc}}[0],
+							${$h_observed_gls{$s_exp}{$s_ID}{$s_loc}}[0]));
+				}else{
+					$s_glstring = expand(join("+",@{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}}));
+				}
+				$s_glstring =~ s/HLA-//g;
+				$h_observed{$s_exp}{$s_ID}{$s_loc} = $s_glstring;
+			}
+		}
+
+		my %h_haplo_total;my %h_haplo_count;
+		my %h_allele_total;my %h_allele_count;
+		foreach my $s_ID (keys %{$h_observed_gls{$s_exp}}){
+			foreach my $s_loc (keys %{$h_observed_gls{$s_exp}{$s_ID}}){
+				foreach my $s_gl (@{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}}){
+					my %h_alleles   = map{ $_ => 1 } split(/\//,$s_gl);
+					my $num_alleles = keys %h_alleles;
+					my $sensitivity = 1 / $num_alleles;
+					$h_allele_total{$s_loc} += $sensitivity;
+					$h_allele_count{$s_loc}++;
+				}
+				my %h_haplotypes   = map{ $_ => 1 } split(/\|/,$h_observed{$s_exp}{$s_ID}{$s_loc});
+				my $num_haplotypes = keys %h_haplotypes;
+				my $sensitivity = 1 / $num_haplotypes;
+
+				$h_haplo_total{$s_loc} += $sensitivity;
+				$h_haplo_count{$s_loc}++;
+			}
+		}
+
+		foreach my $s_loc (keys %h_haplo_count){
+			my $average_haplo  = $h_haplo_total{$s_loc}  / $h_haplo_count{$s_loc};
+			my $average_allele = $h_allele_total{$s_loc} / $h_allele_count{$s_loc};
+			$h_sensitivity{$s_exp}{ALLELE}{$s_loc} = $average_allele;
+			$h_sensitivity{$s_exp}{HAPLO}{$s_loc}  = $average_haplo;
+		}
+
+		if($s_expected =~ /hml$/){
+			# my $which_extract_expected = `which ngs-extract-expected`;chomp($which_extract_expected);
+			# if(!defined $which_extract_expected || $which_extract_expected !~ /\S/){
+			# 	print STDERR "Parsing HML with perl!\n" if $b_verbose;
+			# 	perlParseHML($s_expected, $s_exp);
+			# }else{
+			# 	print STDERR "Parsing HML with ngs-extract-expected\n" if $b_verbose;
+			# 	javaParseHML($s_expected, $s_exp);
+			# }
+		}else{
+			open(EXPECTED,$s_expected) or die "CANT OPEN FILE $! $0";
+			while(<EXPECTED>){
+				chomp;
+				my($s_file,$s_loc,$s_ars,$s_het,$s_typ1,$s_typ2) = split(/\t/,$_);
+
+				my @a_file  = split(/\//,$s_file);
+				my @a_ID = split(/\./,$a_file[$#a_file]);
+				my $ID = $a_ID[0];	
+				$s_loc =~ s/HLA-//g;$s_typ1 =~ s/HLA-//g;$s_typ2 =~ s/HLA-//g;
+				next if !defined $s_loc || $s_loc !~ /\S/;
+				next if $s_loc eq "DPB1"; # For now skip DP
+				
+				$s_typ1 = !defined $s_typ1 || $s_typ1 !~ /\S/ ? $s_typ2 : $s_typ1;
+				$s_typ2 = !defined $s_typ2 || $s_typ2 !~ /\S/ ? $s_typ1 : $s_typ2;
+
+				$h_expected{$s_exp}{$ID}{$s_loc} = (isAC($s_typ1) || isAC($s_typ2)) ? (getGL($s_typ1,$s_typ2)) : expand(join("+",sort $s_typ2, $s_typ1));			
+				$h_expected_zygosity{$s_exp}{$ID}{$s_loc} = $s_typ1 eq $s_typ2 ? 1 : 2;
+
+			}
+			close EXPECTED;
+
+			if(defined $s_qc_validated && defined $s_qc_expected){
+				open(QCEXPECTED,$s_qc_expected) or die "CANT OPEN FILE $! $0";
+				while(<QCEXPECTED>){
+					chomp;
+					my($s_file,$s_loc,$s_ars,$s_het,$s_typ1,$s_typ2) = split(/\t/,$_);
+
+					my @a_file  = split(/\//,$s_file);
+					my @a_ID = split(/\./,$a_file[$#a_file]);
+					my $ID = $a_ID[0];	
+					$s_loc =~ s/HLA-//g;$s_typ1 =~ s/HLA-//g;$s_typ2 =~ s/HLA-//g;
+					next if !defined $s_loc || $s_loc !~ /\S/;
+					next if $s_loc eq "DPB1"; # For now skip DP
+					
+					$s_typ1 = !defined $s_typ1 || $s_typ1 !~ /\S/ ? $s_typ2 : $s_typ1;
+					$s_typ2 = !defined $s_typ2 || $s_typ2 !~ /\S/ ? $s_typ1 : $s_typ2;
+
+					$h_qc_expected{$s_exp}{$ID}{$s_loc} = (isAC($s_typ1) || isAC($s_typ2)) ? (getGL($s_typ1,$s_typ2)) : expand(join("+",sort $s_typ2, $s_typ1));			
+					$h_qc_zygosity{$s_exp}{$ID}{$s_loc} = $s_typ1 eq $s_typ2 ? 1 : 2;
+
+				}
+				close QCEXPECTED;					
+			}
+		}
+
+		open(VERIFIED,$s_validated) or die "CANT OPEN FILE $! $0";
+		while(<VERIFIED>){
+			chomp;
+			my($s_status, $s_file, $s_typing) = split(/\t/,$_);
+			my @a_file  = split(/\//,$s_file); 
+			my @a_ID    = split(/\./,$a_file[$#a_file]);
+			my $ID = $a_ID[0];
+			$s_typing =~ /^HLA-(\D+\d{0,1})\*/;
+			my $s_loc = $1;
+			$s_typing =~ s/HLA-//;
+			next if !defined $s_loc || $s_loc !~ /\S/;
+			next if $s_loc eq "DPB1"; # For now skip DP
+			
+			$h_verified{$s_exp}{$ID}{$s_loc}{$s_typing} = $s_status;
+		}
+		close VERIFIED;
+
+		if(defined $s_qc_validated && defined $s_qc_expected){
+			open(QCVERIFIED,$s_qc_validated) or die "CANT OPEN FILE $! $0";
+			while(<QCVERIFIED>){
+				chomp;
+				my($s_status, $s_file, $s_typing) = split(/\t/,$_);
+				my @a_file  = split(/\//,$s_file); 
+				my @a_ID    = split(/\./,$a_file[$#a_file]);
+				my $ID = $a_ID[0];
+				$s_typing =~ /^HLA-(\D+\d{0,1})\*/;
+				my $s_loc = $1;
+				$s_typing =~ s/HLA-//;
+				next if !defined $s_loc || $s_loc !~ /\S/;
+				next if $s_loc eq "DPB1"; # For now skip DP
+				$h_qc_verified{$s_exp}{$ID}{$s_loc}{$s_typing} = $s_status;
+			}
+			close QCVERIFIED;
+
+		}
+
+		foreach my $s_ID (keys %{$h_qc_verified{$s_exp}}){
+			my $loc_cnt = 0;my $n_error = 0;
+			foreach my $s_loc (keys %{$h_qc_verified{$s_exp}{$s_ID}}){
+				my $n_typings = 0;my $n_qc_typings = 0;
+				foreach my $s_typing (keys %{$h_qc_verified{$s_exp}{$s_ID}{$s_loc}}){
+					if($h_qc_verified{$s_exp}{$s_ID}{$s_loc}{$s_typing} eq "PASS"){
+						$n_typings++;
+					}
+				}
+
+				if(!defined $h_observed_gls{$s_exp}{$s_ID}{$s_loc}[0]){
+					$h_qc_verdict{$s_exp}{$s_ID}{$s_loc} = "ERROR" if defined $h_qc_verified{$s_exp}{$s_ID}{$s_loc};
+					#Need to flag this as no calls
+					print STDERR "NO CALL!\n";
+					next;
+				}
+				
+				my $gl = join("+",@{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}});
+				my ($g1,$g2) = split(/\+/,$gl);
+				$g1 = !defined $g1 || $g1 !~ /\S/ ? $g2 : $g1;
+				$g2 = !defined $g2 || $g2 !~ /\S/ ? $g1 : $g2;	
+				$g1 =~ /^(\D+\d{0,1})\*/;my $s_locus1 = $1;		
+				$g2 =~ /^(\D+\d{0,1})\*/;my $s_locus2 = $1;	
+
+				my $num_typings = keys %{$h_qc_verified{$s_exp}{$s_ID}{$s_loc}};
+
+				if($n_typings == $num_typings){
+					$h_qc_verdict{$s_exp}{$s_ID}{$s_loc} = "PASS";
+				}elsif(defined $h_qc_zygosity{$s_exp}{$s_ID}{$s_loc} && $h_qc_zygosity{$s_exp}{$s_ID}{$s_loc} != $h_observed_zygosity{$s_exp}{$s_ID}{$s_loc} || 
+						$s_locus1 ne $s_loc || $s_locus2 ne $s_loc){
+					$h_qc_verdict{$s_exp}{$s_ID}{$s_loc} = "ERROR";
+				}elsif($n_qc_typings != $num_typings && defined $h_qc_zygosity{$s_exp}{$s_ID}{$s_loc}){
+					$h_qc_verdict{$s_exp}{$s_ID}{$s_loc} = "FAIL";			
+				}else{
+					$h_qc_verdict{$s_exp}{$s_ID}{$s_loc} = "";	
+				}
+
+
+			}
+
+		}
+
+
+		foreach my $s_ID (keys %{$h_verified{$s_exp}}){
+			my $loc_cnt = 0;my $n_error = 0;
+			foreach my $s_loc (keys %{$h_verified{$s_exp}{$s_ID}}){
+				my $n_typings = 0;my $n_qc_typings = 0;
+				foreach my $s_typing (keys %{$h_verified{$s_exp}{$s_ID}{$s_loc}}){
+					if($h_verified{$s_exp}{$s_ID}{$s_loc}{$s_typing} eq "PASS"){
+						$n_typings++;
+					}
+				}
+
+				if(!defined $h_observed_gls{$s_exp}{$s_ID}{$s_loc}[0]){
+					foreach($s_exp,$s_ID,$s_loc){ chomp($_);}
+					print STDERR "No Call: ",join("\t",$s_exp,$s_ID,$s_loc),"\n" if $b_verbose;
+					print $log_html "No data found for $s_exp $s_ID at $s_loc!!<br>";
+					$h_counts{$s_exp}{LOCUS}{$s_loc}{ERROR}++;
+					$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}++;
+					$h_locus_verdict{$s_exp}{$s_ID}{$s_loc} = "ERROR";
+					$h_errors{$s_exp}{$s_ID}{$s_loc}++;
+					$n_error++;
+					#Need to flag this as no calls
+					next;
+				}
+				
+				my $gl = join("+",@{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}});
+				my ($g1,$g2) = split(/\+/,$gl);
+				$g1 = !defined $g1 || $g1 !~ /\S/ ? $g2 : $g1;
+				$g2 = !defined $g2 || $g2 !~ /\S/ ? $g1 : $g2;	
+				$g1 =~ /^(\D+\d{0,1})\*/;my $s_locus1 = $1;		
+				$g2 =~ /^(\D+\d{0,1})\*/;my $s_locus2 = $1;	
+
+				my $num_typings = keys %{$h_verified{$s_exp}{$s_ID}{$s_loc}};
+
+				if($n_typings == $num_typings){
+					$h_counts{$s_exp}{LOCUS}{$s_loc}{PASS}++;
+					$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}++;
+					$h_locus_verdict{$s_exp}{$s_ID}{$s_loc} = "PASS";
+					$loc_cnt++;
+
+				}elsif(!defined $h_expected_zygosity{$s_exp}{$s_ID}{$s_loc} || !defined $h_observed_zygosity{$s_exp}{$s_ID}{$s_loc} 
+					|| $h_expected_zygosity{$s_exp}{$s_ID}{$s_loc} != $h_observed_zygosity{$s_exp}{$s_ID}{$s_loc} || 
+						$s_locus1 ne $s_loc || $s_locus2 ne $s_loc){
+
+					$h_counts{$s_exp}{LOCUS}{$s_loc}{ERROR}++;
+					$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}++;
+					$h_locus_verdict{$s_exp}{$s_ID}{$s_loc} = "ERROR";
+					$h_errors{$s_exp}{$s_ID}{$s_loc}++;
+					$n_error++;
+				}else{		
+					$h_counts{$s_exp}{LOCUS}{$s_loc}{FAIL}++;
+					$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}++;
+					$h_locus_verdict{$s_exp}{$s_ID}{$s_loc} = "FAIL";
+					$h_fails{$s_exp}{$s_ID}{$s_loc}++;			
+				}
+
+			}
+			foreach my $s_loc (keys %{$h_verified{$s_exp}{$s_ID}}){
+				foreach my $s_typing (keys %{$h_verified{$s_exp}{$s_ID}{$s_loc}}){
+					if($h_verified{$s_exp}{$s_ID}{$s_loc}{$s_typing} eq "PASS"){
+						$h_counts{$s_exp}{ALLELE}{$s_loc}{PASS}++;
+						$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}++;
+					}elsif($h_locus_verdict{$s_exp}{$s_ID}{$s_loc} eq "ERROR"){
+						$h_counts{$s_exp}{ALLELE}{$s_loc}{ERROR}++;
+						$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}++;
+					}else{
+						$h_counts{$s_exp}{ALLELE}{$s_loc}{FAIL}++;
+						$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}++;
+					}
+				}
+			}
+
+			if($loc_cnt == 5 && $n_error == 0){
+				$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}++;
+			}elsif($loc_cnt != 5 && $n_error != 0){
+				$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}++;
+			}else{
+				$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}++;
+			}
+
+		}
+
+		foreach my $s_l (keys %{$h_counts{$s_exp}{LOCUS}}){
+			$h_counts{$s_exp}{LOCUS}{$s_l}{PASS} = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{PASS});
+			$h_counts{$s_exp}{LOCUS}{$s_l}{FAIL} = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{FAIL});
+			$h_counts{$s_exp}{LOCUS}{$s_l}{ERROR} = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{ERROR});		
+			$h_counts{$s_exp}{ALLELE}{$s_l}{PASS} = 0 if(!defined $h_counts{$s_exp}{ALLELE}{$s_l}{PASS});
+			$h_counts{$s_exp}{ALLELE}{$s_l}{FAIL} = 0 if(!defined $h_counts{$s_exp}{ALLELE}{$s_l}{FAIL});
+			$h_counts{$s_exp}{ALLELE}{$s_l}{ERROR} = 0 if(!defined $h_counts{$s_exp}{ALLELE}{$s_l}{ERROR});		
+		}
+
+		if($b_verbose){
+			print STDERR "$s_exp files loaded\n";
+			print $log_html "$s_exp files loaded<br>";
+			print STDERR "Observed File:  $s_observed\n";
+			print $log_html "Observed File:  $s_observed<br>";
+			print STDERR "Expected File:  $s_expected\n";
+			print $log_html "Expected File:  $s_expected<br>";
+			print STDERR "Validated File: $s_validated\n\n";
+			print $log_html "Validated File: $s_validated<br><br>";
+		}
+
+	}
+
+
+}
+################################################################################################################
+=head2 validEmail
+
+	Title:     validEmail
+	Usage:     validEmail($s_emails)
+	Function:  
+	Returns:   na
+	Args:      email list
+
+=cut
+sub validEmail{
+
+	my $s_emails_list = shift;
+	return 0 if !defined $s_emails_list;
+
+	my @a_emails      = split(/;/,$s_emails_list);
+	my $valid_emails = 1;
+	foreach my $s_email (@a_emails){
+		$valid_emails = 0 if($s_email !~ /\.com/ || $s_email !~ /\@/);
+	}
+
+	return $valid_emails;
+
+}
+################################################################################################################
+=head2 isAC
+
+	Title:     isAC
+	Usage:     isAC($allele_code)
+	Function:  determines if an allele is an allele code or not
+	Returns:   1 if ac 0 if not
+	Args:      allele code
+
+=cut
+sub isAC{
+	my $s_a = shift;
+	return 1 if $s_a =~ /\*\d{2,3}:\D{2,5}/;
+	return 0;
+}
+################################################################################################################
+=head2 getGL
+
+	Title:     getGL
+	Usage:     getGL($loc,$typing)
+	Function:  
+	Returns:   allele list
+	Args:      allele code
+
+=cut
+sub getGL{
+
+	my($typ1,$typ2) = @_;
+	$typ1 =~ /(\D+\d{0,1})\*/;
+	my $s_gl1 = isAC($typ1) ? ac2gl($1,$typ1) : $typ1;
+	my $s_gl2 = isAC($typ2) ? ac2gl($1,$typ2) : $typ2;
+	return (expand(join("+",sort($s_gl1,$s_gl2))));
+
+}
+################################################################################################################
+=head2 ac2gl
+
+	Title:     ac2gl
+	Usage:     ac2gl($loc,$typing)
+	Function:  
+	Returns:   allele list
+	Args:      allele code
+
+=cut
+sub ac2gl{
+
+	my($loc,$typ) = @_;
+	$typ =~ s/$loc\*//;
+
+	my $ua = new LWP::UserAgent;
+    $ua->agent("AlleleCodeClient/0.1");
+    my @allele_list_list;my @ret;
+
+    my $url = "http://emmes-dev.nmdp.org:8080/ac/api/decode?typing=$loc*$typ";
+    my $response = $ua->request(new HTTP::Request("GET", $url));
+    my $code = $response->code;
+    my $content = $response->content;
+    my $headers = $response->headers_as_string;
+    if ($code == 200) {  # OK
+        #print STDERR "Request url:  $url\nStatus $code Content: \n$content\n"; 
+        my @allele_list_list = split ("/", $content);
+        push @ret, @allele_list_list;
+    } elsif ($code == 400) { # Bad Request
+        # Request syntax was bad, or the typing was bad
+        # print error and keep original typing.
+        print STDERR "Bad request: $content\n\turl:  $url\n";
+        print $log_html "NMDP Email addresses DO NOT WORK!<br>";
+        push @ret, ("$loc*$typ");
+    } else {
+        die "System error: code=$code $content\n";
+    }
+
+    return join("/",@ret);
+
+}
+################################################################################################################
+=head2 emailReport
+
+	Title:     emailReport
+	Usage:     emailReport($s_emails)
+	Function:  compresses and emails the report to the list of given emails
+	Returns:   na
+	Args:      email list
+
+=cut
+sub emailReport{
+
+	my $s_emails_list = shift;
+	my @a_emails      = split(/;/,$s_emails_list);
+
+	$report_directory = "report/";
+	print `tar cvzf report.tar.gz $report_directory`; 
+	print `echo "Report" | mailx -a report.tar.gz -s Report $s_emails_list`;
+
+}
+################################################################################################################
+=head2 g2p
+
+	Title:     g2p
+	Usage:     my $s_allele = g2p($s_genomic_allele)
+	Function:  This turns genomic level alleles into protein level alleles 
+			   This will r
+	Returns:   protein level alleles
+	Args:      genomic level allele
+
+=cut
+sub g2p{
+	my $allele    = shift;
+	return $allele if $allele !~ /:/;
+	my @a_alleles = split(/:/,$allele);
+	return join(":",$a_alleles[0],$a_alleles[1]);
+}
+################################################################################################################
+=head2 expand
+
+	Title: expand
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub expand{
+	my $gl = shift;
+	my ($s_gl1,$s_gl2) = split(/\+/,$gl);
+
+	if(!defined $s_gl1 || !defined $s_gl2){
+		print STDERR "$gl\n";
+		print $log_html "Error GL: $gl<br>";
+		exit;
+	}
+	my %h_gl;
+	foreach my $s_allele (split(/\//,$s_gl1)){
+		foreach my $s_allele2 (split(/\//,$s_gl2)){
+			$h_gl{join("+",sort($s_allele,$s_allele2))}++;
+		}
+	}
+	return join("|",sort keys %h_gl);
+
+}
+################################################################################################################
+=head2 printParams
+
+	Title: printParams
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub printParams{
+
+	my  $params = "<b>./ngs-validation-report ";
+	$params = $params." -x $s_experiment "if(defined $s_experiment);
+	$params = $params." -t $s_title "     if(defined $s_title);	
+	$params = $params." -v $s_validated " if(defined $s_validated);
+	$params = $params." -e $s_expected "  if(defined $s_expected);
+	$params = $params." -o $s_observed "  if(defined $s_observed);		
+	$params = $params." -p $s_output "    if(defined $s_output);	
+	$params = $params." -d $s_directory " if(defined $s_directory);
+	$params = $params." -m $s_emails "    if(defined $s_emails);
+	$params = $params." -f $b_forced "    if($b_forced);
+	$params = $params." -v $b_verbose "   if($b_verbose);
+	print $log_html $params."</b><br><br>";
+
+}
+################################################################################################################
+=head2 perlParseHML
+
+	Title: perlParseHML
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub perlParseHML{
+
+	my ($hml_file, $s_exp) = @_;
+
+	# Initial HML variables
+	my $sample_id; 
+	my $center_cde;    
+	my $locus;    
+	my $assembly;  
+	my $contig;   
+	my $start;         
+	my $end;      
+	my $id;
+	my $strand;    
+	my $phasing_group;
+	my $sequence; 
+	my $interp_date;
+	my $allele_db; 
+	my $db_version;    
+	my $glstring;
+	my $b_seq = 0; 
+	my $b_glstring = 0;
+
+	open(HML,$hml_file) or die "CANT OPEN FILE $! $0";
+	while(<HML>){
+		chomp;
+		
+		if($b_seq){ # If the previous line was a sequence header then..
+			$_ =~ s/\s+//g;
+			$sequence = $_;
+			my $assembly_info = join(";",$id,$assembly,$contig,$start,$end,$strand);
+			$h_expected_seqs{$sample_id}{$assembly_info}{$phasing_group}{$sequence}++;
+			$b_seq = 0;
+			next;
+		}
+		if($b_glstring){ # If the previous line was a glstring header then..
+			$_ =~ s/\s+//g;
+			$glstring   = $_;
+			$b_glstring = 0;my %h_gls;
+			my $interp_info = join(";",$interp_date,$allele_db,$db_version);
+			
+			
+			my @a_haps = split(/\|/,$glstring);
+			foreach my $s_hap (@a_haps){
+				my($s_g1,$s_g2) = split(/\+/,$s_hap);
+				my $gls = (isAC($s_g1) || isAC($s_g2)) ? (getGL($s_g1,$s_g2)) : join("+",sort $s_g2, $s_g1);
+				foreach(split(/\|/,$gls)){ $h_gls{$_}++; }
+			}
+			$glstring = join("|",sort keys %h_gls);
+			$h_expected{$s_exp}{$sample_id}{$locus} = $glstring;
+			#$h_interp{$sample_id}{$locus}  = $interp_info;
+			next;
+		}
+		if($_ =~ /<sample id=\"(.+)\" center-code=\"(\d+)\">/){
+			$sample_id = $1;$center_cde = $2;
+		}
+		if($_ =~ /<sbt-ngs locus="(.+)" test-id=".+" test-id-source=".+">/){
+			$locus = $1;
+		}
+		if($_ =~ /<region assembly="(.+)" contig="(.+)" start="(.+)" end="(.+)" id="(.+)" strand="(.+)" \/>/){
+			$assembly = $1;$contig = $2;$start = $3;$end = $4;$id = $5;$strand=$6;
+		}
+		if($_ =~ /<sequence alphabet=".+" phasing-group="(\d+)">/){
+			$phasing_group = $1;
+			$b_seq = 1;
+		}
+		if($_ =~ /<interpretation date="(.+)" allele-db="(.+)" allele-version="(.+)">/){
+			$interp_date = $1; $allele_db = $2;$db_version = $3;
+		}
+		if($_ =~ /<glstring>/){
+			$b_glstring = 1;
+		}
+		
+	}
+	close HML;
+
+
+}
+################################################################################################################
+=head2 perlParseHML
+
+	Title: perlParseHML
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub javaParseHML{
+
+	my ($hml_file, $s_exp) = @_;
+
+	foreach(`ngs-extract-expected -i $hml_file`){
+		chomp($_);
+		my($s_file,$s_loc,$s_ars,$s_het,$s_typ1,$s_typ2) = split(/\t/,$_);
+
+		my @a_file  = split(/\//,$s_file);
+		my @a_ID = split(/\./,$a_file[$#a_file]);
+		my $ID = $a_ID[0];	
+		$s_loc =~ s/HLA-//g;$s_typ1 =~ s/HLA-//g;$s_typ2 =~ s/HLA-//g;
+		next if !defined $s_loc || $s_loc !~ /\S/;
+		next if $s_loc eq "DPB1"; # For now skip DP
+		
+		$s_typ1 = !defined $s_typ1 || $s_typ1 !~ /\S/ ? $s_typ2 : $s_typ1;
+		$s_typ2 = !defined $s_typ2 || $s_typ2 !~ /\S/ ? $s_typ1 : $s_typ2;
+
+		$h_expected{$s_exp}{$ID}{$s_loc} = (isAC($s_typ1) || isAC($s_typ2)) ? (getGL($s_typ1,$s_typ2)) : expand(join("+",sort $s_typ2, $s_typ1));			
+		$h_expected_zygosity{$s_exp}{$ID}{$s_loc} = $s_typ1 eq $s_typ2 ? 1 : 2;
+	}
+
+}
+################################################################################################################
+=head2 initalize
+
+	Title:    initalize
+	Usage:    initalize( $directory, $web_template, $verbose )
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub initalize{
+
+	my $report_dir = $s_output."/report";
+	if( -d $report_dir && !$b_forced){
+		print STDERR "Exiting because report directory already exists\n";
+		exit;
+	}else{
+		if($b_forced && -d $report_dir){
+			print STDERR "Deleting old reporting directory!\n" if $b_verbose;
+			print `rm -R $report_dir`;
+		}
+		print STDERR "Populating report directory with web files\n" if $b_verbose;
+		print `mkdir $report_dir`;
+		foreach("css","js","img"){
+			my $web_dir = $report_dir."/".$_;
+			print STDERR $web_dir,"\n" if $b_verbose;
+			print `mkdir $web_dir`;
+			my $template = $web_template."/".$_;
+			if(-d $template){
+				my $temp_copy = $template."/*";
+				print `cp $temp_copy $web_dir`;
+			}
+		}
+		
+	}
+
+}
+################################################################################################################
+=head2 logHeader
+
+	Title:     logHeader
+	Usage:
+	Function:  Prints the header to the log.html file
+	Returns:
+	Args:
+
+=cut
+sub logHeader{
+
+	my $html = shift;
+
+	my $header = 
+		qq{
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    
+    <title>Validation Report</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <script src="js/Chart.js"></script>
+    <!-- Custom styles for this template -->
+    <link href="css/dashboard.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+      <style type='text/css'>
+  .my-legend .legend-scale ul {
+    margin: 0;
+    padding: 0;
+    float: left;
+    list-style: none;
+    }
+  .my-legend .legend-scale ul li {
+    display: block;
+    float: left;
+    width: 50px;
+    margin-bottom: 6px;
+    text-align: center;
+    font-size: 80%;
+    list-style: none;
+    }
+  .my-legend ul.legend-labels li span {
+    display: block;
+    float: left;
+    height: 15px;
+    width: 50px;
+    }
+  .my-legend .legend-source {
+    font-size: 70%;
+    color: #999;
+    clear: both;
+    }
+  .my-legend a {
+    color: #777;
+    }
+
+    #expanding{
+      display:none;
+    }
+
+    </style>
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="experiment.html">NGS Validation Report</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="experiment.html">Experiments</a></li>
+            <li><a href="log.html">Log</a></li>
+            <li><a href="help.html">Help</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-3 col-md-2 sidebar">
+
+			</div>
+        </div>
+		<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+      		<h1 class="page-header">Log</h1>
+
+        
+
+		};
+	print $html $header;
+
+}
+################################################################################################################
+=head2 experimentsHtml
+
+	Title:     experimentsHtml
+	Usage:
+	Function:  Prints the header to the log.html file
+	Returns:
+	Args:
+
+=cut
+sub experimentsHtml{
+
+	my $html = shift;
+
+	my $header = 
+		qq{
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    
+    <title>Validation Report</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <script src="js/Chart.js"></script>
+    <!-- Custom styles for this template -->
+    <link href="css/dashboard.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+      <style type='text/css'>
+  .my-legend .legend-scale ul {
+    margin: 0;
+    padding: 0;
+    float: left;
+    list-style: none;
+    }
+  .my-legend .legend-scale ul li {
+    display: block;
+    float: left;
+    width: 50px;
+    margin-bottom: 6px;
+    text-align: center;
+    font-size: 80%;
+    list-style: none;
+    }
+  .my-legend ul.legend-labels li span {
+    display: block;
+    float: left;
+    height: 15px;
+    width: 50px;
+    }
+  .my-legend .legend-source {
+    font-size: 70%;
+    color: #999;
+    clear: both;
+    }
+  .my-legend a {
+    color: #777;
+    }
+
+    #expanding{
+      display:none;
+    }
+
+
+    </style>
+};
+print $html $header;
+
+print $html "<script>\n";
+print $html "\$(document).ready(function(){ \n";
+print $html "\$(\"#myTable\").tablesorter(); \n";
+print $html "}\n";
+print $html ");\n";
+print $html "</script>\n";
+
+my $header2 = qq{
+  </head>
+
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="experiment.html">Validation Report</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="experiment.html">Experiments</a></li>
+            <li><a href="log.html">Log</a></li>
+            <li><a href="help.html">Help</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    };
+
+    print $html $header2;
+
+    my $sidebar = qq{
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+          <ul class="nav nav-sidebar">
+    };
+    print $html $sidebar;
+    foreach my $s_exp (keys %h_experiments){
+    	print $html "<li><a href=\"".$s_exp."/index.html\">".$s_exp."</a></li>\n";
+    }
+    print $html "</ul>\n</div>\n</div>\n";
+	
+
+      my $table = qq{
+	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+		         <div class='my-legend' style="float:right;margin-right:20%;">
+		            <div class='legend-scale'>
+		              <ul class='legend-labels'>
+		                <li><span style='background:#46BFBD;'></span><b>PASS</b></li>
+		                <li><span style='background:#F7464A;'></span><b>FAIL</b></li>
+		                <li><span style='background:#D3D5D6;'></span><b>ERROR</b></li>
+		              </ul>
+		            </div>
+		         </div>
+	          <h1 class="page-header">Experiments</h1>
+	          <div class="table-responsive">
+	            <table class="table table-striped tablesorter" id="myTable">
+	              <thead>
+	                <tr>
+	                  <th>Experiment</th>
+	                  <th># of subjects</th>
+	                  <th>Passed Subjects</th>
+	                  <th>Failed Subjects</th>
+	                  <th>Error Subjects</th>
+	                  <th>Passed Loci</th>
+	                  <th>Failed Loci</th>
+	                  <th>Error Loci</th>
+	                  <th>Passed Alleles</th>
+	                  <th>Failed Alleles</th>
+	                  <th>Error Alleles</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+      
+	 };
+	 print $html $table;
+
+	 foreach my $s_exp (keys %h_experiments){
+	 	last if $b_test;
+	 	print $html "\t<tr>\n";
+	 	print $html "\t\t<td>$s_exp</td>\n";
+
+	 	my $total_subjects =  $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
+	 		$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR};
+
+	 	my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
+	 		$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} + $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR};
+
+	 	my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
+	 		$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR};	
+
+	 	print $html "\t\t<td>$total_subjects</td>\n";
+
+	 	#####  Subjects #####
+	 	my $percent_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} / $total_subjects) * 100))."%)";
+	 	print STDERR "------\n" if $b_verbose;
+	 	print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed,"\n"if $b_verbose;
+	 	$percent_passed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$percent_passed : $percent_passed;
+	 	print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed."</td>\n";
+
+	 	my $percent_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} / $total_subjects) * 100))."%)";
+	 	print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed,"\n" if $b_verbose;
+	 	$percent_failed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$percent_failed : $percent_failed;
+	 	print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed."</td>\n";
+
+	 	my $percent_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} / $total_subjects) * 100))."%)";
+	 	print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}."&nbsp;&nbsp;".$percent_error,"\n" if $b_verbose;
+	 	$percent_error = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}) == 1 ? " ".$percent_error : $percent_error;
+	 	print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}." ".$percent_error."</td>\n";
+	 	print STDERR "------\n" if $b_verbose;
+
+	 	#####  Locus #####
+	 	my $loci_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} / $total_loci) * 100))."%)";
+	 	print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed,"\n" if $b_verbose;
+	 	$loci_passed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$loci_passed : $loci_passed;
+	 	print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
+
+	 	my $loci_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} / $total_loci) * 100))."%)";
+	 	print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed,"\n" if $b_verbose;
+	 	$loci_failed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$loci_failed : $loci_failed;
+	 	print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
+
+	 	my $loci_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} / $total_loci) * 100))."%)";
+	 	print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error,"\n" if $b_verbose;
+	 	$loci_error = length($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}) == 1 ? "&nbsp;&nbsp;".$loci_error : $loci_error;
+	 	print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
+	 	print STDERR "------\n" if $b_verbose;
+
+	 	#####  Alleles #####
+	 	my $allele_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} / $total_allele) * 100))."%)";
+	 	print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$allele_passed,"\n" if $b_verbose;
+	 	print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$allele_passed."</td>\n";
+
+	 	my $allele_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} / $total_allele) * 100))."%)";
+	 	print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$allele_failed,"\n" if $b_verbose;
+	 	print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$allele_failed."</td>\n";
+
+	 	my $allele_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} / $total_allele) * 100))."%)";
+	 	print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$allele_error,"\n" if $b_verbose;
+	 	print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$allele_error."</td>\n";
+	 	print STDERR "------\n" if $b_verbose;	 	
+
+	 }
+
+	
+
+	 my $end_table = qq{
+	 		              
+	              </tbody>
+	              </table>
+	            </div>
+
+	 };
+	print $html $end_table;
+
+
+
+my $charts = qq{
+
+          <div class="row placeholders">  
+              <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
+              <div id="canvas-holder">
+                <canvas id="canvas" width="300" height="300"/>
+              </div>
+               <h4>Subjects</h4>
+               <span class="text-muted">Number of subjects pass and fails for each experiemnt</span>
+            </div>
+            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
+              <div id="canvas-holder">
+                <canvas id="canvas2" width="300" height="300" />
+              </div>
+               <h4>Locus</h4>
+               <span class="text-muted">Number of locus pass and fails for each experiemnt</span>
+            </div>    
+            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
+              <div id="canvas-holder">
+                <canvas id="canvas3" width="300" height="300"/>
+              </div>
+               <h4>Allele</h4>
+               <span class="text-muted">Number of allele pass and fails for each experiemnt</span>
+            </div>        
+
+          </div>
+         </div>
+
+     };
+
+
+	print $html $charts;
+
+	if(!$b_test){
+		print $html "<SCRIPT>\n";
+
+	    ######## 
+	    # Subjects JS
+	    ########
+		print $html "var barChartData = {\n";
+		print $html "\t\tlabels : [";
+		my $label;
+		foreach my $s_exp (keys %h_experiments){
+			$label .= "\"$s_exp\",";
+		}
+		$label =~ s/,$//;
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+		my $chart_pass = qq{
+	            fillColor : "#46BFBD",
+	            strokeColor : "#46BFBD",
+	            highlightFill :  "#5AD3D1",
+	            highlightStroke :  "#5AD3D1",
+	        };
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $subject_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$subject_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}.",";
+	    }
+	    $subject_chart =~ s/,$//;
+	    print $html $subject_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    my $chart_fail = qq{
+	            fillColor : "#F7464A",
+	            strokeColor : "#F7464A",
+	            highlightFill: "#FF5A5E",
+	            highlightStroke: "#FF5A5E",
+	        };
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$fail_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_chart =~ s/,$//;
+	    print $html $fail_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+	    my $chart_error = qq{   
+		        fillColor : "#D3D5D6",
+		        strokeColor : "#D3D5D6",
+		        highlightFill :  "#DCDDDE",
+		        highlightStroke :  "#DCDDDE",
+		    };
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$error_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}.",";
+	    }
+	    $error_chart =~ s/,$//;
+	    print $html $error_chart."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
+
+
+	    ######## 
+	    # Locus JS
+	    ########
+	   	print $html "var barChartData2 = {\n";
+		print $html "\t\tlabels : [";
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $locus_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$locus_chart .= $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}.",";
+	    }
+	    $locus_chart =~ s/,$//;
+	    print $html $locus_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_locus;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$fail_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_locus =~ s/,$//;
+	    print $html $fail_locus."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_locus;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$error_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}.",";
+	    }
+	    $error_locus =~ s/,$//;
+	    print $html $error_locus."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
+
+	    ######## 
+	    # Allele JS
+	    ########
+	   	print $html "var barChartData3 = {\n";
+		print $html "\t\tlabels : [";
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $allele_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$allele_chart .= $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}.",";
+	    }
+	    $allele_chart =~ s/,$//;
+	    print $html $allele_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_allele;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$fail_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_allele =~ s/,$//;
+	    print $html $fail_allele."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_allele;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$error_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}.",";
+	    }
+	    $error_allele =~ s/,$//;
+	    print $html $error_allele."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
+
+
+
+		my $js = qq{
+			window.onload = function(){
+
+	        var ctx3 = document.getElementById("canvas").getContext("2d");
+	        window.myBar = new Chart(ctx3).Bar(barChartData, {
+	          responsive : true
+	        });
+
+	        var ctx5 = document.getElementById("canvas2").getContext("2d");
+	        window.myBar = new Chart(ctx5).Bar(barChartData2, {
+	          responsive : true
+	        });
+
+	        var ctx6 = document.getElementById("canvas3").getContext("2d");
+	        window.myBar = new Chart(ctx6).Bar(barChartData3, {
+	          responsive : true
+	        });
+
+
+	      };
+	       </script>
+		};
+		print $html $js;
+	}
+
+	my $footer = qq{
+	<footer>
+		<div class="footer">
+			<img src="img/bethematch.jpeg" alt="img02">
+			<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+		</div>
+	</footer>	
+	<style type="text/css">
+	    .bargraph {
+	      list-style: none;
+	      padding-top: 20px;
+	      width:560px;
+	    }
+	    footer {
+				color: #888;
+				clear:both;
+				position: relative; 
+				bottom: 10px;
+				left: 0; width: 100%; 
+				text-align: center;
+				font-size:9px;
+				margin-top: 300px;
+				background: rgba(255, 255, 255, 0.6);
+		}
+			</style>
+			<script type="text/javascript" src="js/jquery-latest.js"></script> 
+			<script type="text/javascript" src="js/jquery.tablesorter.js"></script> 
+		   <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+		    <script src="js/bootstrap.min.js"></script>
+		    <script src="js/docs.min.js"></script>
+		    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+		    <script src="js/ie10-viewport-bug-workaround.js"></script>
+  		</body>	
+		};
+
+	print $html $footer;
+
+}
+################################################################################################################
+=head2 helpHtml
+
+	Title:     helpHtml
+	Usage:
+	Function:  Prints the header to the log.html file
+	Returns:
+	Args:
+
+=cut
+sub helpHtml{
+
+	my $html = shift;
+
+	my $header = 
+		qq{
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    
+    <title>Validation Report</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <script src="js/Chart.js"></script>
+    <!-- Custom styles for this template -->
+    <link href="css/dashboard.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+      <style type='text/css'>
+  .my-legend .legend-scale ul {
+    margin: 0;
+    padding: 0;
+    float: left;
+    list-style: none;
+    }
+  .my-legend .legend-scale ul li {
+    display: block;
+    float: left;
+    width: 50px;
+    margin-bottom: 6px;
+    text-align: center;
+    font-size: 80%;
+    list-style: none;
+    }
+  .my-legend ul.legend-labels li span {
+    display: block;
+    float: left;
+    height: 15px;
+    width: 50px;
+    }
+  .my-legend .legend-source {
+    font-size: 70%;
+    color: #999;
+    clear: both;
+    }
+  .my-legend a {
+    color: #777;
+    }
+
+    #expanding{
+      display:none;
+    }
+
+
+    </style>
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="experiment.html">NGS Validation Report</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="experiment.html">Experiments</a></li>
+            <li><a href="log.html">Log</a></li>
+            <li><a href="help.html">Help</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      	<div class="row">
+
+
+        </div>
+         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+      		<h1 class="page-header">Using ngs-validation-report</h1>
+      		<div>
+
+          	</div>
+		</div>
+    </div>
+	
+	<footer>
+		<div class="footer">
+			<img src="img/bethematch.jpeg" alt="img02">
+			<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+		</div>
+	</footer>	
+	<style type="text/css">
+	    .bargraph {
+	      list-style: none;
+	      padding-top: 20px;
+	      width:560px;
+	    }
+	    footer {
+				color: #888;
+				clear:both;
+				position: relative; 
+				bottom: 10px;
+				left: 0; width: 100%; 
+				text-align: center;
+				font-size:9px;
+				margin-top: 300px;
+				background: rgba(255, 255, 255, 0.6);
+		}
+			</style>
+		   <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+		    <script src="js/bootstrap.min.js"></script>
+		    <script src="js/docs.min.js"></script>
+		    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+		    <script src="js/ie10-viewport-bug-workaround.js"></script>
+  		</body>	
+		};
+
+	print $html $header;
+
+}
+################################################################################################################
+=head2 indexHeader
+
+	Title:     indexHeader
+	Usage:
+	Function:  Prints the header to the index.html file
+	Returns:
+	Args:
+
+=cut
+sub indexHeader{
+
+	my ($html, $s_exp) = @_;
+
+	my $s_experiment = $s_exp;
+	my $header = 
+		qq{
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    
+    <title>Validation Report</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <script src="../js/Chart.js"></script>
+    <!-- Custom styles for this template -->
+    <link href="../css/dashboard.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="../js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+      <style type='text/css'>
+  .my-legend .legend-scale ul {
+    margin: 0;
+    padding: 0;
+    float: left;
+    list-style: none;
+    }
+  .my-legend .legend-scale ul li {
+    display: block;
+    float: left;
+    width: 50px;
+    margin-bottom: 6px;
+    text-align: center;
+    font-size: 80%;
+    list-style: none;
+    }
+  .my-legend ul.legend-labels li span {
+    display: block;
+    float: left;
+    height: 15px;
+    width: 50px;
+    }
+  .my-legend .legend-source {
+    font-size: 70%;
+    color: #999;
+    clear: both;
+    }
+  .my-legend a {
+    color: #777;
+    }
+
+    #expanding{
+      display:none;
+    }
+
+
+    </style>
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">Validation Report - $s_experiment</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="../experiment.html">Experiments</a></li>
+            <li><a href="../log.html">Log</a></li>
+            <li><a href="../help.html">Help</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+          <ul class="nav nav-sidebar">
+            <li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>
+             <li><a href="results.html">Results</a></li>
+            <li><a href="fails.html">Failed</a></li>
+            <li><a href="errors.html">Errors</a></li>
+    };
+    print $html $header;
+    print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $h_qc_verdict{$s_experiment};
+    
+    my $header2 = qq{      </ul>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <div class='my-legend' style="float:right;margin-right:20%;">
+            <div class='legend-scale'>
+              <ul class='legend-labels'>
+                <li><span style='background:#46BFBD;'></span><b>PASS</b></li>
+                <li><span style='background:#F7464A;'></span><b>FAIL</b></li>
+                <li><span style='background:#D3D5D6;'></span><b>ERROR</b></li>
+              </ul>
+            </div>
+          </div>
+          <h1 class="page-header" >Overview</h1>
+          <div class="row placeholders">  
+
+            <div class="col-xs-6 col-sm-3 placeholder">
+              <div id="canvas-holder">
+                <canvas id="chart-area3" width="300" height="300"/>
+              </div>
+               <h4>Subjects</h4>
+              <span class="text-muted">Number of subjects that pass or fail</span>
+            </div>
+            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;">
+              <div id="canvas-holder">
+                <canvas id="chart-area" width="300" height="300"/>
+              </div>
+               <h4>Locus</h4>
+              <span class="text-muted">Number of locus level pass and fails</span>
+            </div>          
+            <div class="col-xs-6 col-sm-3 placeholder">
+              <div id="canvas-holder">
+                <canvas id="chart-area2" width="300" height="300"/>
+              </div>
+               <h4>Allele</h4>
+              <span class="text-muted">Number of allele level pass and fails</span>
+            </div>            
+
+          </div>
+
+          <div class="row placeholders">  
+                        <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;">
+              <div id="canvas-holder">
+                <canvas id="canvas3" width="300" height="300"/>
+              </div>
+               <h4>Subjects</h4>
+              <span class="text-muted">Number of subjects that pass or fail</span>
+            </div>
+            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;">
+              <div id="canvas-holder">
+                <canvas id="canvas" width="300" height="300" />
+              </div>
+               <h4>Locus</h4>
+              <span class="text-muted">Number of allele level pass and fails by locus</span>
+            </div>    
+            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;">
+              <div id="canvas-holder">
+                <canvas id="canvas2" width="300" height="300"/>
+              </div>
+               <h4>Allele</h4>
+              <span class="text-muted">Number of allele level pass and fails by Allele</span>
+            </div>        
+
+          </div>
+			
+			<div class="row placeholders">  
+            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;">
+              <div id="canvas-holder">
+                <canvas id="canvas4" width="300" height="300" />
+              </div>
+               <h4>Average Allelic Specificity</h4>
+            </div>
+
+        </div>
+      </div>
+    </div>
+
+		};
+	print $html $header2;
+
+}
+################################################################################################################
+=head2 indexFooter
+
+	Title:     indexFooter
+	Usage:
+	Function:  Prints the footer to the index.html file
+	Returns:
+	Args:
+
+=cut
+sub indexFooter{
+
+	my $html = shift;
+
+	my $footer = 
+		qq{
+			<footer>
+				<div class="footer">
+					<img src="../img/bethematch.jpeg" alt="img02">
+					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+				</div>
+			</footer>	
+	<style type="text/css">
+    .bargraph {
+      list-style: none;
+      padding-top: 20px;
+      width:560px;
+    }
+    footer {
+			color: #888;
+			clear:both;
+			position: relative; 
+			bottom: 10px;
+			left: 0; width: 100%; 
+			text-align: center;
+			font-size:9px;
+			
+			background: rgba(255, 255, 255, 0.6);
+	}
+
+	</style>
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="../js/bootstrap.min.js"></script>
+	    <script src="../js/docs.min.js"></script>
+	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+  
+  </body>		
+		};
+	print $html $footer;
+	close $html;
+
+}
+################################################################################################################
+=head2 logFooter
+
+	Title:     logFooter
+	Usage:
+	Function:  Prints the footer to the log.html file
+	Returns:
+	Args:
+
+=cut
+sub logFooter{
+
+	my $html = shift;
+
+	my $time_taken = time - $start_time;
+	print $html "<br>Took $time_taken seconds to run<br>";
+
+	my $footer = 
+		qq{
+			</div>
+			</div>
+			<footer>
+				<div class="footer">
+					<img src="img/bethematch.jpeg" alt="img02">
+					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+				</div>
+			</footer>	
+	<style type="text/css">
+    .bargraph {
+      list-style: none;
+      padding-top: 20px;
+      width:560px;
+    }
+    footer {
+			color: #888;
+			clear:both;
+			position: relative; 
+			bottom: 10px;
+			left: 0; width: 100%; 
+			text-align: center;
+			font-size:9px;
+			margin-top: 300px;
+			background: rgba(255, 255, 255, 0.6);
+	}
+
+	</style>
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="js/bootstrap.min.js"></script>
+	    <script src="js/docs.min.js"></script>
+	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	    <script src="js/ie10-viewport-bug-workaround.js"></script>
+  
+  </body>		
+		};
+	print $html $footer;
+	close $html;
+
+}
+################################################################################################################
+=head2 indexBody
+
+	Title:     indexBody
+	Usage:
+	Function:  Prints the body to the index.html file
+	Returns:
+	Args:
+
+=cut
+sub indexBody{
+
+	my($html, $ra_counts, $ra_sensitivity) = @_;
+
+	my $pie_data = qq{
+	<script>
+		var pieData = [
+        {
+          value: $$ra_counts{LOCUS}{TOTAL}{PASS},
+          color: "#46BFBD",
+          highlight: "#5AD3D1",
+          label: "Pass"
+        },
+        {
+          value: $$ra_counts{LOCUS}{TOTAL}{FAIL},
+          color:"#F7464A",
+          highlight: "#FF5A5E",
+          label: "Fail"
+        },
+
+        {
+          value: $$ra_counts{LOCUS}{TOTAL}{ERROR},
+          color: "#D3D5D6",
+          highlight: "#DCDDDE",
+          label: "Error"
+        }
+
+
+      ];
+		var pieData2 = [
+       
+        {
+          value: $$ra_counts{ALLELE}{TOTAL}{PASS},
+          color: "#46BFBD",
+          highlight: "#5AD3D1",
+          label: "Pass"
+        },
+        {
+          value: $$ra_counts{ALLELE}{TOTAL}{FAIL},
+          color:"#F7464A",
+          highlight: "#FF5A5E",
+          label: "Fail"
+        },
+        {
+          value: $$ra_counts{ALLELE}{TOTAL}{ERROR},
+          color: "#D3D5D6",
+          highlight: "#DCDDDE",
+          label: "Error"
+        }
+
+      ];
+
+		var pieData3 = [
+        {
+          value: $$ra_counts{SUBJECT}{TOTAL}{PASS},
+          color: "#46BFBD",
+          highlight: "#5AD3D1",
+          label: "Pass"
+        },
+        {
+          value: $$ra_counts{SUBJECT}{TOTAL}{FAIL},
+          color:"#F7464A",
+          highlight: "#FF5A5E",
+          label: "Fail"
+        },
+        {
+          value: $$ra_counts{SUBJECT}{TOTAL}{ERROR},
+          color: "#D3D5D6",
+          highlight: "#DCDDDE",
+          label: "Error"
+        }
+
+      ];
+
+	};
+	#          color:"#0079C1",
+    #highlight: "#3394CD",
+    #     color: "#B4C932",
+    #     highlight: "#C3D45B",    
+	print $html $pie_data;
+
+	my $bar_chart_data = qq{
+		      var barChartData = {
+        labels : ["A","B","C","DRB1","DQB1"],
+        datasets : [
+          {
+            fillColor : "#46BFBD",
+            strokeColor : "#46BFBD",
+            highlightFill :  "#5AD3D1",
+            highlightStroke :  "#5AD3D1",
+            data : [$$ra_counts{LOCUS}{"A"}{PASS},$$ra_counts{LOCUS}{"B"}{PASS},$$ra_counts{LOCUS}{"C"}{PASS},$$ra_counts{LOCUS}{"DRB1"}{PASS},$$ra_counts{LOCUS}{"DQB1"}{PASS}]
+          },
+            {
+            fillColor : "#F7464A",
+            strokeColor : "#F7464A",
+            highlightFill: "#FF5A5E",
+            highlightStroke: "#FF5A5E",
+            data : [$$ra_counts{LOCUS}{"A"}{FAIL},$$ra_counts{LOCUS}{"B"}{FAIL},$$ra_counts{LOCUS}{"C"}{FAIL},$$ra_counts{LOCUS}{"DRB1"}{FAIL},$$ra_counts{LOCUS}{"DQB1"}{FAIL}]
+          },
+          {
+            fillColor : "#D3D5D6",
+            strokeColor : "#D3D5D6",
+            highlightFill :  "#DCDDDE",
+            highlightStroke :  "#DCDDDE",
+            data : [$$ra_counts{LOCUS}{"A"}{ERROR},$$ra_counts{LOCUS}{"B"}{ERROR},$$ra_counts{LOCUS}{"C"}{ERROR},$$ra_counts{LOCUS}{"DRB1"}{ERROR},$$ra_counts{LOCUS}{"DQB1"}{ERROR}]
+          }          
+        ]
+      }
+
+      var barChartData2 = {
+        labels : ["A","B","C","DRB1","DQB1"],
+        datasets : [
+          
+          {
+            fillColor : "#46BFBD",
+            strokeColor : "#46BFBD",
+            highlightFill :  "#5AD3D1",
+            highlightStroke :  "#5AD3D1",
+            data : [$$ra_counts{ALLELE}{"A"}{PASS},$$ra_counts{ALLELE}{"B"}{PASS},$$ra_counts{ALLELE}{"C"}{PASS},$$ra_counts{ALLELE}{"DRB1"}{PASS},$$ra_counts{ALLELE}{"DQB1"}{PASS}]
+          },
+          {
+            fillColor : "#F7464A",
+            strokeColor : "#F7464A",
+            highlightFill: "#FF5A5E",
+            highlightStroke: "#FF5A5E",
+            data : [$$ra_counts{ALLELE}{"A"}{FAIL},$$ra_counts{ALLELE}{"B"}{FAIL},$$ra_counts{ALLELE}{"C"}{FAIL},$$ra_counts{ALLELE}{"DRB1"}{FAIL},$$ra_counts{ALLELE}{"DQB1"}{FAIL}]
+          },
+          {
+            fillColor : "#D3D5D6",
+            strokeColor : "#D3D5D6",
+            highlightFill: "#DCDDDE",
+            highlightStroke: "#DCDDDE",
+            data : [$$ra_counts{ALLELE}{"A"}{ERROR},$$ra_counts{ALLELE}{"B"}{ERROR},$$ra_counts{ALLELE}{"C"}{ERROR},$$ra_counts{ALLELE}{"DRB1"}{ERROR},$$ra_counts{ALLELE}{"DQB1"}{ERROR}]
+          }
+
+        ]
+      }
+
+      var barChartData3 = {
+        labels : ["Subject"],
+        datasets : [
+          {
+            fillColor : "#46BFBD",
+            strokeColor : "#46BFBD",
+            highlightFill :  "#5AD3D1",
+            highlightStroke :  "#5AD3D1",
+            data : [$$ra_counts{SUBJECT}{TOTAL}{PASS}]
+          },
+          {
+            fillColor : "#F7464A",
+            strokeColor : "#F7464A",
+            highlightFill: "#FF5A5E",
+            highlightStroke: "#FF5A5E",
+            data : [$$ra_counts{SUBJECT}{TOTAL}{FAIL}]
+          },
+          {
+            fillColor : "#D3D5D6",
+            strokeColor : "#D3D5D6",
+            highlightFill: "#DCDDDE",
+            highlightStroke: "#DCDDDE",
+            data : [$$ra_counts{SUBJECT}{TOTAL}{ERROR}]
+          }
+        ]
+      }
+
+      var barChartData4 = {
+        labels : ["A","B","C","DRB1","DQB1"],
+        datasets : [
+          {
+            fillColor : "#46BFBD",
+            strokeColor : "#46BFBD",
+            highlightFill :  "#5AD3D1",
+            highlightStroke :  "#5AD3D1",
+            data : [$$ra_sensitivity{ALLELE}{"A"},$$ra_sensitivity{ALLELE}{"B"},$$ra_sensitivity{ALLELE}{"C"},$$ra_sensitivity{ALLELE}{"DRB1"},$$ra_sensitivity{ALLELE}{"DQB1"}]
+          }
+        ]
+      }
+
+      var barChartData5 = {
+        labels : ["A","B","C","DRB1","DQB1"],
+        datasets : [
+          {
+            fillColor : "#46BFBD",
+            strokeColor : "#46BFBD",
+            highlightFill :  "#5AD3D1",
+            highlightStroke :  "#5AD3D1",
+            data : [$$ra_sensitivity{HAPLO}{"A"},$$ra_sensitivity{HAPLO}{"B"},$$ra_sensitivity{HAPLO}{"C"},$$ra_sensitivity{HAPLO}{"DRB1"},$$ra_sensitivity{HAPLO}{"DQB1"}]
+          }
+        ]
+      }
+
+
+	};
+	print $html $bar_chart_data;
+
+	my $js = qq{
+		window.onload = function(){
+        var ctx = document.getElementById("chart-area").getContext("2d");
+        window.myPie = new Chart(ctx).Pie(pieData, {
+          responsive : true
+        });
+        
+        var ctx2 = document.getElementById("chart-area2").getContext("2d");
+        window.myPie = new Chart(ctx2).Pie(pieData2, {
+          responsive : true
+        });
+
+        var ctx4 = document.getElementById("chart-area3").getContext("2d");
+        window.myPie = new Chart(ctx4).Pie(pieData3, {
+          responsive : true
+        });
+
+        var ctx3 = document.getElementById("canvas").getContext("2d");
+        window.myBar = new Chart(ctx3).Bar(barChartData, {
+          responsive : true
+        });
+
+        var ctx5 = document.getElementById("canvas2").getContext("2d");
+        window.myBar = new Chart(ctx5).Bar(barChartData2, {
+          responsive : true
+        });
+
+        var ctx6 = document.getElementById("canvas3").getContext("2d");
+        window.myBar = new Chart(ctx6).Bar(barChartData3, {
+          responsive : true
+        });
+
+        var ctx7 = document.getElementById("canvas4").getContext("2d");
+        window.myBar = new Chart(ctx7).Bar(barChartData4, {
+          responsive : true
+        });
+
+        var ctx8 = document.getElementById("canvas5").getContext("2d");
+        window.myBar = new Chart(ctx8).Bar(barChartData5, {
+          responsive : true
+        });
+
+      };
+       </script>
+	};
+	print $html $js;
+
+
+}
+
+################################################################################################################
+=head2 resultsHeader
+
+	Title:     resultsHeader
+	Usage:
+	Function:  Prints the header to the results.html file
+	Returns:
+	Args:
+
+=cut
+sub resultsHeader{
+
+	my ( $html, $s_exp ) = @_;
+
+	my $s_experiment = $s_exp;
+
+	my $header = qq{
+		<!DOCTYPE html>
+	<html lang="en">
+	  <head>
+	    <meta charset="utf-8">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+	    <meta name="description" content="">
+	    <meta name="author" content="">
+	    
+	    <title>Validation Report</title>
+
+	    <!-- Bootstrap core CSS -->
+	    <link href="../css/bootstrap.min.css" rel="stylesheet">
+	    <script src="../js/Chart.js"></script>
+	    <!-- Custom styles for this template -->
+	    <link href="../css/dashboard.css" rel="stylesheet">
+
+	    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+	    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+	    <script src="../js/ie-emulation-modes-warning.js"></script>
+
+	    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+	    <!--[if lt IE 9]>
+	      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+	      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	    <![endif]-->
+	      <style type='text/css'>
+	  .my-legend .legend-scale ul {
+	    margin: 0;
+	    padding: 0;
+	    float: left;
+	    list-style: none;
+	    }
+	  .my-legend .legend-scale ul li {
+	    display: block;
+	    float: left;
+	    width: 50px;
+	    margin-bottom: 6px;
+	    text-align: center;
+	    font-size: 80%;
+	    list-style: none;
+	    }
+	  .my-legend ul.legend-labels li span {
+	    display: block;
+	    float: left;
+	    height: 15px;
+	    width: 50px;
+	    }
+	  .my-legend .legend-source {
+	    font-size: 70%;
+	    color: #999;
+	    clear: both;
+	    }
+	  .my-legend a {
+	    color: #777;
+	    }
+
+	    #expanding{
+	      display:none;
+	    }
+
+
+	    </style>
+	    <script type="text/javascript" src="../js/jquery-latest.js"></script> 
+		<script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
+};
+print $html $header;
+
+print $html "<script>\n";
+print $html "\$(document).ready(function(){ \n";
+print $html "\$(\"#myTable\").tablesorter(); \n";
+print $html "}\n";
+print $html ");\n";
+print $html "</script>\n";
+
+my $header2 = qq{
+	  </head>
+
+	  <body>
+
+	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+	      <div class="container-fluid">
+	        <div class="navbar-header">
+	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	            <span class="sr-only">Toggle navigation</span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	          </button>
+	          <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment </a>
+	        </div>
+	        <div id="navbar" class="navbar-collapse collapse">
+	          <ul class="nav navbar-nav navbar-right">
+	            <li><a href="../experiment.html">Experiments</a></li>
+	            <li><a href="../log.html">Log</a></li>
+	            <li><a href="../help.html">Help</a></li>
+	          </ul>
+	        </div>
+	      </div>
+	    </nav>
+
+	    <div class="container-fluid">
+	      <div class="row">
+	        <div class="col-sm-3 col-md-2 sidebar">
+	          <ul class="nav nav-sidebar">
+	            <li><a href="index.html">Overview</a></li>
+	            <li class="active"><a href="results.html">Results<span class="sr-only">(current)</span></a></li>
+	            <li><a href="fails.html">Failed</a></li>
+	            <li><a href="errors.html">Errors</a></li>
+	    };
+	    print $html $header2;
+
+	print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $h_qc_verdict{$s_exp};
+	my $header3 = qq{
+	          </ul>
+	        </div>
+	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+	          <h1 class="page-header">Validation Results</h1>
+	          <div class="table-responsive">
+	            <table class="table table-striped tablesorter" id="myTable">
+	              <thead>
+	                <tr>
+	                  <th>Sample ID</th>
+	                  <th>Locus</th>
+	                  <th>Locus Verdict</th>
+	                  <th>Allele Verdict</th>
+	                  <th>Match Grade</th>
+	                  <th>Expected Allele</th>
+	                  <th>Observed Allele Call 1</th>
+	                  <th>Observed Allele Call 2</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+          };
+          print $html $header3;
+
+}
+################################################################################################################
+=head2 resultsBody
+
+	Title:     resultsBody
+	Usage:
+	Function:  Prints the body to the results.html file
+	Returns:
+	Args:
+
+=cut
+sub resultsBody{
+
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages ) = @_;
+
+	my $s_experiment = $s_exp;
+
+	my %h_subject_errors;
+	foreach my $s_ID (keys %$rh_verified){
+		foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
+
+			foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
+
+				print $html "\t\t<tr>\n";
+
+				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
+				
+				if(!defined $$ra_subject_pages{$s_ID}){
+					print STDERR "Subject has no valid loci defined!! $s_ID\n" if !defined $h_subject_errors{$s_ID} && $b_verbose;
+					print $log_html "Subject has no valid loci defined!! <b>$s_exp $s_ID</b><br>" if !defined $h_subject_errors{$s_ID};
+					$h_subject_errors{$s_ID}++;
+					next;
+				}
+				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
+				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">1$s_ID</a></td>\n";
+				
+				print $html "\t\t\t<td>$s_loc</td>\n";
+				if($$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
+				}
+
+				
+				if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}else{
+					print $html "\t\t\t<td>PASS</td>\n";
+				}
+
+				print $html "\t\t\t<td></td>\n";
+
+
+				print $html  "\t\t\t<td>$s_typing</td>\n";
+				
+				# QC Haplotype HERE
+
+				my $printed = 0;my $printed2 = 0;
+				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+
+					my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
+					my $num_alleles = keys %h_alleles;
+
+					if($num_alleles > 9){
+
+						my @a_alleles = keys %h_alleles;
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i == $n_cutoff2){
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+								}
+							}elsif($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+
+						print $html "</span></span></td>\n";
+					}else{
+						my @a_alleles = keys %h_alleles;
+						print $html "<td>";
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+						print $html "</td>\n";
+					}
+
+					
+					my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
+
+					my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
+					my $num_alleles2 = keys %h_alleles2;
+
+					if($num_alleles2 > 9){
+						
+						my @a_alleles = keys %h_alleles2;
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i == $n_cutoff2){
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+								}
+							}elsif($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+
+						print $html "</span></span></td>\n";
+					}else{
+
+						my @a_alleles = keys %h_alleles2;
+						print $html "<td>";
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+						print $html "</td>\n";
+
+					}
+
+
+				}else{
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+				}
+
+				print $html "</tr>\n";
+
+
+			}
+		}
+	}
+
+		my $end_body = qq{</tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+		};
+		print $html $end_body,"\n";
+
+
+}
+
+sub resultsFooter{
+
+	my ( $html ) = @_;
+
+	my $footer = qq{
+
+			
+	<script>
+	     // If the user clicks in the window, set the background color of  to yellow
+	      function expand(obj) {
+	        if(obj.getElementsByTagName("span")[0].style.display == "table"){
+	          obj.getElementsByTagName("span")[0].style.display = "none";
+	        }else{
+	           obj.getElementsByTagName("span")[0].style.display = "table";
+	        }
+	      }
+
+    
+	    </script>
+	    			<footer>
+				<div class="footer">
+					<img src="../img/bethematch.jpeg" alt="img02">
+					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+				</div>
+			</footer>	
+	    <style type="text/css">
+	        .bargraph {
+	          list-style: none;
+	          padding-top: 20px;
+	          width:560px;
+	        }
+	        a.id_links {
+				text-decoration: none;
+				font:bold;
+				color:black;
+	        }
+	        a.id_links:hover {
+				color:#A8A8A8;
+	        }
+	        footer {
+					color: #888;
+					clear:both;
+					position: relative; 
+					bottom: 10px;
+					left: 0; width: 100%; 
+					text-align: center;
+					font-size:9px;
+					
+					background: rgba(255, 255, 255, 0.6);
+			}	        
+	    </style>
+	     <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="../js/bootstrap.min.js"></script>
+	    <script src="../js/docs.min.js"></script>
+	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+	  
+	  </body>
+	</html>
+	};
+	print $html $footer;
+
+}
+
+################################################################################################################
+=head2 failedHeader
+
+	Title:     failedHeader
+	Usage:
+	Function:  Prints the header to the failed.html file
+	Returns:
+	Args:
+
+=cut
+sub failedHeader{
+
+	my ( $html, $s_exp ) = @_;
+
+	my $s_experiment = $s_exp;
+
+	my $header = qq{
+		<!DOCTYPE html>
+	<html lang="en">
+	  <head>
+	    <meta charset="utf-8">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+	    <meta name="description" content="">
+	    <meta name="author" content="">
+	    
+	    <title>Validation Report</title>
+
+	    <!-- Bootstrap core CSS -->
+	    <link href="../css/bootstrap.min.css" rel="stylesheet">
+	    <script src="../js/Chart.js"></script>
+	    <!-- Custom styles for this template -->
+	    <link href="../css/dashboard.css" rel="stylesheet">
+
+	    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+	    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+	    <script src="../js/ie-emulation-modes-warning.js"></script>
+
+	    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+	    <!--[if lt IE 9]>
+	      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+	      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	    <![endif]-->
+	      <style type='text/css'>
+	  .my-legend .legend-scale ul {
+	    margin: 0;
+	    padding: 0;
+	    float: left;
+	    list-style: none;
+	    }
+	  .my-legend .legend-scale ul li {
+	    display: block;
+	    float: left;
+	    width: 50px;
+	    margin-bottom: 6px;
+	    text-align: center;
+	    font-size: 80%;
+	    list-style: none;
+	    }
+	  .my-legend ul.legend-labels li span {
+	    display: block;
+	    float: left;
+	    height: 15px;
+	    width: 50px;
+	    }
+	  .my-legend .legend-source {
+	    font-size: 70%;
+	    color: #999;
+	    clear: both;
+	    }
+	  .my-legend a {
+	    color: #777;
+	    }
+
+	    #expanding{
+	      display:none;
+	    }
+
+
+	    </style>
+	    <script type="text/javascript" src="../js/jquery-latest.js"></script> 
+		<script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
+};
+print $html $header;
+
+print $html "<script>\n";
+print $html "\$(document).ready(function(){ \n";
+print $html "\$(\"#myTable\").tablesorter(); \n";
+print $html "}\n";
+print $html ");\n";
+print $html "</script>\n";
+
+my $header2 = qq{
+	  </head>
+
+	  <body>
+
+	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+	      <div class="container-fluid">
+	        <div class="navbar-header">
+	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	            <span class="sr-only">Toggle navigation</span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	          </button>
+	          <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment </a>
+	        </div>
+	        <div id="navbar" class="navbar-collapse collapse">
+	          <ul class="nav navbar-nav navbar-right">
+	            <li><a href="../experiment.html">Experiments</a></li>
+	            <li><a href="../log.html">Log</a></li>
+	            <li><a href="../help.html">Help</a></li>
+	          </ul>
+	        </div>
+	      </div>
+	    </nav>
+
+	    <div class="container-fluid">
+	      <div class="row">
+	        <div class="col-sm-3 col-md-2 sidebar">
+	          <ul class="nav nav-sidebar">
+	            <li><a href="index.html">Overview</a></li>
+	            <li><a href="results.html">Results</a></li>
+	            <li class="active"><a href="fails.html">Failed<span class="sr-only">(current)</span></a></li>
+	            <li><a href="errors.html">Errors</a></li>
+	    };
+	    print $html $header2;
+
+	print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $h_qc_verdict{$s_exp};
+	my $header3 = qq{
+	          </ul>
+	        </div>
+	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+	          <h1 class="page-header">Validation Results</h1>
+	          <div class="table-responsive">
+	            <table class="table table-striped tablesorter" id="myTable">
+	              <thead>
+	                <tr>
+	                  <th>Sample ID</th>
+	                  <th>Locus</th>
+	                  <th>Locus Verdict</th>
+	                  <th>Allele Verdict</th>
+	                  <th>Match Grade</th>
+	                  <th>Expected Allele</th>
+	                  <th>Observed Allele Call 1</th>
+	                  <th>Observed Allele Call 2</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+          };
+          print $html $header3;
+
+}
+################################################################################################################
+=head2 failedBody
+
+	Title:     failedBody
+	Usage:
+	Function:  Prints the body to the failed.html file
+	Returns:
+	Args:
+
+=cut
+sub failedBody{
+
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_fails ) = @_;
+
+
+	my $s_experiment = $s_exp;
+
+	foreach my $s_ID (keys %$rh_verified){
+		foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
+			next unless defined $$ra_fails{$s_ID}{$s_loc};
+
+			foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
+
+				print $html "\t\t<tr>\n";
+
+				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
+				
+				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
+				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">1$s_ID</a></td>\n";
+
+				print $html "\t\t\t<td>$s_loc</td>\n";
+				if(defined $$rh_locus_verdict{$s_ID}{$s_loc} && $$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif(!defined $$rh_locus_verdict{$s_ID}{$s_loc} || $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
+				}
+
+				if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
+				}
+				print $html  "\t\t\t<td></td>\n";
+				print $html  "\t\t\t<td>$s_typing</td>\n";
+				
+				
+				my $printed = 0;my $printed2 = 0;
+		
+				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+
+					my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
+					my $num_alleles = keys %h_alleles;
+
+					if($num_alleles > 9){
+
+						my @a_alleles = keys %h_alleles;
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i == $n_cutoff2){
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+								}
+							}elsif($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+
+						print $html "</span></span></td>\n";
+					}else{
+						my @a_alleles = keys %h_alleles;
+						print $html "<td>";
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+						print $html "</td>\n";
+					}
+
+					
+					my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
+
+					my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
+					my $num_alleles2 = keys %h_alleles2;
+
+					if($num_alleles2 > 9){
+						
+						my @a_alleles = keys %h_alleles2;
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i == $n_cutoff2){
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+								}
+							}elsif($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+
+						print $html "</span></span></td>\n";
+					}else{
+
+						my @a_alleles = keys %h_alleles2;
+						print $html "<td>";
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+						print $html "</td>\n";
+
+					}
+
+
+				}else{
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+				}
+
+				print $html "</tr>\n";
+
+
+			}
+		}
+	}
+
+		my $end_body = qq{</tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+		};
+		print $html $end_body,"\n";
+
+
+}
+################################################################################################################
+=head2 failedFooter
+
+	Title:     failedFooter
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub failedFooter{
+
+	my ( $html ) = @_;
+
+	my $footer = qq{
+			      <script>
+	     // If the user clicks in the window, set the background color of <body> to yellow
+	      function expand(obj) {
+	        if(obj.getElementsByTagName("span")[0].style.display == "table"){
+	          obj.getElementsByTagName("span")[0].style.display = "none";
+	        }else{
+	           obj.getElementsByTagName("span")[0].style.display = "table";
+	        }
+	      }
+	    </script>
+	    			<footer>
+				<div class="footer">
+					<img src="../img/bethematch.jpeg" alt="img02">
+					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+				</div>
+			</footer>	
+	    <style type="text/css">
+	        .bargraph {
+	          list-style: none;
+	          padding-top: 20px;
+	          width:560px;
+	        }
+	        a.id_links {
+				text-decoration: none;
+				font:bold;
+				color:black;
+	        }
+	        a.id_links:hover {
+				color:#A8A8A8;
+	        }
+	        footer {
+					color: #888;
+					clear:both;
+					position: relative; 
+					bottom: 10px;
+					left: 0; width: 100%; 
+					text-align: center;
+					font-size:9px;
+					
+					background: rgba(255, 255, 255, 0.6);
+			}	        
+	    </style>
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="../js/bootstrap.min.js"></script>
+	    <script src="../js/docs.min.js"></script>
+	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+	  
+	  </body>
+	</html>
+	};
+	print $html $footer;
+
+}
+################################################################################################################
+=head2 failedHeader
+
+	Title:     failedHeader
+	Usage:
+	Function:  Prints the header to the failed.html file
+	Returns:
+	Args:
+
+=cut
+sub qcHeader{
+
+	my ( $html, $s_exp ) = @_;
+
+	my $s_experiment = $s_exp;
+
+	my $header = qq{
+		<!DOCTYPE html>
+	<html lang="en">
+	  <head>
+	    <meta charset="utf-8">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+	    <meta name="description" content="">
+	    <meta name="author" content="">
+	    
+	    <title>Validation Report</title>
+
+	    <script type="text/javascript" src="../js/jquery-latest.js"></script>
+		<script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
+
+	    <!-- Bootstrap core CSS -->
+	    <link href="../css/bootstrap.min.css" rel="stylesheet">
+	    <script src="../js/Chart.js"></script>
+	    <!-- Custom styles for this template -->
+	    <link href="../css/dashboard.css" rel="stylesheet">
+
+	    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+	    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+	    <script src="../js/ie-emulation-modes-warning.js"></script>
+
+	    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+	    <!--[if lt IE 9]>
+	    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+	    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+
+
+
+	    <![endif]-->
+	      <style type='text/css'>
+	  .my-legend .legend-scale ul {
+	    margin: 0;
+	    padding: 0;
+	    float: left;
+	    list-style: none;
+	    }
+	  .my-legend .legend-scale ul li {
+	    display: block;
+	    float: left;
+	    width: 50px;
+	    margin-bottom: 6px;
+	    text-align: center;
+	    font-size: 80%;
+	    list-style: none;
+	    }
+	  .my-legend ul.legend-labels li span {
+	    display: block;
+	    float: left;
+	    height: 15px;
+	    width: 50px;
+	    }
+	  .my-legend .legend-source {
+	    font-size: 70%;
+	    color: #999;
+	    clear: both;
+	    }
+	  .my-legend a {
+	    color: #777;
+	    }
+
+	    #expanding{
+	      display:none;
+	    }
+
+
+	    </style>
+	  </head>
+
+	  <body>
+
+	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+	      <div class="container-fluid">
+	        <div class="navbar-header">
+	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	            <span class="sr-only">Toggle navigation</span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	          </button>
+	          <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment</a>
+	        </div>
+	        <div id="navbar" class="navbar-collapse collapse">
+	          <ul class="nav navbar-nav navbar-right">
+	            <li><a href="../experiment.html">Experiments</a></li>
+	            <li><a href="../log.html">Log</a></li>
+	            <li><a href="../help.html">Help</a></li>
+	          </ul>
+	        </div>
+	      </div>
+	    </nav>
+
+	    <div class="container-fluid">
+	      <div class="row">
+	        <div class="col-sm-3 col-md-2 sidebar">
+	          <ul class="nav nav-sidebar">
+	            <li><a href="index.html">Overview</a></li>
+	            <li><a href="results.html">Results</a></li>
+	            <li><a href="fails.html">Failed</a></li>
+	            <li><a href="errors.html">Errors</a></li>
+	            <li class="active"><a href="qc.html">QC<span class="sr-only">(current)</span></a></li>
+	          </ul>
+	        </div>
+	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+	          <h1 class="page-header">Validation Results</h1>
+	          <div class="table-responsive">
+	             <table class="table table-striped tablesorter" id="myTable">
+	              <thead>
+	                <tr>
+	                  <th>Sample ID</th>
+	                  <th>QC Verdict</th>
+	                  <th>Locus Verdict</th>
+	                  <th>Allele Verdict</th>
+	                  <th>QC Haplotype</th>
+	                  <th>Expected Allele</th>
+	                  <th>Observed Allele Call 1</th>
+	                  <th>Observed Allele Call 2</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+          };
+          print $html $header;
+
+}
+################################################################################################################
+=head2 failedBody
+
+	Title:     failedBody
+	Usage:
+	Function:  Prints the body to the failed.html file
+	Returns:
+	Args:
+
+=cut
+sub qcBody{
+
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_fails ) = @_;
+
+
+	my $s_experiment = $s_exp;
+
+	foreach my $s_ID (keys %$rh_verified){
+		foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
+
+			foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
+
+				print $html "\t\t<tr>\n";
+
+				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
+				
+				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
+				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">1$s_ID</a></td>\n";
+
+				if(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}elsif(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "PASS"){
+					print $html  "\t\t\t<td>PASS</td>\n";
+				}else{
+					print $html  "\t\t\t<td></td>\n";
+				}
+
+				if(defined $$rh_locus_verdict{$s_ID}{$s_loc} && $$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif(!defined $$rh_locus_verdict{$s_ID}{$s_loc} || $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
+				}
+
+				if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} ne "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>PASS</td>\n";
+				}
+
+				if(defined $$rh_qc_expected{$s_ID}{$s_loc}){
+					print $html "\t\t\t<td>$$rh_qc_expected{$s_ID}{$s_loc}</td>";
+				}else{
+					print $html "\t\t\t<td></td>";
+				}
+				print $html  "\t\t\t<td>$s_typing</td>\n";
+				
+				
+				my $printed = 0;my $printed2 = 0;
+		
+				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+
+					my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
+					my $num_alleles = keys %h_alleles;
+
+					if($num_alleles > 9){
+
+						my @a_alleles = keys %h_alleles;
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i == $n_cutoff2){
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+								}
+							}elsif($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+
+						print $html "</span></span></td>\n";
+					}else{
+						my @a_alleles = keys %h_alleles;
+						print $html "<td>";
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+						print $html "</td>\n";
+					}
+
+					
+					my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
+
+					my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
+					my $num_alleles2 = keys %h_alleles2;
+
+					if($num_alleles2 > 9){
+						
+						my @a_alleles = keys %h_alleles2;
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i == $n_cutoff2){
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+								}
+							}elsif($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+
+						print $html "</span></span></td>\n";
+					}else{
+
+						my @a_alleles = keys %h_alleles2;
+						print $html "<td>";
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+						print $html "</td>\n";
+
+					}
+
+
+				}else{
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+				}
+
+				print $html "</tr>\n";
+
+
+			}
+		}
+	}
+
+		my $end_body = qq{</tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+		};
+		print $html $end_body,"\n";
+
+
+}
+################################################################################################################
+=head2 failedFooter
+
+	Title:     failedFooter
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub qcFooter{
+
+	my ( $html ) = @_;
+
+	print $html "<script>\n";
+	print $html "\$(document).ready(function(){ \n";
+	print $html "\$(\"#myTable\").tablesorter(); \n";
+	print $html "}\n";
+	print $html ");\n";
+	print $html "</script>\n";
+
+	my $footer = qq{
+			      <script>
+	     // If the user clicks in the window, set the background color of <body> to yellow
+	      function expand(obj) {
+	        if(obj.getElementsByTagName("span")[0].style.display == "table"){
+	          obj.getElementsByTagName("span")[0].style.display = "none";
+	        }else{
+	           obj.getElementsByTagName("span")[0].style.display = "table";
+	        }
+	      }
+	    </script>
+	    			<footer>
+				<div class="footer">
+					<img src="../img/bethematch.jpeg" alt="img02">
+					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+				</div>
+			</footer>	
+	    <style type="text/css">
+	        .bargraph {
+	          list-style: none;
+	          padding-top: 20px;
+	          width:560px;
+	        }
+	        a.id_links {
+				text-decoration: none;
+				font:bold;
+				color:black;
+	        }
+	        a.id_links:hover {
+				color:#A8A8A8;
+	        }
+	        footer {
+					color: #888;
+					clear:both;
+					position: relative; 
+					bottom: 10px;
+					left: 0; width: 100%; 
+					text-align: center;
+					font-size:9px;
+					
+					background: rgba(255, 255, 255, 0.6);
+			}	        
+	    </style>
+	    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="../js/bootstrap.min.js"></script>
+	    <script src="../js/docs.min.js"></script>
+	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+	  
+	  </body>
+	</html>
+	};
+	print $html $footer;
+
+}
+################################################################################################################
+=head2 failedHeader
+
+	Title:     failedHeader
+	Usage:
+	Function:  Prints the header to the failed.html file
+	Returns:
+	Args:
+
+=cut
+sub errorsHeader{
+
+	my ( $html, $s_exp ) = @_;
+
+	my $s_experiment = $s_exp;
+
+	my $header = qq{
+		<!DOCTYPE html>
+	<html lang="en">
+	  <head>
+	    <meta charset="utf-8">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+	    <meta name="description" content="">
+	    <meta name="author" content="">
+	    
+	    <title>Validation Report</title>
+
+	    <!-- Bootstrap core CSS -->
+	    <link href="../css/bootstrap.min.css" rel="stylesheet">
+	    <script src="../js/Chart.js"></script>
+	    <!-- Custom styles for this template -->
+	    <link href="../css/dashboard.css" rel="stylesheet">
+
+	    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+	    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+	    <script src="../js/ie-emulation-modes-warning.js"></script>
+
+	    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+	    <!--[if lt IE 9]>
+	      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+	      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	    <![endif]-->
+	      <style type='text/css'>
+	  .my-legend .legend-scale ul {
+	    margin: 0;
+	    padding: 0;
+	    float: left;
+	    list-style: none;
+	    }
+	  .my-legend .legend-scale ul li {
+	    display: block;
+	    float: left;
+	    width: 50px;
+	    margin-bottom: 6px;
+	    text-align: center;
+	    font-size: 80%;
+	    list-style: none;
+	    }
+	  .my-legend ul.legend-labels li span {
+	    display: block;
+	    float: left;
+	    height: 15px;
+	    width: 50px;
+	    }
+	  .my-legend .legend-source {
+	    font-size: 70%;
+	    color: #999;
+	    clear: both;
+	    }
+	  .my-legend a {
+	    color: #777;
+	    }
+
+	    #expanding{
+	      display:none;
+	    }
+
+
+	    </style>
+	    <script type="text/javascript" src="../js/jquery-latest.js"></script> 
+		<script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
+};
+print $html $header;
+
+print $html "<script>\n";
+print $html "\$(document).ready(function(){ \n";
+print $html "\$(\"#myTable\").tablesorter(); \n";
+print $html "}\n";
+print $html ");\n";
+print $html "</script>\n";
+
+my $header2 = qq{
+	  </head>
+
+	  <body>
+
+	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+	      <div class="container-fluid">
+	        <div class="navbar-header">
+	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	            <span class="sr-only">Toggle navigation</span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	          </button>
+	          <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment </a>
+	        </div>
+	        <div id="navbar" class="navbar-collapse collapse">
+	          <ul class="nav navbar-nav navbar-right">
+	            <li><a href="../experiment.html">Experiments</a></li>
+	            <li><a href="../log.html">Log</a></li>
+	            <li><a href="../help.html">Help</a></li>
+	          </ul>
+	        </div>
+	      </div>
+	    </nav>
+
+	    <div class="container-fluid">
+	      <div class="row">
+	        <div class="col-sm-3 col-md-2 sidebar">
+	          <ul class="nav nav-sidebar">
+	            <li><a href="index.html">Overview</a></li>
+	            <li><a href="results.html">Results</a></li>
+	            <li><a href="fails.html">Failed</a></li>
+	            <li class="active"><a href="errors.html">Errors<span class="sr-only">(current)</span></a></li>
+	    };
+	    print $html $header2;
+
+	print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $h_qc_verdict{$s_exp};
+	my $header3 = qq{
+	          </ul>
+	        </div>
+	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+	          <h1 class="page-header">Validation Results</h1>
+	          <div class="table-responsive">
+	            <table class="table table-striped tablesorter" id="myTable">
+	              <thead>
+	                <tr>
+	                  <th>Sample ID</th>
+	                  <th>Locus</th>
+	                  <th>Locus Verdict</th>
+	                  <th>Allele Verdict</th>
+	                  <th>Match Grade</th>
+	                  <th>Expected Allele</th>
+	                  <th>Observed Allele Call 1</th>
+	                  <th>Observed Allele Call 2</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+          };
+          print $html $header3;
+
+}
+################################################################################################################
+=head2 failedBody
+
+	Title:     failedBody
+	Usage:
+	Function:  Prints the body to the failed.html file
+	Returns:
+	Args:
+
+=cut
+sub errorsBody{
+
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages, $ra_errors ) = @_;
+
+	my $s_experiment = $s_exp;
+
+	foreach my $s_ID (keys %$rh_verified){
+		foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
+			next unless defined $$ra_errors{$s_ID}{$s_loc};
+
+			foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
+
+				print $html "\t\t<tr>\n";
+
+				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
+				
+				next if(!defined $$ra_subject_pages{$s_ID});
+
+				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
+				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">1$s_ID</a></td>\n";
+
+				print $html "\t\t\t<td>$s_loc</td>";
+				if($$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
+				}
+
+				if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL"){
+					print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
+				}
+
+
+				print $html "\t\t\t<td></td>";				
+				print $html  "\t\t\t<td>$s_typing</td>\n";
+				
+				
+				my $printed = 0;my $printed2 = 0;
+				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+
+					my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
+					my $num_alleles = keys %h_alleles;
+
+					if($num_alleles > 9){
+
+						my @a_alleles = keys %h_alleles;
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i == $n_cutoff2){
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+								}
+							}elsif($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+
+						print $html "</span></span></td>\n";
+					}else{
+						my @a_alleles = keys %h_alleles;
+						print $html "<td>";
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+						print $html "</td>\n";
+					}
+
+					
+					my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
+
+					my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
+					my $num_alleles2 = keys %h_alleles2;
+
+					if($num_alleles2 > 9){
+						
+						my @a_alleles = keys %h_alleles2;
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i == $n_cutoff2){
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+								}
+							}elsif($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+
+						print $html "</span></span></td>\n";
+					}else{
+
+						my @a_alleles = keys %h_alleles2;
+						print $html "<td>";
+						for(my $i=1;$i<=$#a_alleles+1;$i++){
+							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+							if($i % $n_cutoff1 == 0) {
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+								}
+							}else{
+								if($a_alleles[$i-1] eq $s_typing){
+									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+								}else{
+									print $html "$a_alleles[$i-1]".$s_end;
+								}
+							}
+
+						}
+						print $html "</td>\n";
+
+					}
+
+
+				}else{
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+				}
+
+				print $html "</tr>\n";
+
+
+			}
+		}
+	}
+
+		my $end_body = qq{</tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+		};
+		print $html $end_body,"\n";
+
+
+}
+################################################################################################################
+=head2 failedFooter
+
+	Title:     failedFooter
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub errorsFooter{
+
+	my ( $html ) = @_;
+
+	my $footer = qq{
+			      <script>
+	     // If the user clicks in the window, set the background color of <body> to yellow
+	      function expand(obj) {
+	        if(obj.getElementsByTagName("span")[0].style.display == "table"){
+	          obj.getElementsByTagName("span")[0].style.display = "none";
+	        }else{
+	           obj.getElementsByTagName("span")[0].style.display = "table";
+	        }
+	      }
+	    </script>
+	    			<footer>
+				<div class="footer">
+					<img src="../img/bethematch.jpeg" alt="img02">
+					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+				</div>
+			</footer>	
+	    <style type="text/css">
+	        .bargraph {
+	          list-style: none;
+	          padding-top: 20px;
+	          width:560px;
+	        }
+	        a.id_links {
+				text-decoration: none;
+				font:bold;
+				color:black;
+	        }
+	        a.id_links:hover {
+				color:#A8A8A8;
+	        }
+	        footer {
+					color: #888;
+					clear:both;
+					position: relative; 
+					bottom: 10px;
+					left: 0; width: 100%; 
+					text-align: center;
+					font-size:9px;
+					
+					background: rgba(255, 255, 255, 0.6);
+			}	        
+	    </style>
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="../js/bootstrap.min.js"></script>
+	    <script src="../js/docs.min.js"></script>
+	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+	  
+	  </body>
+	</html>
+	};
+	print $html $footer;
+
+}
+
+################################################################################################################
+=head2 subjectsHeader
+
+	Title: subjectsHeader
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub subjectsHeader{
+
+	my ( $html, $s_exp, $s_ID ) = @_;
+
+	my $s_experiment = $s_exp;
+
+	my $header = qq{
+		<!DOCTYPE html>
+	<html lang="en">
+	  <head>
+	    <meta charset="utf-8">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+	    <meta name="description" content="">
+	    <meta name="author" content="">
+	    
+	    <title>Validation Report</title>
+
+	    <!-- Bootstrap core CSS -->
+	    <link href="../../css/bootstrap.min.css" rel="stylesheet">
+	    <script src="../../js/Chart.js"></script>
+	    <!-- Custom styles for this template -->
+	    <link href="../../css/dashboard.css" rel="stylesheet">
+
+	    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+	    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+	    <script src="../../js/ie-emulation-modes-warning.js"></script>
+
+	    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+	    <!--[if lt IE 9]>
+	      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+	      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	    <![endif]-->
+	      <style type='text/css'>
+	  .my-legend .legend-scale ul {
+	    margin: 0;
+	    padding: 0;
+	    float: left;
+	    list-style: none;
+	    }
+	  .my-legend .legend-scale ul li {
+	    display: block;
+	    float: left;
+	    width: 50px;
+	    margin-bottom: 6px;
+	    text-align: center;
+	    font-size: 80%;
+	    list-style: none;
+	    }
+	  .my-legend ul.legend-labels li span {
+	    display: block;
+	    float: left;
+	    height: 15px;
+	    width: 50px;
+	    }
+	  .my-legend .legend-source {
+	    font-size: 70%;
+	    color: #999;
+	    clear: both;
+	    }
+	  .my-legend a {
+	    color: #777;
+	    }
+
+	    #expanding{
+	      display:none;
+	    }
+
+
+	    </style>
+	  </head>
+
+	  <body>
+
+	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+	      <div class="container-fluid">
+	        <div class="navbar-header">
+	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	            <span class="sr-only">Toggle navigation</span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	          </button>
+	          <a class="navbar-brand" href="../../experiment.html">Validation Report - $s_experiment </a>
+	        </div>
+	        <div id="navbar" class="navbar-collapse collapse">
+	          <ul class="nav navbar-nav navbar-right">
+	            <li><a href="../../experiment.html">Experiments</a></li>
+	            <li><a href="../../log.html">Log</a></li>
+	            <li><a href="../../help.html">Help</a></li>
+	          </ul>
+	        </div>
+	      </div>
+	    </nav>
+
+	    <div class="container-fluid">
+	      <div class="row">
+	        <div class="col-sm-3 col-md-2 sidebar">
+	          <ul class="nav nav-sidebar">
+	            <li><a href="../index.html">Overview</a></li>
+	            <li class="active"><a href="../results.html">Results<span class="sr-only">(current)</span></a></li>
+	            <li><a href="../fails.html">Failed</a></li>
+	            <li><a href="../errors.html">Errors</a></li>
+	    };
+	    print $html $header;
+	    print $html "<li><a href=\"../qc.html\">QC</a></li>\n" if defined $h_qc_verdict{$s_exp};
+
+	    my $header2 = qq{
+	          </ul>
+	        </div>
+	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+	          <h1 class="page-header">$s_ID Validation Results</h1>
+				<div class="table-responsive">
+	            <table class="table table-striped">
+	              <thead>
+	                <tr>
+	                  <th>Locus</th>
+	                  <th>Locus Verdict</th>
+	                  <th>QC Verdict</th>
+	                  <th>QC Expected</th>
+	                  <th>Expected</th>
+	                  <th>Allele Call 1</th>
+	                  <th>Allele Call 1</th>
+	                </tr>
+	              </thead>
+	           	<tbody>	
+
+          };
+          print $html $header2;
+
+}
+
+################################################################################################################
+=head2 subjectsBody
+
+	Title: subjectsBody
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub subjectsBody{
+
+	my ( $html, $s_exp, $s_ID, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_expected, $rh_observed, $rh_sequence_data  ) = @_;
+
+	my $s_experiment = $s_exp;
+	foreach my $s_loc (sort keys %{$$rh_locus_verdict{$s_ID}}){
+		print $html "\t\t<tr>\n";
+		print $html "\t\t\t<th>$s_loc</th>\n";
+
+		if($$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+		}elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+		}else{
+			print $html "\t\t\t<td>PASS</td>\n";
+		}
+
+		if(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "FAIL"){
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+		}elsif(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "ERROR"){
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+		}elsif(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "PASS"){
+			print $html  "\t\t\t<td>PASS</td>\n";
+		}else{
+			print $html  "\t\t\t<td></td>\n";
+		}
+
+		if(defined $$rh_qc_expected{$s_ID}{$s_loc}){
+			print $html "\t\t\t<td>$$rh_qc_expected{$s_ID}{$s_loc}</td>";
+		}else{
+			print $html "\t\t\t<td></td>";
+		}
+		print $html "\t\t\t<td>$$rh_expected{$s_ID}{$s_loc}</td>\n";
+		if(!defined $$rh_expected{$s_ID}{$s_loc}){
+			print STDERR $s_exp,"\t",$s_ID,"\t",$s_loc,"\n";
+		}
+		my @a_expected_haps = split(/\|/,$$rh_expected{$s_ID}{$s_loc});
+
+		my %h_expected_alleles;
+		foreach(@a_expected_haps){
+			my($x,$y) = split(/\+/,$_);
+			$x =defined $x && $x =~ /\S/ ? g2p($x) : undef;
+			$y =defined $y && $y =~ /\S/ ? g2p($y) : undef;
+			$h_expected_alleles{$x}++ if defined $x;
+			$h_expected_alleles{$y}++ if defined $y;
+		}
+
+
+		if(!defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+			next;
+		}
+
+
+		my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (4,13) : (3,10);
+
+		my $printed = 0;my $printed2 = 0;
+		if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+
+			my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
+			my $num_alleles = keys %h_alleles;
+
+			if($num_alleles > 9){
+
+				my @a_alleles = keys %h_alleles;
+				for(my $i=1;$i<=$#a_alleles+1;$i++){
+					print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+					my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+					if($i == $n_cutoff2){
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+						}
+					}elsif($i % $n_cutoff1 == 0) {
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+						}
+					}else{
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end;
+						}
+					}
+
+				}
+
+				print $html "</span></span></td>\n";
+			}else{
+				my @a_alleles = keys %h_alleles;
+				print $html "<td>";
+				for(my $i=1;$i<=$#a_alleles+1;$i++){
+					my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+					if($i % $n_cutoff1 == 0) {
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+						}
+					}else{
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end;
+						}
+					}
+
+				}
+				print $html "</td>\n";
+
+			}
+
+			
+			my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
+
+			my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
+			my $num_alleles2 = keys %h_alleles2;
+
+			if($num_alleles2 > 9){
+				
+				my @a_alleles = keys %h_alleles2;
+				for(my $i=1;$i<=$#a_alleles+1;$i++){
+					print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+					my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+					if($i == $n_cutoff2){
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+						}
+					}elsif($i % $n_cutoff1 == 0) {
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+						}
+					}else{
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end;
+						}
+					}
+
+				}
+
+				print $html "</span></span></td>\n";
+			}else{
+
+				my @a_alleles = keys %h_alleles2;
+				print $html "<td>";
+				for(my $i=1;$i<=$#a_alleles+1;$i++){
+					my $s_end = $i == $#a_alleles+1 ? "" : "/";	
+
+					if($i % $n_cutoff1 == 0) {
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+						}
+					}else{
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end;
+						}
+					}
+
+				}
+				print $html "</td>\n";
+
+			}
+
+
+		}else{
+			print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+			print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+			print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+			print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+		}
+
+		print $html "</tr>\n";
+		#print $html "</span></span>\n" if $#a_haps > 10;
+		#print $html "</td>\n<td>$num_haplos</td>\n";
+		#my $f_sensitivity = sprintf("%.3f",1 / $num_haplos);
+		#print $html "</td>\n<td>$f_sensitivity</td>\n";
+		print $html  "</tr>\n";
+
+
+	}
+
+	#$h_sequence_data{$s_id}{$pervious_locus}{$s_seq}++;
+
+	my $sequence_start = qq{
+	          	<div class="table-responsive">
+
+		            <table class="table table-striped">
+		            <h2>Consensus Sequences</h1>
+		              <thead>
+		                <tr>
+		                  <th>Locus</th>
+		                  <th>Zygousity</th>
+		                  <th>Sequence 1</th>
+		                  <th>Sequence 1</th>
+		                </tr>
+		              </thead>
+		           	<tbody>
+	};
+
+	print $html $sequence_start;
+	
+	foreach my $s_loc (sort keys %{$$rh_sequence_data{$s_ID}}){
+		print $html "<tr>\n";
+		print $html "<th>$s_loc</th>\n";
+		my $num_seqs = keys %{$$rh_sequence_data{$s_ID}{$s_loc}};
+
+		print $html "<td>$num_seqs</td>\n";
+
+
+		my @a_seqs = keys %{$$rh_sequence_data{$s_ID}{$s_loc}};
+
+		for(my $i=0;$i<=$#a_seqs;$i++){
+			my @a_nucls = split(//,$a_seqs[$i]);
+			print $html "<td>";
+			for(my $j=1;$j<=$#a_nucls+1;$j++){
+				if($j % 50 == 0) {
+					print $html "$a_nucls[$j-1]<br>\n";
+				}else{
+					print $html "$a_nucls[$j-1]";
+				}
+			}
+			print $html "</td>\n";
+		}
+		
+		print $html "</tr>\n";
+
+	}
+
+
+	my $end_body = qq{
+          		</tbody>
+          	</table>
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+	};
+	print $html $end_body,"\n";
+
+}
+
+################################################################################################################
+=head2 subjectsFooter
+
+	Title: subjectsFooter
+	Usage:
+	Function:
+	Returns:
+	Args:
+
+=cut
+sub subjectsFooter{
+
+	my ( $html ) = @_;
+
+	my $footer = qq{
+		<script>
+	     // If the user clicks in the window, set the background color of <body> to yellow
+	      function expand(obj) {
+	        if(obj.getElementsByTagName("span")[0].style.display == "table"){
+	          obj.getElementsByTagName("span")[0].style.display = "none";
+	        }else{
+	           obj.getElementsByTagName("span")[0].style.display = "table";
+	        }
+	      }
+	    </script>
+	    			<footer>
+				<div class="footer">
+					<img src="../../img/bethematch.jpeg" alt="img02">
+					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+				</div>
+			</footer>	
+	    <style type="text/css">
+	        .bargraph {
+	          list-style: none;
+	          padding-top: 20px;
+	          width:560px;
+	        }
+	        a.id_links {
+				text-decoration: none;
+				font:bold;
+				color:black;
+	        }
+	        a.id_links:hover {
+				color:#A8A8A8;
+	        }	    
+    	footer {
+			color: #888;
+			clear:both;
+			position: relative; 
+			bottom: 10px;
+			left: 0; width: 100%; 
+			text-align: center;
+			font-size:9px;
+			
+			background: rgba(255, 255, 255, 0.6);
+		}	            
+	    </style>
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="../../js/bootstrap.min.js"></script>
+	    <script src="../../js/docs.min.js"></script>
+	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	    <script src="../../js/ie10-viewport-bug-workaround.js"></script>
+	  
+	  </body>
+	</html>
+	};
+	print $html $footer;
+
+}
+
+
+
+
+
