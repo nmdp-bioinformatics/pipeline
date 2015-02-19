@@ -50,7 +50,7 @@
 =head1 LICENSE
 
     pipeline  Consensus assembly and allele interpretation pipeline.
-    Copyright (c) 2014 National Marrow Donor Program (NMDP)
+    Copyright (c) 2015 National Marrow Donor Program (NMDP)
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published
@@ -474,14 +474,14 @@ sub loadFiles{
 		}
 
 		if($s_expected =~ /hml$/){
-			# my $which_extract_expected = `which ngs-extract-expected`;chomp($which_extract_expected);
-			# if(!defined $which_extract_expected || $which_extract_expected !~ /\S/){
-			# 	print STDERR "Parsing HML with perl!\n" if $b_verbose;
-			# 	perlParseHML($s_expected, $s_exp);
-			# }else{
-			# 	print STDERR "Parsing HML with ngs-extract-expected\n" if $b_verbose;
-			# 	javaParseHML($s_expected, $s_exp);
-			# }
+			my $which_extract_expected = `which ngs-extract-expected`;chomp($which_extract_expected);
+			if(!defined $which_extract_expected || $which_extract_expected !~ /\S/){
+				print STDERR "Parsing HML with perl!\n" if $b_verbose;
+				perlParseHML($s_expected, $s_exp);
+			}else{
+				print STDERR "Parsing HML with ngs-extract-expected\n" if $b_verbose;
+				javaParseHML($s_expected, $s_exp);
+			}
 		}else{
 			open(EXPECTED,$s_expected) or die "CANT OPEN FILE $! $0";
 			while(<EXPECTED>){
@@ -2480,7 +2480,7 @@ sub resultsHeader{
 
 
 	    </style>
-	    <script type="text/javascript" src="../js/jquery-latest.js"></script> 
+	    <script type="text/javascript" src="../js/jquery.js"></script> 
 		<script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
 };
 print $html $header;

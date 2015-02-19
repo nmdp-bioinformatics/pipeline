@@ -51,7 +51,7 @@ All timedata files may safely be removed after  run validation.
 
 ngs-validation-report
 ========
-This tool takes in the output of the NGS pipeline and produces a html report of the results. This allows for an easily traversible report for viewing the validation results. 
+This tool takes in the output of the NGS pipeline and produces a html report of the results. 
 
 Using ngs-validation-report
 ========
