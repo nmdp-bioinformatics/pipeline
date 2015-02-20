@@ -30,7 +30,7 @@ if [[ ${DEBUG}"x" != "x" ]]; then
 fi
 
 TOOLDIR=/opt/ngs-tools/bin
-REFDIR=/mnt/common/data/reference/grch38/seqs_for_alignment_pipelines
+REFDIR=/opt/data/grch38/seqs_for_alignment_pipelines
 
 ## note that REFDIR may require customization to your circumstances, as
 ## well as TOOLDIR
@@ -149,12 +149,12 @@ cat > $BOILERPLATE_HEADER << EOF
 #CHROM POS ID REF ALT QUAL FILTER INFO
 EOF
 fi
-
-  bwa bwasw -b 1 ${REFDIR}/${REFCHR} ${intermediate}.ssake.contigs | samtools view -Sb - | samtools sort - ${final}.contigs.bwa.sorted
-  bwa mem ${REFDIR}/${REFCHR} ${FILE1} ${FILE2} | samtools view -Sb - | samtools sort - ${final}.reads.bwa.sorted
-  samtools index ${final}.reads.bwa.sorted.bam
-  samtools mpileup -RB -C 0 -Q 0 -f ${REFDIR}/${REFCHR}.gz ${final}.contigs.bwa.sorted.bam | cat $BOILERPLATE_HEADER - | bcftools view -O z -o ${final}.vcf.gz
-  samtools mpileup -f ${REFDIR}/${REFCHR}.gz ${final}.reads.bwa.sorted.bam > ${final}.reads.bwa.sorted.vcf
+  bwa bwasw -b 1 ${REFDIR}/${REFCHR} ${intermediate}.ssake.contigs | samtools view -hub - | samtools sort -l 0 -O bam -T ${final}.contigs.bwa.tmp -o ${final}.contigs.bwa.sorted.bam
+  bwa mem ${REFDIR}/${REFCHR} ${FILE1} ${FILE2} | samtools view -hub - | samtools sort -l 0 -O bam -T ${final}.reads.bwa.tmp -o ${final}.reads.bwa.sorted.bam
+  ## Having major issues with samtools v1.1 -- will swap samtools mpileup for freebayes (unfortunately not in homebrew right now)
+  # samtools index ${final}.reads.bwa.sorted.bam
+  #samtools mpileup -RB -C 0 -Q 0 -f ${REFDIR}/${REFCHR}.gz ${final}.contigs.bwa.sorted.bam -v -u | cat $BOILERPLATE_HEADER -
+  #samtools mpileup -f ${REFDIR}/${REFCHR}.gz ${final}.reads.bwa.sorted.bam -v -u > ${final}.reads.bwa.sorted.vcf
 done
 
 echo "completed processing file ${SOURCEFILE}"
