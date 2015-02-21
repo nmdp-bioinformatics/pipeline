@@ -70,6 +70,25 @@ foreach my $s_file (@a_files){
     }
 }
 
+# To Do: Test the different file names
+
+# print `perl ngs-validation-report -d t/hml -f 1 -t 1`;
+# foreach my $s_dir (@a_directories){
+#     if(-d $s_dir){
+#         is(1,1);$number_of_tests_run++;
+#     }else{
+#         is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
+#     }
+# }
+# foreach my $s_file (@a_files){
+#     if(-e $s_file){
+#         is(1,1);$number_of_tests_run++;
+#     }else{
+#         is(1,0,"$s_file not created!\n");$number_of_tests_run++;
+#     }
+# }
+
+
 done_testing( $number_of_tests_run );
 
 
