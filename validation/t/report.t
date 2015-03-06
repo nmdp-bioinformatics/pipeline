@@ -51,7 +51,7 @@ my $test_expected = $working."/t/ex0_expected.txt";
 my $test_observed = $working."/t/ex0_observed.txt";
 my $test_verified = $working."/t/ex0_verified.txt";
 
-print `perl ngs-validation-report -d t -f 1 -t 1`;
+print `perl ngs-validation-report -d t/txt -f 1 -t 1`;
 my @a_directories = split(/,/,"report,report/css,report/ex0,report/img,report/js");
 my @a_files = split(/,/,"report/css/bootstrap.min.css,report/experiment.html,report/help.html,report/log.html,report/ex0/errors.html,report/ex0/fails.html,report/ex0/index.html,report/ex0/results.html,report/ex0/subjects/subject1.html");
 
@@ -70,24 +70,22 @@ foreach my $s_file (@a_files){
     }
 }
 
-# To Do: Test the different file names
-
-# print `perl ngs-validation-report -d t/hml -f 1 -t 1`;
-# foreach my $s_dir (@a_directories){
-#     if(-d $s_dir){
-#         is(1,1);$number_of_tests_run++;
-#     }else{
-#         is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
-#     }
-# }
-# foreach my $s_file (@a_files){
-#     if(-e $s_file){
-#         is(1,1);$number_of_tests_run++;
-#     }else{
-#         is(1,0,"$s_file not created!\n");$number_of_tests_run++;
-#     }
-# }
-
+print `perl ngs-validation-report -d t/hml -f 1 -t 1`;
+foreach my $s_dir (@a_directories){
+    if(-d $s_dir){
+        is(1,1);$number_of_tests_run++;
+    }else{
+        is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
+    }
+}
+foreach my $s_file (@a_files){
+    if(-e $s_file){
+        is(1,1);$number_of_tests_run++;
+    }else{
+        is(1,0,"$s_file not created!\n");$number_of_tests_run++;
+    }
+}
+print `rm -R report`;
 
 done_testing( $number_of_tests_run );
 

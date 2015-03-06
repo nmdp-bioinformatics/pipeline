@@ -205,8 +205,8 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		$h_experiments{$s_experiment}{EXP} = $s_expected;
 	}else{
 		my @a_files = <$s_directory/*.txt>;
-		my %h_exps = map{ $_ =~ /\/(ex\d+\D*)_/; $1 => 1 } grep { $_ =~ /\/(ex\d+\D*)_/ } @a_files;
-		my @a_experiments = map{ $_ =~ /\/(ex\d+\D*)_/; $1 => 1 } grep { $_ =~ /\/(ex\d+\D*)_/ } @a_files;
+		my %h_exps = map{ $_ =~ /\/(ex\d+)/; $1 => 1 } grep { $_ =~ /\/(ex\d+)/ } @a_files;
+		my @a_experiments = map{ $_ =~ /\/(ex\d+)/; $1 => 1 } grep { $_ =~ /\/(ex\d+)/ } @a_files;
 		my $num_experiments = keys %h_experiments;
 
  		foreach my $s_exp (keys %h_exps){
@@ -250,7 +250,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 }else{
 	# If experiment name isn't provided take it from the files
 	if(!defined $s_experiment){
-		$s_validated =~ /(ex\d+\D*)_/;
+		$s_validated =~ /(ex\d+)/;
 		$s_experiment = $1;
 	}
 	$h_experiments{$s_experiment}{VAL} = $s_validated;
@@ -284,7 +284,7 @@ html::logHeader($log_html);
 html::helpHtml($help_html);
 &printParams(); # Prints out what parameters were used
 &loadFiles();   # Load all of the filles
-html::experimentsHtml($exp_html,\%h_counts,\%h_experiments);
+html::experimentsHtml($exp_html,\%h_counts,\%h_experiments,$b_test);
 
 foreach my $s_exp (keys %h_experiments){
 
@@ -381,6 +381,8 @@ print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
         Usage:    loadFiles($s_experiment, $s_validated, $s_expected, $s_observed);
         Function: This loads all of the data files into the utlized hashes 
 
+&loadFiles($s_observed,\%h_experiments,\%h_sequence_data,\%h_observed_gls,\%h_observed,\%h_sensitivity,
+
 =cut
 sub loadFiles{
 
@@ -475,7 +477,7 @@ sub loadFiles{
 			$h_sensitivity{$s_exp}{HAPLO}{$s_loc}  = $average_haplo;
 		}
 
-		if($s_expected =~ /hml$/){
+		if($s_expected =~ /[hml|xml]$/){
 			my $which_extract_expected = `which ngs-extract-expected`;chomp($which_extract_expected);
 			if(!defined $which_extract_expected || $which_extract_expected !~ /\S/){
 				print STDERR "Parsing HML with perl!\n" if $b_verbose;
@@ -1009,9 +1011,17 @@ sub javaParseHML{
 		chomp($_);
 		my($s_file,$s_loc,$s_ars,$s_het,$s_typ1,$s_typ2) = split(/\t/,$_);
 
-		my @a_file  = split(/\//,$s_file);
-		my @a_ID = split(/\./,$a_file[$#a_file]);
-		my $ID = $a_ID[0];	
+		next if !defined $s_typ1 && !defined $s_typ2;
+		my $ID;
+		if($s_file =~ /\//){
+			my @a_file  = split(/\//,$s_file);
+			my @a_ID = split(/\./,$a_file[$#a_file]);
+			$ID = $a_ID[0];	
+		}else{
+			my @a_ID = split(/\./,$s_file);
+			$ID = $a_ID[0];	
+		}
+		
 		$s_loc =~ s/HLA-//g;$s_typ1 =~ s/HLA-//g;$s_typ2 =~ s/HLA-//g;
 		next if !defined $s_loc || $s_loc !~ /\S/;
 		next if $s_loc eq "DPB1"; # For now skip DP

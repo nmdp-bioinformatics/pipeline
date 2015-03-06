@@ -178,7 +178,7 @@ sub logHeader{
 =cut
 sub experimentsHtml{
 
-	my ($html, $rh_counts, $rh_experiments) = @_;
+	my ($html, $rh_counts, $rh_experiments, $b_test) = @_;
 
 	my %h_counts = %$rh_counts;
 	my %h_experiments = %$rh_experiments;
@@ -332,307 +332,309 @@ my $header2 = qq{
       
 	 };
 	 print $html $table;
-	 foreach my $s_exp (keys %h_experiments){
-	 	print $html "\t<tr>\n";
-	 	print $html "\t\t<td>$s_exp</td>\n";
-	 	my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
-	 		$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR};
+	 if(!$b_test){
+		 foreach my $s_exp (keys %h_experiments){
+		 	print $html "\t<tr>\n";
+		 	print $html "\t\t<td>$s_exp</td>\n";
+		 	my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
+		 		$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR};
 
-	 	my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
-	 		$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} + $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR};
+		 	my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
+		 		$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} + $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR};
 
-	 	my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
-	 		$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR};	
+		 	my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
+		 		$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR};	
 
-	 	print $html "\t\t<td>$total_subjects</td>\n";
+		 	print $html "\t\t<td>$total_subjects</td>\n";
 
-	 	#####  Subjects #####
-	 	my $percent_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} / $total_subjects) * 100))."%)";
-	 	print STDERR "------\n" if $b_verbose;
-	 	print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed,"\n"if $b_verbose;
-	 	$percent_passed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$percent_passed : $percent_passed;
-	 	print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed."</td>\n";
+		 	#####  Subjects #####
+		 	my $percent_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} / $total_subjects) * 100))."%)";
+		 	print STDERR "------\n" if $b_verbose;
+		 	print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed,"\n"if $b_verbose;
+		 	$percent_passed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$percent_passed : $percent_passed;
+		 	print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed."</td>\n";
 
-	 	my $percent_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} / $total_subjects) * 100))."%)";
-	 	print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed,"\n" if $b_verbose;
-	 	$percent_failed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$percent_failed : $percent_failed;
-	 	print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed."</td>\n";
+		 	my $percent_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} / $total_subjects) * 100))."%)";
+		 	print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed,"\n" if $b_verbose;
+		 	$percent_failed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$percent_failed : $percent_failed;
+		 	print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed."</td>\n";
 
-	 	my $percent_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} / $total_subjects) * 100))."%)";
-	 	print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}."&nbsp;&nbsp;".$percent_error,"\n" if $b_verbose;
-	 	$percent_error = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}) == 1 ? " ".$percent_error : $percent_error;
-	 	print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}." ".$percent_error."</td>\n";
-	 	print STDERR "------\n" if $b_verbose;
+		 	my $percent_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} / $total_subjects) * 100))."%)";
+		 	print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}."&nbsp;&nbsp;".$percent_error,"\n" if $b_verbose;
+		 	$percent_error = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}) == 1 ? " ".$percent_error : $percent_error;
+		 	print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}." ".$percent_error."</td>\n";
+		 	print STDERR "------\n" if $b_verbose;
 
-	 	#####  Locus #####
-	 	my $loci_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} / $total_loci) * 100))."%)";
-	 	print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed,"\n" if $b_verbose;
-	 	$loci_passed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$loci_passed : $loci_passed;
-	 	print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
+		 	#####  Locus #####
+		 	my $loci_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} / $total_loci) * 100))."%)";
+		 	print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed,"\n" if $b_verbose;
+		 	$loci_passed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$loci_passed : $loci_passed;
+		 	print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
 
-	 	my $loci_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} / $total_loci) * 100))."%)";
-	 	print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed,"\n" if $b_verbose;
-	 	$loci_failed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$loci_failed : $loci_failed;
-	 	print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
+		 	my $loci_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} / $total_loci) * 100))."%)";
+		 	print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed,"\n" if $b_verbose;
+		 	$loci_failed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$loci_failed : $loci_failed;
+		 	print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
 
-	 	my $loci_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} / $total_loci) * 100))."%)";
-	 	print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error,"\n" if $b_verbose;
-	 	$loci_error = length($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}) == 1 ? "&nbsp;&nbsp;".$loci_error : $loci_error;
-	 	print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
-	 	print STDERR "------\n" if $b_verbose;
+		 	my $loci_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} / $total_loci) * 100))."%)";
+		 	print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error,"\n" if $b_verbose;
+		 	$loci_error = length($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}) == 1 ? "&nbsp;&nbsp;".$loci_error : $loci_error;
+		 	print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
+		 	print STDERR "------\n" if $b_verbose;
 
-	 	#####  Alleles #####
-	 	my $allele_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} / $total_allele) * 100))."%)";
-	 	print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$allele_passed,"\n" if $b_verbose;
-	 	print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$allele_passed."</td>\n";
+		 	#####  Alleles #####
+		 	my $allele_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} / $total_allele) * 100))."%)";
+		 	print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$allele_passed,"\n" if $b_verbose;
+		 	print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$allele_passed."</td>\n";
 
-	 	my $allele_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} / $total_allele) * 100))."%)";
-	 	print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$allele_failed,"\n" if $b_verbose;
-	 	print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$allele_failed."</td>\n";
+		 	my $allele_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} / $total_allele) * 100))."%)";
+		 	print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$allele_failed,"\n" if $b_verbose;
+		 	print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$allele_failed."</td>\n";
 
-	 	my $allele_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} / $total_allele) * 100))."%)";
-	 	print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$allele_error,"\n" if $b_verbose;
-	 	print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$allele_error."</td>\n";
-	 	print STDERR "------\n" if $b_verbose;	 	
+		 	my $allele_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} / $total_allele) * 100))."%)";
+		 	print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$allele_error,"\n" if $b_verbose;
+		 	print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$allele_error."</td>\n";
+		 	print STDERR "------\n" if $b_verbose;	 	
 
-	 }
+		 }
 
-	
+		
 
-	 my $end_table = qq{
-	 		              
-	              </tbody>
-	              </table>
+		 my $end_table = qq{
+		 		              
+		              </tbody>
+		              </table>
+		            </div>
+
+		 };
+		print $html $end_table;
+
+
+
+	my $charts = qq{
+
+	          <div class="row placeholders">  
+	              <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
+	              <div id="canvas-holder">
+	                <canvas id="canvas" width="300" height="300"/>
+	              </div>
+	               <h4>Subjects</h4>
+	               <span class="text-muted">Number of subjects pass and fails for each experiemnt</span>
 	            </div>
+	            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
+	              <div id="canvas-holder">
+	                <canvas id="canvas2" width="300" height="300" />
+	              </div>
+	               <h4>Locus</h4>
+	               <span class="text-muted">Number of locus pass and fails for each experiemnt</span>
+	            </div>    
+	            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
+	              <div id="canvas-holder">
+	                <canvas id="canvas3" width="300" height="300"/>
+	              </div>
+	               <h4>Allele</h4>
+	               <span class="text-muted">Number of allele pass and fails for each experiemnt</span>
+	            </div>        
 
-	 };
-	print $html $end_table;
+	          </div>
+	         </div>
 
-
-
-my $charts = qq{
-
-          <div class="row placeholders">  
-              <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
-              <div id="canvas-holder">
-                <canvas id="canvas" width="300" height="300"/>
-              </div>
-               <h4>Subjects</h4>
-               <span class="text-muted">Number of subjects pass and fails for each experiemnt</span>
-            </div>
-            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
-              <div id="canvas-holder">
-                <canvas id="canvas2" width="300" height="300" />
-              </div>
-               <h4>Locus</h4>
-               <span class="text-muted">Number of locus pass and fails for each experiemnt</span>
-            </div>    
-            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
-              <div id="canvas-holder">
-                <canvas id="canvas3" width="300" height="300"/>
-              </div>
-               <h4>Allele</h4>
-               <span class="text-muted">Number of allele pass and fails for each experiemnt</span>
-            </div>        
-
-          </div>
-         </div>
-
-     };
+	     };
 
 
-	print $html $charts;
+		print $html $charts;
 
-	print $html "<SCRIPT>\n";
+		print $html "<SCRIPT>\n";
 
-    ######## 
-    # Subjects JS
-    ########
-	print $html "var barChartData = {\n";
-	print $html "\t\tlabels : [";
-	my $label;
-	foreach my $s_exp (keys %h_experiments){
-		$label .= "\"$s_exp\",";
+	    ######## 
+	    # Subjects JS
+	    ########
+		print $html "var barChartData = {\n";
+		print $html "\t\tlabels : [";
+		my $label;
+		foreach my $s_exp (keys %h_experiments){
+			$label .= "\"$s_exp\",";
+		}
+		$label =~ s/,$//;
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+		my $chart_pass = qq{
+	            fillColor : "#46BFBD",
+	            strokeColor : "#46BFBD",
+	            highlightFill :  "#5AD3D1",
+	            highlightStroke :  "#5AD3D1",
+	        };
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $subject_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$subject_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}.",";
+	    }
+	    $subject_chart =~ s/,$//;
+	    print $html $subject_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    my $chart_fail = qq{
+	            fillColor : "#F7464A",
+	            strokeColor : "#F7464A",
+	            highlightFill: "#FF5A5E",
+	            highlightStroke: "#FF5A5E",
+	        };
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$fail_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_chart =~ s/,$//;
+	    print $html $fail_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+	    my $chart_error = qq{   
+		        fillColor : "#D3D5D6",
+		        strokeColor : "#D3D5D6",
+		        highlightFill :  "#DCDDDE",
+		        highlightStroke :  "#DCDDDE",
+		    };
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$error_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}.",";
+	    }
+	    $error_chart =~ s/,$//;
+	    print $html $error_chart."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
+
+
+	    ######## 
+	    # Locus JS
+	    ########
+	   	print $html "var barChartData2 = {\n";
+		print $html "\t\tlabels : [";
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $locus_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$locus_chart .= $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}.",";
+	    }
+	    $locus_chart =~ s/,$//;
+	    print $html $locus_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_locus;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$fail_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_locus =~ s/,$//;
+	    print $html $fail_locus."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_locus;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$error_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}.",";
+	    }
+	    $error_locus =~ s/,$//;
+	    print $html $error_locus."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
+
+	    ######## 
+	    # Allele JS
+	    ########
+	   	print $html "var barChartData3 = {\n";
+		print $html "\t\tlabels : [";
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $allele_chart;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$allele_chart .= $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}.",";
+	    }
+	    $allele_chart =~ s/,$//;
+	    print $html $allele_chart."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_allele;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$fail_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_allele =~ s/,$//;
+	    print $html $fail_allele."],\n";
+	    print $html "\t\t\t},\n";
+
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_allele;
+	    foreach my $s_exp (keys %h_experiments){
+	    	$error_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}.",";
+	    }
+	    $error_allele =~ s/,$//;
+	    print $html $error_allele."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
+
+
+		my $js = qq{
+			window.onload = function(){
+
+	        var ctx3 = document.getElementById("canvas").getContext("2d");
+	        window.myBar = new Chart(ctx3).Bar(barChartData, {
+	          responsive : true
+	        });
+
+	        var ctx5 = document.getElementById("canvas2").getContext("2d");
+	        window.myBar = new Chart(ctx5).Bar(barChartData2, {
+	          responsive : true
+	        });
+
+	        var ctx6 = document.getElementById("canvas3").getContext("2d");
+	        window.myBar = new Chart(ctx6).Bar(barChartData3, {
+	          responsive : true
+	        });
+
+
+	      };
+	       </script>
+		};
+		print $html $js;
+		
 	}
-	$label =~ s/,$//;
-	print $html $label."],\n";
-    print $html "\t\tdatasets : [\n";
-   
-
-    #Pass columns
-    print $html "\t\t\t{\n";
-	my $chart_pass = qq{
-            fillColor : "#46BFBD",
-            strokeColor : "#46BFBD",
-            highlightFill :  "#5AD3D1",
-            highlightStroke :  "#5AD3D1",
-        };
-    print $html $chart_pass;
-    print $html "\t\t\tdata : [";
-    my $subject_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$subject_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}.",";
-    }
-    $subject_chart =~ s/,$//;
-    print $html $subject_chart."],\n";
-    print $html "\t\t\t},\n";
-
-    #Fail columns
-    print $html "\t\t\t{\n";
-    my $chart_fail = qq{
-            fillColor : "#F7464A",
-            strokeColor : "#F7464A",
-            highlightFill: "#FF5A5E",
-            highlightStroke: "#FF5A5E",
-        };
-    print $html $chart_fail;    
-    print $html "\t\t\tdata : [";
-    my $fail_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$fail_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}.",";
-    }
-    $fail_chart =~ s/,$//;
-    print $html $fail_chart."],\n";
-    print $html "\t\t\t},\n";
-
-    #Error charts
-    print $html "\t\t\t{\n";   
-    my $chart_error = qq{   
-	        fillColor : "#D3D5D6",
-	        strokeColor : "#D3D5D6",
-	        highlightFill :  "#DCDDDE",
-	        highlightStroke :  "#DCDDDE",
-	    };
-	print $html $chart_error;        
-    print $html "\t\t\tdata : [";
-    my $error_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$error_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}.",";
-    }
-    $error_chart =~ s/,$//;
-    print $html $error_chart."],\n";
-    print $html "\t\t\t}\n";
-    print $html "\t\t]\n";
-    print $html "\t}\n";
-
-
-    ######## 
-    # Locus JS
-    ########
-   	print $html "var barChartData2 = {\n";
-	print $html "\t\tlabels : [";
-	print $html $label."],\n";
-    print $html "\t\tdatasets : [\n";
-   
-    #Pass columns
-    print $html "\t\t\t{\n";
-    print $html $chart_pass;
-    print $html "\t\t\tdata : [";
-    my $locus_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$locus_chart .= $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}.",";
-    }
-    $locus_chart =~ s/,$//;
-    print $html $locus_chart."],\n";
-    print $html "\t\t\t},\n";
-
-    #Fail columns
-    print $html "\t\t\t{\n";
-    print $html $chart_fail;    
-    print $html "\t\t\tdata : [";
-    my $fail_locus;
-    foreach my $s_exp (keys %h_experiments){
-    	$fail_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}.",";
-    }
-    $fail_locus =~ s/,$//;
-    print $html $fail_locus."],\n";
-    print $html "\t\t\t},\n";
-
-    #Error charts
-    print $html "\t\t\t{\n";   
-	print $html $chart_error;        
-    print $html "\t\t\tdata : [";
-    my $error_locus;
-    foreach my $s_exp (keys %h_experiments){
-    	$error_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}.",";
-    }
-    $error_locus =~ s/,$//;
-    print $html $error_locus."],\n";
-    print $html "\t\t\t}\n";
-    print $html "\t\t]\n";
-    print $html "\t}\n";
-
-    ######## 
-    # Allele JS
-    ########
-   	print $html "var barChartData3 = {\n";
-	print $html "\t\tlabels : [";
-	print $html $label."],\n";
-    print $html "\t\tdatasets : [\n";
-   
-    #Pass columns
-    print $html "\t\t\t{\n";
-    print $html $chart_pass;
-    print $html "\t\t\tdata : [";
-    my $allele_chart;
-    foreach my $s_exp (keys %h_experiments){
-    	$allele_chart .= $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}.",";
-    }
-    $allele_chart =~ s/,$//;
-    print $html $allele_chart."],\n";
-    print $html "\t\t\t},\n";
-
-    #Fail columns
-    print $html "\t\t\t{\n";
-    print $html $chart_fail;    
-    print $html "\t\t\tdata : [";
-    my $fail_allele;
-    foreach my $s_exp (keys %h_experiments){
-    	$fail_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}.",";
-    }
-    $fail_allele =~ s/,$//;
-    print $html $fail_allele."],\n";
-    print $html "\t\t\t},\n";
-
-    #Error charts
-    print $html "\t\t\t{\n";   
-	print $html $chart_error;        
-    print $html "\t\t\tdata : [";
-    my $error_allele;
-    foreach my $s_exp (keys %h_experiments){
-    	$error_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}.",";
-    }
-    $error_allele =~ s/,$//;
-    print $html $error_allele."],\n";
-    print $html "\t\t\t}\n";
-    print $html "\t\t]\n";
-    print $html "\t}\n";
-
-
-	my $js = qq{
-		window.onload = function(){
-
-        var ctx3 = document.getElementById("canvas").getContext("2d");
-        window.myBar = new Chart(ctx3).Bar(barChartData, {
-          responsive : true
-        });
-
-        var ctx5 = document.getElementById("canvas2").getContext("2d");
-        window.myBar = new Chart(ctx5).Bar(barChartData2, {
-          responsive : true
-        });
-
-        var ctx6 = document.getElementById("canvas3").getContext("2d");
-        window.myBar = new Chart(ctx6).Bar(barChartData3, {
-          responsive : true
-        });
-
-
-      };
-       </script>
-	};
-	print $html $js;
-
 
 	my $footer = qq{
 	<footer>
