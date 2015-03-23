@@ -21,11 +21,15 @@
 #
 
 ABORT=0
-TOOLDIR=/opt/ngs-tools/bin
-SOURCEFILE=$1
+TOOLDIR=/Users/int33484/Documents/Projects/Code/ngs/ngs-tools-1.8-SNAPSHOT/bin
+FINAL=$1
 TEMPFILE=temp.fasta
 BREADTH_OF_COVERAGE=0.5
 OUTFILE=$2
+ZYGOSITY=1000
+LOCI="HLA-A HLA-B HLA-C HLA-DRB1 HLA-DQB1"
+
+
 
 ### validate that we have all the tools we need
 if [[ ! -x ${TOOLDIR}/ngs-filter-consensus ]]; then
@@ -39,11 +43,28 @@ if [[ ${ABORT} -gt 0 ]]; then
 fi
 
 rm -f ${OUTFILE}
-
-while read SAMPLE_FILE LOCUS REGIONS_FILE ZYGOSITY FIRST_ALLELE SECOND_ALLELE; do
-  rm -f ${TEMPFILE}
-  ${TOOLDIR}/ngs-filter-consensus -i ${SAMPLE_FILE} -x ${REGIONS_FILE} -g ${LOCUS} -b ${BREADTH_OF_COVERAGE} -c -r -p ${ZYGOSITY} -o ${TEMPFILE}
-  for INTERPRETATION in $(curl -T ${TEMPFILE} http://interp.b12x.org/hla/api/rs/seqInterp); do
-    printf '%s\t%s\n' ${SAMPLE_FILE} ${INTERPRETATION} >> ${OUTFILE}
-  done
-done < "${SOURCEFILE}"
+for BAMFILE in $(find $FINAL -name "*.contigs.bwa.sorted.bam" -type f -print); do
+  	for LOCUS in ${LOCI}; do
+        REGIONS_FILE=
+        if [ "$LOCUS" == "HLA-A" ]; then
+          REGIONS_FILE="./tutorial/regions/grch38/hla-a/hla-a.ars.txt"
+        fi
+        if [ "$LOCUS" == "HLA-B" ]; then
+          REGIONS_FILE="./tutorial/regions/grch38/hla-b/hla-b.ars.txt"
+        fi
+        if [ "$LOCUS" == "HLA-C" ]; then
+          REGIONS_FILE="./tutorial/regions/grch38/hla-c/hla-c.ars.txt"
+        fi
+        if [ "$LOCUS" == "HLA-DRB1" ]; then
+          REGIONS_FILE="./tutorial/regions/grch38/hla-drb1/hla-drb1.ars.txt"
+        fi
+        if [ "$LOCUS" == "HLA-DQB1" ]; then
+          REGIONS_FILE="./tutorial/regions/grch38/hla-dqb1/hla-dqb1.ars.txt"
+        fi
+        rm -f ${TEMPFILE}
+        ${TOOLDIR}/ngs-filter-consensus -i ${BAMFILE} -x ${REGIONS_FILE} -g ${LOCUS} -b ${BREADTH_OF_COVERAGE} -c -r -p ${ZYGOSITY} -o ${TEMPFILE}
+        for INTERPRETATION in $(curl -T ${TEMPFILE} http://interp.b12x.org/hla/api/rs/seqInterp); do
+            printf '%s\t%s\n' ${BAMFILE} ${INTERPRETATION} >> ${OUTFILE}
+        done
+    done
+done
