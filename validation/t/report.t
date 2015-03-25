@@ -51,9 +51,9 @@ my $test_expected = $working."/t/ex0_expected.txt";
 my $test_observed = $working."/t/ex0_observed.txt";
 my $test_verified = $working."/t/ex0_verified.txt";
 
-print `perl ngs-validation-report -d t/txt -f 1 -t 1`;
+print `./ngs-validation-report -d t/txt -f 1 -t 1`;
 my @a_directories = split(/,/,"report,report/css,report/ex0,report/img,report/js");
-my @a_files = split(/,/,"report/css/bootstrap.min.css,report/experiment.html,report/help.html,report/log.html,report/ex0/errors.html,report/ex0/fails.html,report/ex0/index.html,report/ex0/results.html,report/ex0/subjects/subject1.html");
+my @a_files = split(/,/,"report/css/bootstrap.min.css,report/experiment.html,report/help.html,report/log.html,report/ex0/drbx.html,report/ex0/errors.html,report/ex0/fails.html,report/ex0/index.html,report/ex0/results.html,report/ex0/subjects/subject1.html");
 
 foreach my $s_dir (@a_directories){
     if(-d $s_dir){
@@ -70,7 +70,7 @@ foreach my $s_file (@a_files){
     }
 }
 
-print `perl ngs-validation-report -d t/hml -f 1 -t 1`;
+print `./ngs-validation-report -d t/hml -f 1 -t 1`;
 foreach my $s_dir (@a_directories){
     if(-d $s_dir){
         is(1,1);$number_of_tests_run++;
