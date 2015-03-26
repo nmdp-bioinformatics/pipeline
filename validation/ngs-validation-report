@@ -5,11 +5,12 @@
 
 =head1 SYNOPSIS
 
-./ngs-validation-report [--experiment] [--validated] [--expected] [--observed] [--email] [--title] [--directory] [--verbose] [--help]
+./ngs-validation-report [--experiment] [--validated] [--expected] [--observed] [--blastn] [--email] [--title] [--directory] [--verbose] [--help]
     -x/--experiment       Experiment number (ex. ex014) 
     -l/--validated        Output file from ngs-validate-interp
     -e/--expected         Expected file
     -o/--observed         Observed file
+    -n/--blastn           Blast results (observed2blastn.pl)
     -d/--directory        Directory of input files (default = pwd)
     -p/--output           Output directory (default = pwd)
     -m/--email            A list of email addresses seperated by ;
@@ -405,7 +406,6 @@ print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
         Usage:    loadFiles($s_experiment, $s_validated, $s_expected, $s_observed);
         Function: This loads all of the data files into the utlized hashes 
 
-&loadFiles($s_observed,\%h_experiments,\%h_sequence_data,\%h_observed_gls,\%h_observed,\%h_sensitivity,
 
 =cut
 sub loadFiles{
@@ -687,7 +687,7 @@ sub loadFiles{
 						$h_no_data{$s_exp}{$s_ID}++;
 					}
 
-					$h_counts{$s_exp}{LOCUS}{$s_loc}{ERROR}++;
+					$h_counts{$s_exp}{LOCUS}{$s_loc}{ERROR}++; 
 					$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}++;
 					$h_locus_verdict{$s_exp}{$s_ID}{$s_loc} = "ERROR";
 					$h_errors{$s_exp}{$s_ID}{$s_loc}++;
@@ -763,7 +763,8 @@ sub loadFiles{
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}++;
 			}
 			else{
-				
+				# log this
+
 			}
 
 		}

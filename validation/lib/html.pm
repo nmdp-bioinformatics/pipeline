@@ -515,7 +515,7 @@ my $table4 = qq{
   
     print $html $end_table;
     
-  }36127041611
+  }
 	my $charts = qq{
 
 	          <div class="row placeholders">  
@@ -4930,16 +4930,13 @@ sub subjectsBody{
 
 		print $html "<td>$num_seqs</td>\n";
 
-
 		my @a_seqs = keys %{$$rh_sequence_data{$s_ID}{$s_loc}};
-
 
 		for(my $i=0;$i<=$#a_seqs;$i++){
 			my @a_nucls = split(//,$a_seqs[$i]);
 			   print $html "<td>";
           my $pwd = `pwd`;chomp($pwd);
           my $full_blast_dir = $pwd."/report/blast/".$s_exp."/".$$rh_seq_ids{$s_ID}{$s_loc}{$a_seqs[$i]}.".html";
-         
           if(defined $$rh_seq_ids{$s_ID}{$s_loc}{$a_seqs[$i]} && defined $s_blast_dir ){
             my $s_blast_file = "../../blast/".$s_exp."/".$$rh_seq_ids{$s_ID}{$s_loc}{$a_seqs[$i]}.".html";
             if(-e $full_blast_dir){

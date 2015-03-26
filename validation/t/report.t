@@ -54,6 +54,7 @@ my $test_verified = $working."/t/ex0_verified.txt";
 print `./ngs-validation-report -d t/txt -f 1 -t 1`;
 my @a_directories = split(/,/,"report,report/css,report/ex0,report/img,report/js");
 my @a_files = split(/,/,"report/css/bootstrap.min.css,report/experiment.html,report/help.html,report/log.html,report/ex0/drbx.html,report/ex0/errors.html,report/ex0/fails.html,report/ex0/index.html,report/ex0/results.html,report/ex0/subjects/subject1.html");
+my $s_blast_file = $working."/report/blast/ex0/Test1.A.0.html";
 
 foreach my $s_dir (@a_directories){
     if(-d $s_dir){
@@ -85,6 +86,52 @@ foreach my $s_file (@a_files){
         is(1,0,"$s_file not created!\n");$number_of_tests_run++;
     }
 }
+
+# Running blast test with txt input file
+print `./ngs-validation-report -d t/txt -n t/blastn -f 1 -t 1`;
+foreach my $s_dir (@a_directories){
+    if(-d $s_dir){
+        is(1,1);$number_of_tests_run++;
+    }else{
+        is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
+    }
+}
+foreach my $s_file (@a_files){
+    if(-e $s_file){
+        is(1,1);$number_of_tests_run++;
+    }else{
+        is(1,0,"$s_file not created!\n");$number_of_tests_run++;
+    }
+}
+if( -e $s_blast_file){
+    is(1,1);$number_of_tests_run++;
+}else{
+    is(1,0,"$s_blast_file BLAST file not created!\n");$number_of_tests_run++;
+}
+
+# Running blast test with hml input file
+print `./ngs-validation-report -d t/hml -n t/blastn -f 1 -t 1`;
+foreach my $s_dir (@a_directories){
+    if(-d $s_dir){
+        is(1,1);$number_of_tests_run++;
+    }else{
+        is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
+    }
+}
+foreach my $s_file (@a_files){
+    if(-e $s_file){
+        is(1,1);$number_of_tests_run++;
+    }else{
+        is(1,0,"$s_file not created!\n");$number_of_tests_run++;
+    }
+}
+if( -e $s_blast_file){
+    is(1,1);$number_of_tests_run++;
+}else{
+    is(1,0,"$s_blast_file BLAST file not created!\n");$number_of_tests_run++;
+}
+
+
 print `rm -R report`;
 
 done_testing( $number_of_tests_run );
