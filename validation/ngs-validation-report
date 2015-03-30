@@ -143,8 +143,6 @@ BEGIN{
 
 
 }
-#my $lib = $working
-use lib '/mhalagan/research/devel/perl/ngs/pipeline/validation/lib';
 use html;
 use strict;
 use warnings;
@@ -312,27 +310,33 @@ foreach my $s_exp (keys %h_experiments){
 	my $errors_index     = $report_directory."/".$s_exp."/errors.html";
 	my $qc_index         = $report_directory."/".$s_exp."/qc.html";
 
+	my $b_qc = 0;
+	my %qc_verdict;
+	my %qc_expected;
+	if(defined $h_qc_verdict{$s_exp}){
+		%qc_verdict  = %{$h_qc_verdict{$s_exp}};
+		%qc_expected = %{$h_qc_expected{$s_exp}};
+		$b_qc = 1;
+	}
+
 	my %counts      = %{$h_counts{$s_exp}};
 	my %sensitivity = %{$h_sensitivity{$s_exp}};
 	my %loc_verdict = %{$h_locus_verdict{$s_exp}};
-	my %qc_verdict;
-	if(defined $h_qc_verdict{$s_exp}){
-		%qc_verdict  = %{$h_qc_verdict{$s_exp}};
-	} 
-	my %qc_expected;
-	if(defined $h_qc_verdict{$s_exp}){
-		%qc_expected  = %{$h_qc_expected{$s_exp}} ;
-	} 
 	my %verified    = %{$h_verified{$s_exp}};
 	my %observed    = %{$h_observed_gls{$s_exp}};
 	my %observed_gl = %{$h_observed{$s_exp}};
 	my %expected    = %{$h_expected{$s_exp}};
 	my %subject     = %{$h_subject_pages{$s_exp}};
-	my %fail        = %{$h_fails{$s_exp}};
-	my %error       = %{$h_errors{$s_exp}};
-	my %drbx        = %{$h_drbx{$s_exp}};
 	my %seq         = %{$h_sequence_data{$s_exp}};
 	my %seqids      = %{$h_sequence_ids{$s_exp}};
+
+	my %fail;
+	my %error;
+	my %drbx;
+	my ($b_fail, $b_error, $b_drbx)  = (0, 0, 0);
+	($b_fail,%fail)    = defined $h_fails{$s_exp} ? (1,%{$h_fails{$s_exp}})    : (0,%fail);
+	($b_error,%error)  = defined $h_errors{$s_exp} ? (1,%{$h_errors{$s_exp}})  : (0,%error);
+	($b_drbx,%drbx)    = defined $h_drbx{$s_exp}   ? (1,%{$h_drbx{$s_exp}})    : (0,%drbx);
 
 	# Creating the index.html file
 	open(my $index_html, ">$report_index") or die "CANT OPEN FILE $! $0";
@@ -349,34 +353,41 @@ foreach my $s_exp (keys %h_experiments){
 	close $results_html;
 
 	# Creating the failed.html file
-	open(my $failed_html, ">$failed_index") or die "CANT OPEN FILE $! $0";
-	html::failedHeader($failed_html, $s_exp, \%h_qc_verdict);
-	html::failedBody($failed_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%fail);
-	html::failedFooter($failed_html);
-	close $failed_html;
+	if($b_fail){
+		print STDERR "writing out the failed.html for $s_exp\n";
+		open(my $failed_html, ">$failed_index") or die "CANT OPEN FILE $! $0";
+		html::failedHeader($failed_html, $s_exp, \%h_qc_verdict);
+		html::failedBody($failed_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%fail);
+		html::failedFooter($failed_html);
+		close $failed_html;
+	}
 
 	# Creating the drbx.html file
-	open(my $drbx_html, ">$drbx_index") or die "CANT OPEN FILE $! $0";
-	html::drbxHeader($drbx_html, $s_exp, \%h_qc_verdict);
-	html::drbxBody($drbx_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%drbx);
-	html::drbxFooter($drbx_html);
-	close $drbx_html;
+	if($b_drbx){
+		open(my $drbx_html, ">$drbx_index") or die "CANT OPEN FILE $! $0";
+		html::drbxHeader($drbx_html, $s_exp, \%h_qc_verdict);
+		html::drbxBody($drbx_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%drbx);
+		html::drbxFooter($drbx_html);
+		close $drbx_html;
+	}
 
-	if(defined $h_qc_verdict{$s_exp}){
-		# Creating the qc.html file
+	# Creating the errors.html file
+	if($b_error){
+		open(my $errors_html, ">$errors_index") or die "CANT OPEN FILE $! $0";
+		html::errorsHeader($errors_html, $s_exp, \%h_qc_verdict);
+		html::errorsBody($errors_html, $s_exp, \%loc_verdict, \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%error);
+		html::errorsFooter($errors_html);
+		close $errors_html;
+	}
+
+	# Creating the qc.html file
+	if($b_qc){	
 		open(my $qc_html, ">$qc_index") or die "CANT OPEN FILE $! $0";
 		html::qcHeader($qc_html, $s_exp);
 		html::qcBody($qc_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%fail);
 		html::qcFooter($qc_html);
 		close $qc_html;
 	}
-
-	# Creating the failed.html file
-	open(my $errors_html, ">$errors_index") or die "CANT OPEN FILE $! $0";
-	html::errorsHeader($errors_html, $s_exp, \%h_qc_verdict);
-	html::errorsBody($errors_html, $s_exp, \%loc_verdict, \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%error);
-	html::errorsFooter($errors_html);
-	close $errors_html;
 
 	my $subject_dir = $s_output."/report/".$s_exp."/subjects";
 	print `mkdir $subject_dir`;
@@ -496,7 +507,7 @@ sub loadFiles{
 				}
 				my %h_haplotypes   = map{ $_ => 1 } split(/\|/,$h_observed{$s_exp}{$s_ID}{$s_loc});
 				my $num_haplotypes = keys %h_haplotypes;
-				my $sensitivity = 1 / $num_haplotypes;
+				my $sensitivity    = 1 / $num_haplotypes;
 
 				$h_haplo_total{$s_loc} += $sensitivity;
 				$h_haplo_count{$s_loc}++;
@@ -520,6 +531,7 @@ sub loadFiles{
 				javaParseHML($s_expected, $s_exp);
 			}
 		}else{
+			print STDERR "Opening $s_expected..\n" if $b_verbose;
 			open(EXPECTED,$s_expected) or die "CANT OPEN FILE $! $0";
 			while(<EXPECTED>){
 				chomp;
@@ -763,7 +775,7 @@ sub loadFiles{
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}++;
 			}
 			else{
-				# log this
+				# TODO log these 
 
 			}
 
@@ -795,6 +807,19 @@ sub loadFiles{
 		}
 
 
+	}
+
+
+	foreach my $s_exp (keys %h_expected){
+		foreach my $s_ID (keys %{$h_expected{$s_exp}}){
+			if(!defined $h_observed{$s_exp}{$s_ID}){
+				print STDERR "No data in observed FILE!!! $s_exp $s_ID\n";
+			}
+
+			if(!defined $h_observed{$s_exp}{$s_ID} && !defined $h_no_data{$s_exp}{$s_ID}){
+				print STDERR "WTF no data $s_exp $s_ID\n";
+			}
+		}
 	}
 
 	if($b_verbose){

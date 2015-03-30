@@ -2035,8 +2035,8 @@ sub resultsBody{
 				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
 				
 				if(!defined $$ra_subject_pages{$s_ID}){
-					print STDERR "Subject has no valid loci defined!! $s_ID\n" if !defined $h_subject_errors{$s_ID} && $b_verbose;
-					print $log_html "Subject has no valid loci defined!! <b>$s_exp $s_ID</b><br>" if !defined $$rh_subject_errors{$s_ID};
+					print STDERR "Subject has no valid loci defined!! $s_ID\n" if !defined $rh_subject_errors || !defined $h_subject_errors{$s_ID} && $b_verbose;
+					#print $log_html "Subject has no valid loci defined!! <b>$s_exp $s_ID</b><br>" if !defined $rh_subject_errors || !defined $$rh_subject_errors{$s_ID};
 					$h_subject_errors{$s_ID}++;
 					next;
 				}
@@ -2081,7 +2081,7 @@ sub resultsBody{
 
 				print $html  "\t\t\t<td>$s_typing</td>\n";
 				
-				# QC Haplotype HERE
+
 
 				my $printed = 0;my $printed2 = 0;
 				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
