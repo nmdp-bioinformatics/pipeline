@@ -179,7 +179,7 @@ sub logHeader{
 =cut
 sub experimentsHtml{
 
-	my ($html, $rh_counts, $rh_experiments, $b_test) = @_;
+	my ($html, $rh_counts, $rh_experiments) = @_;
 
 	my %h_counts = %$rh_counts;
 	my %h_experiments = %$rh_experiments;
@@ -294,7 +294,7 @@ my $header2 = qq{
           <ul class="nav nav-sidebar">
     };
     print $html $sidebar;
-    foreach my $s_exp (keys %h_experiments){
+    foreach my $s_exp (sort keys %h_experiments){
     	print $html "<li><a href=\"".$s_exp."/index.html\">".$s_exp."</a></li>\n";
     }
     print $html "</ul>\n</div>\n</div>\n";
@@ -302,7 +302,7 @@ my $header2 = qq{
 
       my $table = qq{
 	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-              <div class='my-legend' style="float:right;margin-right:20%;">
+              <div class='my-legend' style="float:right;">
                 <div class='legend-scale'>
                   <ul class='legend-labels'>
                 <li><span style='background:#46BFBD;'></span><b>PASS</b></li>
@@ -324,7 +324,7 @@ my $header2 = qq{
 		            </div>
 
 		 };
-		# print $html $end_table;
+
 
 ########## TABLE 1 ##########
 my $table2 = qq{
@@ -344,53 +344,52 @@ my $table2 = qq{
       
    };
    print $html $table2;
-   if(!$b_test){
-     foreach my $s_exp (keys %h_experiments){
-      print $html "\t<tr>\n";
-      print $html "\t\t<td>$s_exp</td>\n";
-      my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
-        $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
-      my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
-        $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} + $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} + $h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX};
+   foreach my $s_exp (sort keys %h_experiments){
+    print $html "\t<tr>\n";
+    print $html "\t\t<td>$s_exp</td>\n";
+    my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
+      $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
-      my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
-        $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} + $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX};  
+    my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
+      $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} + $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} + $h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX};
 
-      print $html "\t\t<td>$total_subjects</td>\n";
+    my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
+      $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} + $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX};  
 
-      #####  Subjects #####
-      my $percent_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} / $total_subjects) * 100))."%)";
-      print STDERR "------\n" if $b_verbose;
-      print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed,"\n"if $b_verbose;
-      $percent_passed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$percent_passed : $percent_passed;
-      print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed."</td>\n";
+    print $html "\t\t<td>$total_subjects</td>\n";
 
-      my $percent_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} / $total_subjects) * 100))."%)";
-      print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed,"\n" if $b_verbose;
-      $percent_failed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$percent_failed : $percent_failed;
-      print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed."</td>\n";
+    #####  Subjects #####
+    my $percent_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} / $total_subjects) * 100))."%)";
+    print STDERR "------\n" if $b_verbose;
+    print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed,"\n"if $b_verbose;
+    $percent_passed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$percent_passed : $percent_passed;
+    print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed."</td>\n";
 
-      my $percent_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} / $total_subjects) * 100))."%)";
-      print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}."&nbsp;&nbsp;".$percent_error,"\n" if $b_verbose;
-      $percent_error = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}) == 1 ? " ".$percent_error : $percent_error;
-      print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}." ".$percent_error."</td>\n";
-      print STDERR "------\n" if $b_verbose;
+    my $percent_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} / $total_subjects) * 100))."%)";
+    print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed,"\n" if $b_verbose;
+    $percent_failed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$percent_failed : $percent_failed;
+    print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed."</td>\n";
 
-      my $percent_drbx = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX} / $total_subjects) * 100))."%)";
-      print STDERR "DRBX: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}."&nbsp;&nbsp;".$percent_drbx,"\n" if $b_verbose;
-      $percent_drbx = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}) == 1 ? " ".$percent_drbx : $percent_drbx;
-      print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}." ".$percent_drbx."</td>\n";
-      print STDERR "------\n" if $b_verbose;
-    
+    my $percent_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} / $total_subjects) * 100))."%)";
+    print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}."&nbsp;&nbsp;".$percent_error,"\n" if $b_verbose;
+    $percent_error = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}) == 1 ? " ".$percent_error : $percent_error;
+    print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}." ".$percent_error."</td>\n";
+    print STDERR "------\n" if $b_verbose;
+
+    my $percent_drbx = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX} / $total_subjects) * 100))."%)";
+    print STDERR "DRBX: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}."&nbsp;&nbsp;".$percent_drbx,"\n" if $b_verbose;
+    $percent_drbx = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}) == 1 ? " ".$percent_drbx : $percent_drbx;
+    print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}." ".$percent_drbx."</td>\n";
+    print STDERR "------\n" if $b_verbose;
+  
+
+   }
 
 
-     }
+  print $html $end_table;
 
   
-    print $html $end_table;
-
-  }
   ########## TABLE 1 ##########
 my $table3 = qq{
     <div class="table-responsive">
@@ -409,50 +408,50 @@ my $table3 = qq{
       
    };
    print $html $table3;
-   if(!$b_test){
-     foreach my $s_exp (keys %h_experiments){
-      print $html "\t<tr>\n";
-      print $html "\t\t<td>$s_exp</td>\n";
-      my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
-        $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
-      my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
-        $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} + $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} + $h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX};
+   foreach my $s_exp (sort keys %h_experiments){
+    print $html "\t<tr>\n";
+    print $html "\t\t<td>$s_exp</td>\n";
+    my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
+      $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
-      my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
-        $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} + $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX};  
+    my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
+      $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} + $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} + $h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX};
 
-      print $html "\t\t<td>$total_loci</td>\n";
+    my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
+      $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} + $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX};  
 
-      #####  Locus #####
-      my $loci_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} / $total_loci) * 100))."%)";
-      print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed,"\n" if $b_verbose;
-      $loci_passed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$loci_passed : $loci_passed;
-      print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
+    print $html "\t\t<td>$total_loci</td>\n";
 
-      my $loci_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} / $total_loci) * 100))."%)";
-      print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed,"\n" if $b_verbose;
-      $loci_failed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$loci_failed : $loci_failed;
-      print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
+    #####  Locus #####
+    my $loci_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} / $total_loci) * 100))."%)";
+    print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed,"\n" if $b_verbose;
+    $loci_passed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$loci_passed : $loci_passed;
+    print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
 
-      my $loci_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} / $total_loci) * 100))."%)";
-      print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error,"\n" if $b_verbose;
-      $loci_error = length($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}) == 1 ? "&nbsp;&nbsp;".$loci_error : $loci_error;
-      print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
-      print STDERR "------\n" if $b_verbose;
+    my $loci_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} / $total_loci) * 100))."%)";
+    print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed,"\n" if $b_verbose;
+    $loci_failed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$loci_failed : $loci_failed;
+    print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
 
-      my $loci_drbx = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX} / $total_loci) * 100))."%)";
-      print STDERR "DRBX: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}." ".$loci_drbx,"\n" if $b_verbose;
-      $loci_drbx = length($h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}) == 1 ? "&nbsp;&nbsp;".$loci_drbx : $loci_drbx;
-      print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}." ".$loci_drbx."</td>\n";
-      print STDERR "------\n" if $b_verbose;
+    my $loci_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} / $total_loci) * 100))."%)";
+    print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error,"\n" if $b_verbose;
+    $loci_error = length($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}) == 1 ? "&nbsp;&nbsp;".$loci_error : $loci_error;
+    print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
+    print STDERR "------\n" if $b_verbose;
 
-     }
+    my $loci_drbx = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX} / $total_loci) * 100))."%)";
+    print STDERR "DRBX: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}." ".$loci_drbx,"\n" if $b_verbose;
+    $loci_drbx = length($h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}) == 1 ? "&nbsp;&nbsp;".$loci_drbx : $loci_drbx;
+    print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}." ".$loci_drbx."</td>\n";
+    print STDERR "------\n" if $b_verbose;
 
-  
-    print $html $end_table;
+   }
+
+
+  print $html $end_table;
     
-  }
+  
 
  ########## TABLE 1 ##########
 my $table4 = qq{
@@ -472,50 +471,50 @@ my $table4 = qq{
       
    };
    print $html $table4;
-   if(!$b_test){
-     foreach my $s_exp (keys %h_experiments){
-      print $html "\t<tr>\n";
-      print $html "\t\t<td>$s_exp</td>\n";
-      my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
-        $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
-      my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
-        $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} + $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} + $h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX};
+   foreach my $s_exp (sort keys %h_experiments){
+    print $html "\t<tr>\n";
+    print $html "\t\t<td>$s_exp</td>\n";
+    my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
+      $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
-      my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
-        $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} + $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX};  
+    my $total_loci = $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} +
+      $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} + $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} + $h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX};
 
-      print $html "\t\t<td>$total_allele</td>\n";
+    my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
+      $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} + $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX};  
 
-      #####  Locus #####
-      my $loci_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} / $total_allele) * 100))."%)";
-      print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$loci_passed,"\n" if $b_verbose;
-      $loci_passed = length($h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$loci_passed : $loci_passed;
-      print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
+    print $html "\t\t<td>$total_allele</td>\n";
 
-      my $loci_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} / $total_allele) * 100))."%)";
-      print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$loci_failed,"\n" if $b_verbose;
-      $loci_failed = length($h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$loci_failed : $loci_failed;
-      print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
+    #####  Locus #####
+    my $loci_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} / $total_allele) * 100))."%)";
+    print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$loci_passed,"\n" if $b_verbose;
+    $loci_passed = length($h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$loci_passed : $loci_passed;
+    print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
 
-      my $loci_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} / $total_allele) * 100))."%)";
-      print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$loci_error,"\n" if $b_verbose;
-      $loci_error = length($h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}) == 1 ? "&nbsp;&nbsp;".$loci_error : $loci_error;
-      print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
-      print STDERR "------\n" if $b_verbose;
+    my $loci_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} / $total_allele) * 100))."%)";
+    print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$loci_failed,"\n" if $b_verbose;
+    $loci_failed = length($h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$loci_failed : $loci_failed;
+    print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
 
-      my $loci_drbx = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX} / $total_allele) * 100))."%)";
-      print STDERR "DRBX: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}." ".$loci_drbx,"\n" if $b_verbose;
-      $loci_drbx = length($h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}) == 1 ? "&nbsp;&nbsp;".$loci_drbx : $loci_drbx;
-      print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}." ".$loci_drbx."</td>\n";
-      print STDERR "------\n" if $b_verbose;
+    my $loci_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} / $total_allele) * 100))."%)";
+    print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$loci_error,"\n" if $b_verbose;
+    $loci_error = length($h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}) == 1 ? "&nbsp;&nbsp;".$loci_error : $loci_error;
+    print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
+    print STDERR "------\n" if $b_verbose;
 
-     }
+    my $loci_drbx = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX} / $total_allele) * 100))."%)";
+    print STDERR "DRBX: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}." ".$loci_drbx,"\n" if $b_verbose;
+    $loci_drbx = length($h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}) == 1 ? "&nbsp;&nbsp;".$loci_drbx : $loci_drbx;
+    print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}." ".$loci_drbx."</td>\n";
+    print STDERR "------\n" if $b_verbose;
 
-  
-    print $html $end_table;
+   }
+
+
+  print $html $end_table;
     
-  }
+  
 	my $charts = qq{
 
 	          <div class="row placeholders">  
@@ -549,7 +548,6 @@ my $table4 = qq{
 
 		print $html $charts;
 
-    if(!$b_test){
 		print $html "<SCRIPT>\n";
 
 	    ######## 
@@ -558,7 +556,7 @@ my $table4 = qq{
 		print $html "var barChartData = {\n";
 		print $html "\t\tlabels : [";
 		my $label;
-		foreach my $s_exp (keys %h_experiments){
+		foreach my $s_exp (sort keys %h_experiments){
 			$label .= "\"$s_exp\",";
 		}
 		$label =~ s/,$//;
@@ -577,7 +575,7 @@ my $table4 = qq{
 	    print $html $chart_pass;
 	    print $html "\t\t\tdata : [";
 	    my $subject_chart;
-	    foreach my $s_exp (keys %h_experiments){
+	    foreach my $s_exp (sort keys %h_experiments){
 	    	$subject_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}.",";
 	    }
 	    $subject_chart =~ s/,$//;
@@ -595,7 +593,7 @@ my $table4 = qq{
 	    print $html $chart_fail;    
 	    print $html "\t\t\tdata : [";
 	    my $fail_chart;
-	    foreach my $s_exp (keys %h_experiments){
+	    foreach my $s_exp (sort keys %h_experiments){
 	    	$fail_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}.",";
 	    }
 	    $fail_chart =~ s/,$//;
@@ -613,7 +611,7 @@ my $table4 = qq{
       print $html $chart_drbx;    
       print $html "\t\t\tdata : [";
       my $drbx_chart;
-      foreach my $s_exp (keys %h_experiments){
+      foreach my $s_exp (sort keys %h_experiments){
         $drbx_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}.",";
       }
       $drbx_chart =~ s/,$//;
@@ -631,7 +629,7 @@ my $table4 = qq{
 		print $html $chart_error;        
 	    print $html "\t\t\tdata : [";
 	    my $error_chart;
-	    foreach my $s_exp (keys %h_experiments){
+	    foreach my $s_exp (sort keys %h_experiments){
 	    	$error_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}.",";
 	    }
 	    $error_chart =~ s/,$//;
@@ -645,8 +643,8 @@ my $table4 = qq{
 	    # Locus JS
 	    ########
 	   	print $html "var barChartData2 = {\n";
-		print $html "\t\tlabels : [";
-		print $html $label."],\n";
+		  print $html "\t\tlabels : [";
+		  print $html $label."],\n";
 	    print $html "\t\tdatasets : [\n";
 	   
 	    #Pass columns
@@ -654,7 +652,7 @@ my $table4 = qq{
 	    print $html $chart_pass;
 	    print $html "\t\t\tdata : [";
 	    my $locus_chart;
-	    foreach my $s_exp (keys %h_experiments){
+	    foreach my $s_exp (sort keys %h_experiments){
 	    	$locus_chart .= $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}.",";
 	    }
 	    $locus_chart =~ s/,$//;
@@ -666,7 +664,7 @@ my $table4 = qq{
 	    print $html $chart_fail;    
 	    print $html "\t\t\tdata : [";
 	    my $fail_locus;
-	    foreach my $s_exp (keys %h_experiments){
+	    foreach my $s_exp (sort keys %h_experiments){
 	    	$fail_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}.",";
 	    }
 	    $fail_locus =~ s/,$//;
@@ -679,7 +677,7 @@ my $table4 = qq{
       print $html $chart_drbx;    
       print $html "\t\t\tdata : [";
       my $drbx_locus;
-      foreach my $s_exp (keys %h_experiments){
+      foreach my $s_exp (sort keys %h_experiments){
         $drbx_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}.",";
       }
       $drbx_locus =~ s/,$//;
@@ -691,7 +689,7 @@ my $table4 = qq{
 		print $html $chart_error;        
 	    print $html "\t\t\tdata : [";
 	    my $error_locus;
-	    foreach my $s_exp (keys %h_experiments){
+	    foreach my $s_exp (sort keys %h_experiments){
 	    	$error_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}.",";
 	    }
 	    $error_locus =~ s/,$//;
@@ -704,8 +702,8 @@ my $table4 = qq{
 	    # Allele JS
 	    ########
 	   	print $html "var barChartData3 = {\n";
-		print $html "\t\tlabels : [";
-		print $html $label."],\n";
+		  print $html "\t\tlabels : [";
+		  print $html $label."],\n";
 	    print $html "\t\tdatasets : [\n";
 	   
 	    #Pass columns
@@ -713,7 +711,7 @@ my $table4 = qq{
 	    print $html $chart_pass;
 	    print $html "\t\t\tdata : [";
 	    my $allele_chart;
-	    foreach my $s_exp (keys %h_experiments){
+	    foreach my $s_exp (sort keys %h_experiments){
 	    	$allele_chart .= $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}.",";
 	    }
 	    $allele_chart =~ s/,$//;
@@ -725,7 +723,7 @@ my $table4 = qq{
 	    print $html $chart_fail;    
 	    print $html "\t\t\tdata : [";
 	    my $fail_allele;
-	    foreach my $s_exp (keys %h_experiments){
+	    foreach my $s_exp (sort keys %h_experiments){
 	    	$fail_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}.",";
 	    }
 	    $fail_allele =~ s/,$//;
@@ -737,7 +735,7 @@ my $table4 = qq{
       print $html $chart_drbx;    
       print $html "\t\t\tdata : [";
       my $drbx_allele;
-      foreach my $s_exp (keys %h_experiments){
+      foreach my $s_exp (sort keys %h_experiments){
         $drbx_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}.",";
       }
       $drbx_allele =~ s/,$//;
@@ -749,7 +747,7 @@ my $table4 = qq{
 		print $html $chart_error;        
 	    print $html "\t\t\tdata : [";
 	    my $error_allele;
-	    foreach my $s_exp (keys %h_experiments){
+	    foreach my $s_exp (sort keys %h_experiments){
 	    	$error_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}.",";
 	    }
 	    $error_allele =~ s/,$//;
@@ -783,7 +781,7 @@ my $table4 = qq{
 		};
 		print $html $js;
 		
-	}
+	
 
 	my $footer = qq{
 	<footer>
@@ -1355,15 +1353,7 @@ sub indexHeader{
 
           </div>
 			
-			<div class="row placeholders">  
-            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;">
-              <div id="canvas-holder">
-                <canvas id="canvas4" width="300" height="300" />
-              </div>
-               <h4>Average Allelic Specificity</h4>
-            </div>
 
-        </div>
       </div>
     </div>
 
@@ -1582,11 +1572,8 @@ sub indexBody{
       ];
 
 	};
-	#          color:"#0079C1",
-    #highlight: "#3394CD",
-    #     color: "#B4C932",
-    #     highlight: "#C3D45B",    
 	print $html $pie_data;
+
 
 	my $bar_chart_data = qq{
 		      var barChartData = {
@@ -1785,7 +1772,7 @@ sub indexBody{
 =cut
 sub resultsHeader{
 
-	my ( $html, $s_exp, $rh_qc_verdict ) = @_;
+	my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed ) = @_;
 
 	my $s_experiment = $s_exp;
 
@@ -1997,15 +1984,19 @@ my $header2 = qq{
 	                  <th>Locus</th>
 	                  <th>Locus Verdict</th>
 	                  <th>Allele Verdict</th>
-	                  <th>Match Grade</th>
+	                  <th>Observed Seqs</th>
 	                  <th>Expected Allele</th>
-	                  <th>Observed Allele Call 1</th>
-	                  <th>Observed Allele Call 2</th>
+          };
+          print $html $header3;
+          for(1..$n_max_observed){
+            print $html "<th>Observed Allele Call ",$_,"</th>\n";
+          }
+          my $header4 = qq{
 	                </tr>
 	              </thead>
 	              <tbody>
           };
-          print $html $header3;
+          print $html $header4;
 
 }
 ################################################################################################################
@@ -2020,7 +2011,7 @@ my $header2 = qq{
 =cut
 sub resultsBody{
 
-	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages, $rh_subject_errors ) = @_;
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages, $rh_subject_errors, $rh_consensus ) = @_;
 
 	my $s_experiment = $s_exp;
 
@@ -2076,136 +2067,20 @@ sub resultsBody{
 					print $html "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
 				}
 
-				print $html "\t\t\t<td></td>\n";
-
+        if(defined $$rh_consensus{$s_ID}{$s_loc}){
+				  print $html "\t\t\t<td>$$rh_consensus{$s_ID}{$s_loc}</td>\n";
+        }else{
+          print $html "\t\t\t<td></td>\n";
+        }
 
 				print $html  "\t\t\t<td>$s_typing</td>\n";
-				
 
-
-				my $printed = 0;my $printed2 = 0;
 				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
 
-					my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
-					my $num_alleles = keys %h_alleles;
-
-					if($num_alleles > 9){
-
-						my @a_alleles = keys %h_alleles;
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i == $n_cutoff2){
-
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-								}
-							}elsif($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-
-						print $html "</span></span></td>\n";
-					}else{
-						my @a_alleles = keys %h_alleles;
-						print $html "<td>";
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-						print $html "</td>\n";
-					}
-
-					
-					my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
-
-					my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
-					my $num_alleles2 = keys %h_alleles2;
-
-					if($num_alleles2 > 9){
-						
-						my @a_alleles = keys %h_alleles2;
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i == $n_cutoff2){
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-								}
-							}elsif($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-
-						print $html "</span></span></td>\n";
-					}else{
-
-						my @a_alleles = keys %h_alleles2;
-						print $html "<td>";
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-						print $html "</td>\n";
-
-					}
-
+          for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
+            my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
+            printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
+          }
 
 				}else{
 					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
@@ -2227,6 +2102,72 @@ sub resultsBody{
 	    </div>
 		};
 		print $html $end_body,"\n";
+
+
+}
+
+sub printObservedAlleles{
+
+    my( $html, $observed_gl, $s_typing, $n_cutoff2, $n_cutoff1) = @_;
+
+
+    my %h_alleles = map{ $_ => 1 } split(/\//,$observed_gl);
+    my $num_alleles = keys %h_alleles;
+
+    if($num_alleles > 9){
+
+      my @a_alleles = keys %h_alleles;
+      for(my $i=1;$i<=$#a_alleles+1;$i++){
+        print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+        my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
+
+        if($i == $n_cutoff2){
+
+          if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
+            print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+          }else{
+            print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+          }
+        }elsif($i % $n_cutoff1 == 0) {
+          if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
+            print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
+          }else{
+            print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+          }
+        }else{
+          if($a_alleles[$i-1] eq $s_typing){
+            print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+          }else{
+            print $html "$a_alleles[$i-1]".$s_end;
+          }
+        }
+
+      }
+
+      print $html "</span></span></td>\n";
+    }else{
+      my @a_alleles = keys %h_alleles;
+      print $html "<td>";
+      for(my $i=1;$i<=$#a_alleles+1;$i++){
+        my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
+
+        if($i % $n_cutoff1 == 0) {
+          if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
+            print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+          }else{
+            print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+          }
+        }else{
+          if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
+            print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+          }else{
+            print $html "$a_alleles[$i-1]".$s_end;
+          }
+        }
+
+      }
+      print $html "</td>\n";
+    }
 
 
 }
@@ -2376,7 +2317,7 @@ sub resultsFooter{
 =cut
 sub failedHeader{
 
-	my ( $html, $s_exp, $rh_qc_verdict ) = @_;
+	my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed  ) = @_;
 
 	my $s_experiment = $s_exp;
 
@@ -2586,15 +2527,19 @@ my $header2 = qq{
 	                  <th>Locus</th>
 	                  <th>Locus Verdict</th>
 	                  <th>Allele Verdict</th>
-	                  <th>Match Grade</th>
+	                  <th>Observed Seqs</th>
 	                  <th>Expected Allele</th>
-	                  <th>Observed Allele Call 1</th>
-	                  <th>Observed Allele Call 2</th>
-	                </tr>
-	              </thead>
-	              <tbody>
           };
           print $html $header3;
+          for(1..$n_max_observed){
+            print $html "<th>Observed Allele Call ",$_,"</th>\n";
+          }
+          my $header4 = qq{
+                  </tr>
+                </thead>
+                <tbody>
+          };
+          print $html $header4;
 
 }
 ################################################################################################################
@@ -2609,7 +2554,7 @@ my $header2 = qq{
 =cut
 sub failedBody{
 
-	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_fails ) = @_;
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_fails, $rh_consensus ) = @_;
 
 
 	my $s_experiment = $s_exp;
@@ -2651,133 +2596,22 @@ sub failedBody{
 				}else{
 					print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
 				}
-				print $html  "\t\t\t<td></td>\n";
+
+        if(defined $$rh_consensus{$s_ID}{$s_loc}){
+          print $html "\t\t\t<td>$$rh_consensus{$s_ID}{$s_loc}</td>\n";
+        }else{
+          print $html "\t\t\t<td></td>\n";
+        }
+
 				print $html  "\t\t\t<td>$s_typing</td>\n";
 				
 				
-				my $printed = 0;my $printed2 = 0;
-		
 				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
-
-					my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
-					my $num_alleles = keys %h_alleles;
-
-					if($num_alleles > 9){
-
-						my @a_alleles = keys %h_alleles;
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i == $n_cutoff2){
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-								}
-							}elsif($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-
-						print $html "</span></span></td>\n";
-					}else{
-						my @a_alleles = keys %h_alleles;
-						print $html "<td>";
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-						print $html "</td>\n";
-					}
-
-					
-					my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
-
-					my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
-					my $num_alleles2 = keys %h_alleles2;
-
-					if($num_alleles2 > 9){
-						
-						my @a_alleles = keys %h_alleles2;
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i == $n_cutoff2){
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-								}
-							}elsif($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-
-						print $html "</span></span></td>\n";
-					}else{
-
-						my @a_alleles = keys %h_alleles2;
-						print $html "<td>";
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-						print $html "</td>\n";
-
-					}
-
+	
+          for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
+            my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
+            printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
+          }
 
 				}else{
 					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
@@ -2968,7 +2802,7 @@ sub failedFooter{
 =cut
 sub drbxHeader{
 
-  my ( $html, $s_exp, $rh_qc_verdict ) = @_;
+  my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed  ) = @_;
 
   my $s_experiment = $s_exp;
 
@@ -3178,15 +3012,19 @@ my $header2 = qq{
                     <th>Locus</th>
                     <th>Locus Verdict</th>
                     <th>Allele Verdict</th>
-                    <th>Match Grade</th>
+                    <th>Observed Seqs</th>
                     <th>Expected Allele</th>
-                    <th>Observed Allele Call 1</th>
-                    <th>Observed Allele Call 2</th>
+          };
+          print $html $header3;
+          for(1..$n_max_observed){
+            print $html "<th>Observed Allele Call ",$_,"</th>\n";
+          }
+          my $header4 = qq{
                   </tr>
                 </thead>
                 <tbody>
           };
-          print $html $header3;
+          print $html $header4;
 
 }
 ################################################################################################################
@@ -3201,7 +3039,7 @@ my $header2 = qq{
 =cut
 sub drbxBody{
 
-  my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_drbx ) = @_;
+  my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_drbx, $rh_consensus ) = @_;
 
 
   my $s_experiment = $s_exp;
@@ -3247,134 +3085,21 @@ sub drbxBody{
         }else{
           print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
         }
-        print $html  "\t\t\t<td></td>\n";
+
+        if(defined $$rh_consensus{$s_ID}{$s_loc}){
+          print $html "\t\t\t<td>$$rh_consensus{$s_ID}{$s_loc}</td>\n";
+        }else{
+          print $html "\t\t\t<td></td>\n";
+        }
+
         print $html  "\t\t\t<td>$s_typing</td>\n";
         
-        
-        my $printed = 0;my $printed2 = 0;
     
         if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
-
-          my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
-          my $num_alleles = keys %h_alleles;
-
-          if($num_alleles > 9){
-
-            my @a_alleles = keys %h_alleles;
-            for(my $i=1;$i<=$#a_alleles+1;$i++){
-              print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-              my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
-
-              if($i == $n_cutoff2){
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-                }else{
-                  print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-                }
-              }elsif($i % $n_cutoff1 == 0) {
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
-                }else{
-                  print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-                }
-              }else{
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-                }else{
-                  print $html "$a_alleles[$i-1]".$s_end;
-                }
-              }
-
-            }
-
-            print $html "</span></span></td>\n";
-          }else{
-            my @a_alleles = keys %h_alleles;
-            print $html "<td>";
-            for(my $i=1;$i<=$#a_alleles+1;$i++){
-              my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
-
-              if($i % $n_cutoff1 == 0) {
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-                }else{
-                  print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-                }
-              }else{
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-                }else{
-                  print $html "$a_alleles[$i-1]".$s_end;
-                }
-              }
-
-            }
-            print $html "</td>\n";
+          for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
+            my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
+            printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
           }
-
-          
-          my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
-
-          my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
-          my $num_alleles2 = keys %h_alleles2;
-
-          if($num_alleles2 > 9){
-            
-            my @a_alleles = keys %h_alleles2;
-            for(my $i=1;$i<=$#a_alleles+1;$i++){
-              print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-              my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
-
-              if($i == $n_cutoff2){
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-                }else{
-                  print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-                }
-              }elsif($i % $n_cutoff1 == 0) {
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-                }else{
-                  print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-                }
-              }else{
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-                }else{
-                  print $html "$a_alleles[$i-1]".$s_end;
-                }
-              }
-
-            }
-
-            print $html "</span></span></td>\n";
-          }else{
-
-            my @a_alleles = keys %h_alleles2;
-            print $html "<td>";
-            for(my $i=1;$i<=$#a_alleles+1;$i++){
-              my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
-
-              if($i % $n_cutoff1 == 0) {
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-                }else{
-                  print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-                }
-              }else{
-                if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-                  print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-                }else{
-                  print $html "$a_alleles[$i-1]".$s_end;
-                }
-              }
-
-            }
-            print $html "</td>\n";
-
-          }
-
-
         }else{
           print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
           print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
@@ -3563,137 +3288,231 @@ sub drbxFooter{
 
 =cut
 sub qcHeader{
+  my ( $html, $s_exp, $n_max_observed ) = @_;
 
-	my ( $html, $s_exp ) = @_;
+  my $s_experiment = $s_exp;
 
-	my $s_experiment = $s_exp;
+  my $header = qq{
+    <!DOCTYPE html>
+  <html lang="en">
+    <head>
+         <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="">
+      <meta name="author" content="">
+      
+      <title>Validation Report</title>
 
-	my $header = qq{
-		<!DOCTYPE html>
-	<html lang="en">
-	  <head>
-	    <meta charset="utf-8">
-	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-	    <meta name="viewport" content="width=device-width, initial-scale=1">
-	    <meta name="description" content="">
-	    <meta name="author" content="">
-	    
-	    <title>Validation Report</title>
+      <!-- Bootstrap core CSS -->
+      <link href="../css/bootstrap.min.css" rel="stylesheet">
+      <script src="../js/Chart.js"></script>
+      <!-- Custom styles for this template -->
+      <link href="../css/dashboard.css" rel="stylesheet">
 
-	    <script type="text/javascript" src="../js/jquery.js"></script>
-		<script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
+      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
 
-	    <!-- Bootstrap core CSS -->
-	    <link href="../css/bootstrap.min.css" rel="stylesheet">
-	    <script src="../js/Chart.js"></script>
-	    <!-- Custom styles for this template -->
-	    <link href="../css/dashboard.css" rel="stylesheet">
+      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+      <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+      <![endif]-->
 
-	    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-	    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-	    <script src="../js/ie-emulation-modes-warning.js"></script>
+    <script type="text/javascript" src="../js/jquery.js"></script> 
+  <script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
+  <script type="text/javascript" src="../js/jquery.tablesorter.widgets.js"></script> 
+  
+  <script src="../js/jquery-latest.min.js"></script>
+  <script src="../js/jquery-ui.min.js"></script>
+  <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/docs.js"></script>
 
-	    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-	    <!--[if lt IE 9]>
-	    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-	    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <script src="../js/prettify.js"></script>
+  <script src="../js/jquery-latest.min.js"></script>
 
-
-
-	    <![endif]-->
-	      <style type='text/css'>
-	  .my-legend .legend-scale ul {
-	    margin: 0;
-	    padding: 0;
-	    float: left;
-	    list-style: none;
-	    }
-	  .my-legend .legend-scale ul li {
-	    display: block;
-	    float: left;
-	    width: 50px;
-	    margin-bottom: 6px;
-	    text-align: center;
-	    font-size: 80%;
-	    list-style: none;
-	    }
-	  .my-legend ul.legend-labels li span {
-	    display: block;
-	    float: left;
-	    height: 15px;
-	    width: 50px;
-	    }
-	  .my-legend .legend-source {
-	    font-size: 70%;
-	    color: #999;
-	    clear: both;
-	    }
-	  .my-legend a {
-	    color: #777;
-	    }
-
-	    #expanding{
-	      display:none;
-	    }
+  <!-- Tablesorter: theme -->
+  <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
 
 
-	    </style>
-	  </head>
+  <!-- Tablesorter script: required -->
+  <script src="../js/jquery.tablesorter.js"></script>
+  <script src="../js/jquery.tablesorter.widgets.js"></script>
 
-	  <body>
+  <script id=\"js\">\$(function(){
 
-	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-	      <div class="container-fluid">
-	        <div class="navbar-header">
-	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-	            <span class="sr-only">Toggle navigation</span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	          </button>
-	          <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment</a>
-	        </div>
-	        <div id="navbar" class="navbar-collapse collapse">
-	          <ul class="nav navbar-nav navbar-right">
-	            <li><a href="../experiment.html">Experiments</a></li>
-	            <li><a href="../log.html">Log</a></li>
-	            <li><a href="../help.html">Help</a></li>
-	          </ul>
-	        </div>
-	      </div>
-	    </nav>
+    \$(\'#table1\').tablesorter({
+      widthFixed : true,
+      showProcessing: true,
+      headerTemplate : '{content} {icon}', // Add icon for various themes
 
-	    <div class="container-fluid">
-	      <div class="row">
-	        <div class="col-sm-3 col-md-2 sidebar">
-	          <ul class="nav nav-sidebar">
-	            <li><a href="index.html">Overview</a></li>
-	            <li><a href="results.html">Results</a></li>
-	            <li><a href="fails.html">Failed</a></li>
-	            <li><a href="errors.html">Dropout</a></li>
-              <li><a href="errors.html">DRBX</a></li>
-	            <li class="active"><a href="qc.html">QC<span class="sr-only">(current)</span></a></li>
-	          </ul>
-	        </div>
-	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-	          <h1 class="page-header">Validation Results</h1>
-	          <div class="table-responsive">
-	             <table class="table table-striped tablesorter" id="myTable">
-	              <thead>
-	                <tr>
-	                  <th>Sample ID</th>
-	                  <th>QC Verdict</th>
-	                  <th>Locus Verdict</th>
-	                  <th>Allele Verdict</th>
-	                  <th>QC Haplotype</th>
-	                  <th>Expected Allele</th>
-	                  <th>Observed Allele Call 1</th>
-	                  <th>Observed Allele Call 2</th>
-	                </tr>
-	              </thead>
-	              <tbody>
+      widgets: [ 'stickyHeaders', 'filter' ],
+
+      widgetOptions: {
+
+        // extra class name added to the sticky header row
+        stickyHeaders : '',
+        // number or jquery selector targeting the position:fixed element
+        stickyHeaders_offset : 50,
+        // added to table ID, if it exists
+        stickyHeaders_cloneId : '-sticky',
+        // trigger "resize" event on headers
+        stickyHeaders_addResizeEvent : false,
+        // if false and a caption exist, it won't be included in the sticky header
+        stickyHeaders_includeCaption : false,
+        // The zIndex of the stickyHeaders, allows the user to adjust this to their needs
+        stickyHeaders_zIndex : 2,
+        // jQuery selector or object to attach sticky header to
+        stickyHeaders_attachTo : null,
+        // jQuery selector or object to monitor horizontal scroll position (defaults: xScroll > attachTo > window)
+        stickyHeaders_xScroll : null,
+        // jQuery selector or object to monitor vertical scroll position (defaults: yScroll > attachTo > window)
+        stickyHeaders_yScroll : null,
+        // scroll table top into view after filtering
+        stickyHeaders_filteredToTop: true,
+
+      }
+    });
+    \$(\'input[type=\"checkbox\"][value=\"change\"]\').change(function() {
+         if(this.checked) {
+            var checkboxes = \$(\'body\').find(\'input\');
+            for(var i =0;i<checkboxes.length;i++){
+              if(checkboxes[i].value !== "change"){
+                checkboxes[i].checked = true;
+              }
+            }
+         }
+         if(!this.checked) {
+            var checkboxes = \$(\'body\').find(\'input\');
+            for(var i =0;i<checkboxes.length;i++){
+              if(checkboxes[i].value !== "change"){
+                checkboxes[i].checked = false;
+              }
+            }
+         }
+
+     });
+    
+});</script>
+        <style type='text/css'>
+    .my-legend .legend-scale ul {
+      margin: 0;
+      padding: 0;
+      float: left;
+      list-style: none;
+      }
+    .my-legend .legend-scale ul li {
+      display: block;
+      float: left;
+      width: 50px;
+      margin-bottom: 6px;
+      text-align: center;
+      font-size: 80%;
+      list-style: none;
+      }
+    .my-legend ul.legend-labels li span {
+      display: block;
+      float: left;
+      height: 15px;
+      width: 50px;
+      }
+    .my-legend .legend-source {
+      font-size: 70%;
+      color: #999;
+      clear: both;
+      }
+    .my-legend a {
+      color: #777;
+      }
+
+      #expanding{
+        display:none;
+      }
+
+
+      </style>
+};
+print $html $header;
+
+
+my $header2 = qq{
+    </head>
+
+    <body>
+
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment </a>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="../experiment.html">Experiments</a></li>
+              <li><a href="../log.html">Log</a></li>
+              <li><a href="../help.html">Help</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-sm-3 col-md-2 sidebar">
+            <ul class="nav nav-sidebar">
+              <li><a href="index.html">Overview</a></li>
+              <li><a href="results.html">Results</a></li>
+              <li><a href="fails.html">Failed</a></li>
+              <li><a href="errors.html">Dropout</a></li>
+              <li><a href="drbx.html">DRBX</a></li>
+              <li  class="active"><a href="qc.html">QC<span class="sr-only">(current)</span></a></li>
+      };
+      print $html $header2;
+
+  my $header3 = qq{
+            </ul>
+          </div>
+          <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+          <div style="float:right;margin-top:20px;">
+                <a class="hovering" >
+              <span  onclick="Addfilter()" style="font-weight:bold;">Filter Rows</span>         
+            </a>
+            <span  style="font-weight:bold;"> | </span>
+                <a class="hovering" >
+                  <span  onclick="downloadcsv()" style="font-weight:bold;">Download to CSV</span>
+                </a>
+            </div>
+
+            <h1 class="page-header">Validation Results</h1>
+            <div class="table-responsive">
+               <table class="table table-striped tablesorter-bootstrap" id="table1">
+                <thead>
+                  <tr>
+                  <td style="border-color:#dddddd;border-style:solid;border-left-width:0px;border-right-width:0px;border-bottom-width:2px;" class="filter-false sorter-false">
+                      <div style="margin-top:17px;"><input type = "checkbox" value="change"/></div>
+                  </td>                  
+                    <th>Sample ID</th>
+                    <th>QC Verdict</th>
+                    <th>Locus Verdict</th>
+                    <th>Allele Verdict</th>
+                    <th>QC Data</th>
+                    <th>Expected Allele</th>
           };
-          print $html $header;
+          print $html $header3;
+          for(1..$n_max_observed){
+            print $html "<th>Observed Allele Call ",$_,"</th>\n";
+          }
+          my $header4 = qq{
+                  </tr>
+                </thead>
+                <tbody>
+          };
+          print $html $header4;
 
 }
 ################################################################################################################
@@ -3718,14 +3537,25 @@ sub qcBody{
 
 			foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
 
-        next if !defined defined $$rh_qc_verdict{$s_ID}{$s_loc};
+        next if !defined $$rh_qc_expected{$s_ID}{$s_loc} || $$rh_qc_expected{$s_ID}{$s_loc} !~ /\S/;
 
 				print $html "\t\t<tr>\n";
+
+                              
+        my $s_checkbox = qq{
+                  <td >
+                    <div style="margin-left:4px;margin-top:10px;"><input type = "checkbox"
+                       id = "myCheck"
+                       value = "ham" />
+                      </div>
+                   </td>
+                  };
+        print $html $s_checkbox;
 
 				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
 				
 				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
-				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">1$s_ID</a></td>\n";
+				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">$s_ID</a></td>\n";
 
 				if(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "FAIL"){
 					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
@@ -3754,137 +3584,52 @@ sub qcBody{
 				}
 
 				if(defined $$rh_qc_expected{$s_ID}{$s_loc}){
-					print $html "\t\t\t<td>$$rh_qc_expected{$s_ID}{$s_loc}</td>";
+
+          my %h_haps   = split(/\|/,$$rh_qc_expected{$s_ID}{$s_loc});
+          my $num_haps = keys %h_haps;
+          if($num_haps < 2){
+              my ($h1,$h2) = split(/\+/,$$rh_qc_expected{$s_ID}{$s_loc});
+              $h1 =~ s/ //g;$h2 =~ s/ //g;
+              $h1 = g2p($h1) eq g2p($s_typing) ? "<b>".$h1."</b>" : $h1;
+              $h2 = g2p($h2) eq g2p($s_typing) ? "<b>".$h2."</b>" : $h2;
+              $hap = join("+",$h1,$h2);
+              print $html  "\t\t\t<td>$hap</td>\n";
+          }else{
+            my $cnt = 1;
+            print $html "<td>";
+            foreach my $hap (keys %h_haps){
+              my ($h1,$h2) = split(/\+/,$hap);
+              $h1 = g2p($h1) eq g2p($s_typing) ? "<b>".$h1."</b>" : $h1;
+              $h2 = g2p($h2) eq g2p($s_typing) ? "<b>".$h2."</b>" : $h2;
+              $hap = join("+",$h1,$h2);
+              if($cnt % 2 == 0 && $cnt != $num_haps){
+                $hap =~ s/ //g;
+                print $html $hap."|<br>";
+                $cnt++;
+              }elsif($cnt != $num_haps){
+                $hap =~ s/ //g;
+                print $html $hap."|";
+                $cnt++;
+              }else{
+                $hap =~ s/ //g;
+                print $html $hap;
+              }
+            }
+            print $html "</td>";
+          }
+
 				}else{
 					print $html "\t\t\t<td></td>";
 				}
+
 				print $html  "\t\t\t<td>$s_typing</td>\n";
-				
-				
-				my $printed = 0;my $printed2 = 0;
+
 		
 				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
-
-					my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
-					my $num_alleles = keys %h_alleles;
-
-					if($num_alleles > 9){
-
-						my @a_alleles = keys %h_alleles;
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i == $n_cutoff2){
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-								}
-							}elsif($i % $n_cutoff1 == 0) {
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-
-						print $html "</span></span></td>\n";
-					}else{
-						my @a_alleles = keys %h_alleles;
-						print $html "<td>";
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i % $n_cutoff1 == 0) {
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-						print $html "</td>\n";
-					}
-
-					
-					my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
-
-					my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
-					my $num_alleles2 = keys %h_alleles2;
-
-					if($num_alleles2 > 9){
-						
-						my @a_alleles = keys %h_alleles2;
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i == $n_cutoff2){
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-								}
-							}elsif($i % $n_cutoff1 == 0) {
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-
-						print $html "</span></span></td>\n";
-					}else{
-
-						my @a_alleles = keys %h_alleles2;
-						print $html "<td>";
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i % $n_cutoff1 == 0) {
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if($a_alleles[$i-1] eq $s_typing){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-						print $html "</td>\n";
-
-					}
-
-
+          for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
+            my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
+            printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
+          }
 				}else{
 					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
 					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
@@ -3996,7 +3741,7 @@ sub qcFooter{
 =cut
 sub errorsHeader{
 
-	my ( $html, $s_exp, $rh_qc_verdict ) = @_;
+	my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed  ) = @_;
 
 	my $s_experiment = $s_exp;
 
@@ -4209,15 +3954,19 @@ my $header2 = qq{
 	                  <th>Locus</th>
 	                  <th>Locus Verdict</th>
 	                  <th>Allele Verdict</th>
-	                  <th>Match Grade</th>
+	                  <th>Observed Seqs</th>
 	                  <th>Expected Allele</th>
-	                  <th>Observed Allele Call 1</th>
-	                  <th>Observed Allele Call 2</th>
-	                </tr>
-	              </thead>
-	              <tbody>
           };
           print $html $header3;
+          for(1..$n_max_observed){
+            print $html "<th>Observed Allele Call ",$_,"</th>\n";
+          }
+          my $header4 = qq{
+                  </tr>
+                </thead>
+                <tbody>
+          };
+          print $html $header4;
 
 }
 ################################################################################################################
@@ -4232,7 +3981,7 @@ my $header2 = qq{
 =cut
 sub errorsBody{
 
-	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages, $ra_errors ) = @_;
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages, $ra_errors, $rh_consensus ) = @_;
 
 	my $s_experiment = $s_exp;
 
@@ -4279,134 +4028,19 @@ sub errorsBody{
 					print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
 				}
 
-
-				print $html "\t\t\t<td></td>";				
+        if(defined $$rh_consensus{$s_ID}{$s_loc}){
+          print $html "\t\t\t<td>$$rh_consensus{$s_ID}{$s_loc}</td>\n";
+        }else{
+          print $html "\t\t\t<td></td>\n";
+        }
+				
 				print $html  "\t\t\t<td>$s_typing</td>\n";
 				
-				
-				my $printed = 0;my $printed2 = 0;
 				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
-
-					my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
-					my $num_alleles = keys %h_alleles;
-
-					if($num_alleles > 9){
-
-						my @a_alleles = keys %h_alleles;
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i == $n_cutoff2){
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-								}
-							}elsif($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-
-						print $html "</span></span></td>\n";
-					}else{
-						my @a_alleles = keys %h_alleles;
-						print $html "<td>";
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-						print $html "</td>\n";
-					}
-
-					
-					my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
-
-					my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
-					my $num_alleles2 = keys %h_alleles2;
-
-					if($num_alleles2 > 9){
-						
-						my @a_alleles = keys %h_alleles2;
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i == $n_cutoff2){
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-								}
-							}elsif($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-
-						print $html "</span></span></td>\n";
-					}else{
-
-						my @a_alleles = keys %h_alleles2;
-						print $html "<td>";
-						for(my $i=1;$i<=$#a_alleles+1;$i++){
-							my $s_end = $i == $#a_alleles+1 ? "" : "/";	
-
-							if($i % $n_cutoff1 == 0) {
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-								}
-							}else{
-								if(g2p($a_alleles[$i-1]) eq g2p($s_typing)){
-									print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-								}else{
-									print $html "$a_alleles[$i-1]".$s_end;
-								}
-							}
-
-						}
-						print $html "</td>\n";
-
-					}
-
-
+          for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
+            my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
+            printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
+          }
 				}else{
 					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
 					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
