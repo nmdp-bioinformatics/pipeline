@@ -938,6 +938,11 @@ my $table2 = qq{
 
     print $html "\t\t<td>$total_subjects</td>\n";
 
+    if($total_subjects == 0){ 
+      print $s_exp," WFT!\n";
+      print STDERR Dumper(%h_counts),"\n";
+      exit;
+    }
     #####  Subjects #####
     my $percent_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} / $total_subjects) * 100))."%)";
     print STDERR "------\n" if $b_verbose;

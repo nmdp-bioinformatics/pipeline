@@ -824,6 +824,7 @@ sub loadFiles{
 
 			}
 
+			my $num_typs = (keys %{$h_verified{$s_exp}{$s_ID}});
 			foreach my $s_loc (keys %{$h_verified{$s_exp}{$s_ID}}){
 				foreach my $s_typing (keys %{$h_verified{$s_exp}{$s_ID}{$s_loc}}){
 					if($h_verified{$s_exp}{$s_ID}{$s_loc}{$s_typing} eq "PASS"){
@@ -851,7 +852,9 @@ sub loadFiles{
 			}elsif($loc_cnt != 5 && $n_drbx > 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}++;
 			}else{
-				# TODO log these 
+				if($loc_cnt == $num_typs){
+					$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}++;
+				}
 
 			}
 
