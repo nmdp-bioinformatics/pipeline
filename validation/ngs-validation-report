@@ -98,13 +98,14 @@
 =head1 TODO
 	
     - Add match grades
+    - Add option to email zip or tar
+    - Add option for providing a race config file
     - Add more detailed comments
     - Put all of the HTML subroutines in a separate package
     - Add a test for each individual subroutine
     - Add to hml tests t/report.t
     - Change all of the bootstrap.css to be from http links
     - Change all of the tablesorter links to be from 
-    - Add subject links to the log file
     - Change NGS Validation Report -> Validation report in log file
 
 =head1 SUBROUTINES
@@ -129,7 +130,6 @@ BEGIN{
 		my @inc_files = glob "$_/*";
 		foreach my $inc_file (@inc_files){
 			$lwp = 1 if $inc_file =~ /LWP/;
-
 		}
 	}
 
@@ -165,11 +165,11 @@ my %h_expected;          # Hash that contains the expected Alleles
 my %h_verified;          # Hash that contains the verified Alleles
 my %h_counts;            # Hash that contains the counts
 my %h_drbx;              # Hash that contains the drbx issues
-my %h_locus_verdict;     # 
-my %h_subject_pages;     # 
-my %h_sequence_data;     # 
-my %h_fails;		     # 
-my %h_errors;            # 
+my %h_locus_verdict;     # Hash that contains the locus verdict
+my %h_subject_pages;     # Hash of the subject pages
+my %h_sequence_data;     # Hash of the sequence data
+my %h_fails;		     # Hash of the fails
+my %h_errors;            # Hash of the errors
 my %h_sensitivity;       #
 my %h_expected_seqs;     #
 my %h_experiments;       #
@@ -177,16 +177,16 @@ my %h_qc_verified;       #
 my %h_qc_expected;       #
 my %h_qc_zygosity;       #
 my %h_qc_verdict;        #
-my %h_expected_zygosity;
-my %h_sequence_ids;
-my %h_consensus_counts;
-my %h_observed_max;
-my %h_error_max;
-my %h_drbx_max;
-my %h_qc_max;
-my %h_failed_max;
-my %h_qc_counts;
-my $s_subject_page = 1;
+my %h_expected_zygosity; #
+my %h_sequence_ids;      #
+my %h_consensus_counts;  #
+my %h_observed_max;      #
+my %h_error_max;         #
+my %h_drbx_max;          #
+my %h_qc_max;            #
+my %h_failed_max;        #
+my %h_qc_counts;         #
+my $s_subject_page = 1;  #
 
 our ( $s_blast_dir, $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_test, $b_forced, $b_verbose) = 
 	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0);
@@ -228,7 +228,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		$h_experiments{$s_experiment}{OBS} = $s_observed;
 		$h_experiments{$s_experiment}{EXP} = $s_expected;
 	}else{
-		my @a_files = glob "$s_directory/*.txt";
+		my @a_files = glob "$s_directory/*";
 		my %h_exps = map{ $_ =~ /\/(ex\d+)/; $1 => 1 } grep { $_ =~ /\/(ex\d+)/ } @a_files;
 		my @a_experiments = map{ $_ =~ /\/(ex\d+)/; $1 => 1 } grep { $_ =~ /\/(ex\d+)/ } @a_files;
 		my $num_experiments = keys %h_experiments;
@@ -237,12 +237,12 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
  			my @a_ex_files  =  glob "$s_directory/$s_exp*";
 			my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
 			my @a_expected  = grep { $_ =~ /expected/ } @a_ex_files;
-			my @a_validated  = grep { $_ =~ /validated/ } @a_ex_files;
+			my @a_validated = grep { $_ =~ /validated/ } @a_ex_files;
 			$s_observed   = (defined $a_observed[0]) ? $a_observed[0] : undef;
 			$s_expected   = (defined $a_expected[0]) ? $a_expected[0] : undef;
 			$s_validated  = (defined $a_validated[0]) ? $a_validated[0] : undef;
 
-			if(defined $a_validated[1]){ # Getting the QC files if present
+			if(defined $a_validated[1]){ # Getting the QC validated files if present
 				my $s_qc_validated = $a_validated[0] =~ /sbt/ ? $a_validated[0] : 
 					($a_validated[1] =~ /sbt/ ? $a_validated[1] : undef);
 				my $s_ngsp_validated = $a_validated[0] =~ /ngsp/ ? $a_validated[0] : 
@@ -254,7 +254,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 				$h_experiments{$s_exp}{VAL} = $s_validated;
 			}
 
-			if(defined $a_expected[1]){ # Getting the QC files if present
+			if(defined $a_expected[1]){ # Getting the QC expected files if present
 				my $s_qc_expected = $a_expected[0] =~ /sbt/ ? $a_expected[0] : 
 					($a_expected[1] =~ /sbt/ ? $a_expected[1] : undef);
 				my $s_ngsp_expected = $a_expected[0] =~ /ngsp/ ? $a_expected[0] : 
@@ -264,7 +264,6 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 			}else{
 				$h_experiments{$s_exp}{EXP} = $s_expected;
 			}
-
 			$s_experiment = $a_experiments[0];
 			$h_experiments{$s_exp}{OBS} = $s_observed;
 
@@ -311,95 +310,90 @@ html::experimentsHtml($exp_html,\%h_counts,\%h_experiments);
 foreach my $s_exp (keys %h_experiments){
 
 	my $experiment_dir = $report_directory."/".$s_exp;
+	my $report_index   = $report_directory."/".$s_exp."/index.html";
+	my $results_index  = $report_directory."/".$s_exp."/results.html";
+	my $failed_index   = $report_directory."/".$s_exp."/fails.html";
+	my $drbx_index     = $report_directory."/".$s_exp."/drbx.html";
+	my $errors_index   = $report_directory."/".$s_exp."/errors.html";
+	my $qc_index       = $report_directory."/".$s_exp."/qc.html";
 	print `mkdir $experiment_dir`;
-	my $report_index     = $report_directory."/".$s_exp."/index.html";
-	my $results_index    = $report_directory."/".$s_exp."/results.html";
-	my $failed_index     = $report_directory."/".$s_exp."/fails.html";
-	my $drbx_index       = $report_directory."/".$s_exp."/drbx.html";
-	my $errors_index     = $report_directory."/".$s_exp."/errors.html";
-	my $qc_index         = $report_directory."/".$s_exp."/qc.html";
 
-	my $b_qc = 0;
-	my %qc_verdict;
-	my %qc_expected;
-	if(defined $h_qc_verdict{$s_exp}){
-		%qc_verdict  = %{$h_qc_verdict{$s_exp}};
-		%qc_expected = %{$h_qc_expected{$s_exp}};
-		$b_qc = 1;
-	}
+	my %counts         = %{$h_counts{$s_exp}};           # Counts for the $s_exp experiment
+	my %sensitivity    = %{$h_sensitivity{$s_exp}};      # Counts for the $s_exp experiment
+	my %loc_verdict    = %{$h_locus_verdict{$s_exp}};    # Counts for the $s_exp experiment
+	my %verified       = %{$h_verified{$s_exp}};         # Counts for the $s_exp experiment
+	my %observed       = %{$h_observed_gls{$s_exp}};     # Counts for the $s_exp experiment
+	my %expected       = %{$h_expected{$s_exp}};         # Counts for the $s_exp experiment
+	my %subject        = %{$h_subject_pages{$s_exp}};    # Counts for the $s_exp experiment
+	my %seq            = %{$h_sequence_data{$s_exp}};    # Counts for the $s_exp experiment
+	my %seqids         = %{$h_sequence_ids{$s_exp}};     # Counts for the $s_exp experiment
+	my %consensus      = %{$h_consensus_counts{$s_exp}}; # Counts for the $s_exp experiment
+	my $max_results    = $h_observed_max{$s_exp};        # Counts for the $s_exp experiment
+	my $max_drbx       = $h_drbx_max{$s_exp};            # Counts for the $s_exp experiment
+	my $max_errors     = $h_error_max{$s_exp};           # Counts for the $s_exp experiment
+	my $max_failed     = $h_failed_max{$s_exp};          # Counts for the $s_exp experiment
+	my $max_qc         = $h_qc_max{$s_exp};              # Counts for the $s_exp experiment
 
-	my %counts       = %{$h_counts{$s_exp}};
-	my %sensitivity  = %{$h_sensitivity{$s_exp}};
-	my %loc_verdict  = %{$h_locus_verdict{$s_exp}};
-	my %verified     = %{$h_verified{$s_exp}};
-	my %observed     = %{$h_observed_gls{$s_exp}};
-	my %expected     = %{$h_expected{$s_exp}};
-	my %subject      = %{$h_subject_pages{$s_exp}};
-	my %seq          = %{$h_sequence_data{$s_exp}};
-	my %seqids       = %{$h_sequence_ids{$s_exp}};
-	my %consensus    = %{$h_consensus_counts{$s_exp}};
+	my %fail;         # Failed results
+	my %error;        # Error results
+	my %drbx;         # DRBX results
+	my %qc_verdict;   # qc verdict results
+	my %qc_expected;  # qc expected results
 
-	my $max_results  = $h_observed_max{$s_exp};
-	my $max_drbx     = $h_drbx_max{$s_exp};
-	my $max_errors   = $h_error_max{$s_exp};
-	my $max_failed   = $h_failed_max{$s_exp};
-	my $max_qc       = $h_qc_max{$s_exp};
-
-	my %fail;
-	my %error;
-	my %drbx;
-	my ($b_fail, $b_error, $b_drbx)  = (0, 0, 0);
-	($b_fail,%fail)    = defined $h_fails{$s_exp} ? (1,%{$h_fails{$s_exp}})    : (0,%fail);
-	($b_error,%error)  = defined $h_errors{$s_exp} ? (1,%{$h_errors{$s_exp}})  : (0,%error);
-	($b_drbx,%drbx)    = defined $h_drbx{$s_exp}   ? (1,%{$h_drbx{$s_exp}})    : (0,%drbx);
+	my ($b_fail, $b_error, $b_drbx, $b_qc)  = (0, 0, 0, 0); # 
+	($b_qc,%qc_verdict)  = defined $h_qc_verdict{$s_exp} ? (1,%{$h_qc_verdict{$s_exp}})  : (0,%h_qc_verdict);
+	($b_qc,%qc_expected) = defined $h_qc_verdict{$s_exp} ? (1,%{$h_qc_expected{$s_exp}}) : (0,%h_qc_expected);	
+	($b_fail,%fail)      = defined $h_fails{$s_exp}  	 ? (1,%{$h_fails{$s_exp}})   	 : (0,%fail);
+	($b_error,%error)    = defined $h_errors{$s_exp} 	 ? (1,%{$h_errors{$s_exp}})  	 : (0,%error);
+	($b_drbx,%drbx)      = defined $h_drbx{$s_exp}   	 ? (1,%{$h_drbx{$s_exp}})    	 : (0,%drbx);
 
 	# Creating the index.html file
 	open(my $index_html,">",$report_index) or die "CANT OPEN FILE $! $0";
-	html::indexHeader($index_html, $s_exp, \%h_qc_verdict);
+	html::indexHeader($index_html, $s_exp, \%h_qc_verdict, $b_drbx, $b_error, $b_fail);
 	html::indexBody($index_html, \%counts, \%sensitivity) if !$b_test;
 	html::indexFooter($index_html);
 	close $index_html;
 
 	# Creating the results.html file
 	open(my $results_html,">",$results_index) or die "CANT OPEN FILE $! $0";
-	html::resultsHeader($results_html, $s_exp, \%h_qc_verdict, $max_results);
+	html::htmlHeader($results_html, $s_exp, \%h_qc_verdict, $max_results, "results", $b_drbx, $b_error, $b_fail);
 	html::resultsBody($results_html, $s_exp, \%loc_verdict, \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%error, \%consensus);
-	html::resultsFooter($results_html);
+	html::htmlFooter($results_html);
 	close $results_html;
 
 	# Creating the failed.html file
 	if($b_fail){
 		open(my $failed_html,">",$failed_index) or die "CANT OPEN FILE $! $0";
-		html::failedHeader($failed_html, $s_exp, \%h_qc_verdict, $max_failed);
+		html::htmlHeader($failed_html, $s_exp, \%h_qc_verdict, $max_failed, "failed", $b_drbx, $b_error, $b_fail);
 		html::failedBody($failed_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%fail, \%consensus);
-		html::failedFooter($failed_html);
+		html::htmlFooter($failed_html);
 		close $failed_html;
 	}
 
 	# Creating the drbx.html file
 	if($b_drbx){
 		open(my $drbx_html,">",$drbx_index) or die "CANT OPEN FILE $! $0";
-		html::drbxHeader($drbx_html, $s_exp, \%h_qc_verdict, $max_drbx);
+		html::htmlHeader($drbx_html, $s_exp, \%h_qc_verdict, $max_drbx, "drbx", $b_drbx, $b_error, $b_fail);
 		html::drbxBody($drbx_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%drbx, \%consensus);
-		html::drbxFooter($drbx_html);
+		html::htmlFooter($drbx_html);
 		close $drbx_html;
 	}
 
 	# Creating the errors.html file
 	if($b_error){
 		open(my $errors_html,">",$errors_index) or die "CANT OPEN FILE $! $0";
-		html::errorsHeader($errors_html, $s_exp, \%h_qc_verdict, $max_errors);
+		html::htmlHeader($errors_html, $s_exp, \%h_qc_verdict, $max_errors, "error", $b_drbx, $b_error, $b_fail);
 		html::errorsBody($errors_html, $s_exp, \%loc_verdict, \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%error, \%consensus);
-		html::errorsFooter($errors_html);
+		html::htmlFooter($errors_html);
 		close $errors_html;
 	}
 
 	# Creating the qc.html file
 	if($b_qc){	
 		open(my $qc_html,">",$qc_index) or die "CANT OPEN FILE $! $0";
-		html::qcHeader($qc_html, $s_exp, $max_qc);
+		html::qcHeader($qc_html, $s_exp, $max_qc, $b_drbx, $b_error, $b_fail);
 		html::qcBody($qc_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%fail);
-		html::resultsFooter($qc_html);
+		html::qcFooter($qc_html);
 		close $qc_html;
 	}
 
@@ -412,14 +406,14 @@ foreach my $s_exp (keys %h_experiments){
 		open(my $subject_html,">",$subject_page) or die "CANT OPEN FILE $! $0";
 		html::subjectsHeader($subject_html, $s_exp,  $s_ID, \%h_qc_verdict);
 		html::subjectsBody($subject_html, $s_exp, $s_ID, $s_blast_dir, \%loc_verdict, \%qc_verdict, \%qc_expected, \%expected, \%observed, \%seq, \%seqids );
-		html::subjectsFooter($subject_html);
+		html::htmlFooter($subject_html);
 		close $subject_html;
 	}
 
 
 }
 
-html::logFooter($log_html);
+html::logFooter($log_html); # Print out the log HTML file footer
 &emailReport($s_emails) if $b_email; # Email out the report if emails are provided
 print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
 
@@ -430,7 +424,6 @@ print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
         Title:    loadFiles
         Usage:    loadFiles($s_experiment, $s_validated, $s_expected, $s_observed);
         Function: This loads all of the data files into the utlized hashes 
-
 
 =cut
 sub loadFiles{
@@ -537,13 +530,13 @@ sub loadFiles{
 			my $which_extract_expected = `which ngs-extract-expected`;chomp($which_extract_expected);
 			if(!defined $which_extract_expected || $which_extract_expected !~ /\S/){
 				print STDERR "Parsing HML with perl!\n" if $b_verbose;
-				perlParseHML($s_expected, $s_exp);
+				perlParseHML($s_expected, $s_exp, 0);
 			}else{
 				print STDERR "Parsing HML with ngs-extract-expected\n" if $b_verbose;
-				javaParseHML($s_expected, $s_exp);
+				javaParseHML($s_expected, $s_exp, 0);
 			}
 		}else{
-			print STDERR "Opening $s_expected..\n" if $b_verbose;
+			
 			open(my $exp,"<",$s_expected) or die "CANT OPEN FILE $! $0";
 			while(<$exp>){
 				chomp;
@@ -589,8 +582,43 @@ sub loadFiles{
 			}
 		}
 
-		open(VERIFIED,$s_validated) or die "CANT OPEN FILE $! $0";
-		while(<VERIFIED>){
+		if(defined $s_qc_validated && defined $s_qc_expected){
+			if($s_qc_expected =~ /[hml|xml]$/){
+				my $which_extract_expected = `which ngs-extract-expected`;chomp($which_extract_expected);
+				if(!defined $which_extract_expected || $which_extract_expected !~ /\S/){
+					print STDERR "Parsing HML with perl!\n" if $b_verbose;
+					perlParseHML($s_qc_expected, $s_exp, 1);
+				}else{
+					print STDERR "Parsing HML with ngs-extract-expected\n" if $b_verbose;
+					javaParseHML($s_qc_expected, $s_exp, 1);
+				}
+			}else{
+				open(my $qcexp,"<",$s_qc_expected) or die "CANT OPEN FILE $! $0";
+				while(<$qcexp>){
+					chomp;
+					my($s_file,$s_loc,$s_ars,$s_het,$s_typ1,$s_typ2) = split(/\t/,$_);
+
+					my @a_file  = split(/\//,$s_file);
+					my @a_ID = split(/\./,$a_file[$#a_file]);
+					my $ID = $a_ID[0];	
+					$s_loc =~ s/HLA-//g;$s_typ1 =~ s/HLA-//g;$s_typ2 =~ s/HLA-//g;
+					next if !defined $s_loc || $s_loc !~ /\S/;
+					next if $s_loc eq "DPB1"; # For now skip DP
+					
+					$s_typ1 = !defined $s_typ1 || $s_typ1 !~ /\S/ ? $s_typ2 : $s_typ1;
+					$s_typ2 = !defined $s_typ2 || $s_typ2 !~ /\S/ ? $s_typ1 : $s_typ2;
+
+					$h_qc_expected{$s_exp}{$ID}{$s_loc} = (isAC($s_typ1) || isAC($s_typ2)) ? (getGL($s_typ1,$s_typ2)) : expand(join("+",sort $s_typ2, $s_typ1));			
+					$h_qc_zygosity{$s_exp}{$ID}{$s_loc} = $s_typ1 eq $s_typ2 ? 1 : 2;
+
+				}
+				close $qcexp;
+			}
+
+		}
+
+		open(my $ver,"<",$s_validated) or die "CANT OPEN FILE $! $0";
+		while(<$ver>){
 			chomp;
 			my($s_status, $s_file, $s_typing) = split(/\t/,$_);
 			my @a_file  = split(/\//,$s_file); 
@@ -614,11 +642,11 @@ sub loadFiles{
 			}
 
 		}
-		close VERIFIED;
+		close $ver;
 
 		if(defined $s_qc_validated && defined $s_qc_expected){
-			open(QCVERIFIED,$s_qc_validated) or die "CANT OPEN FILE $! $0";
-			while(<QCVERIFIED>){
+			open(my $qc_ver,"<",$s_qc_validated) or die "CANT OPEN FILE $! $0";
+			while(<$qc_ver>){
 				chomp;
 				my($s_status, $s_file, $s_typing) = split(/\t/,$_);
 				my @a_file  = split(/\//,$s_file); 
@@ -642,7 +670,7 @@ sub loadFiles{
 				}
 
 			}
-			close QCVERIFIED;
+			close $qc_ver;
 
 		}
 
@@ -722,7 +750,7 @@ sub loadFiles{
 
 		
 		foreach my $s_ID (keys %{$h_verified{$s_exp}}){
-			my $loc_cnt = 0;my $n_error = 0;my $n_drbx = 0;
+			my $loc_cnt = 0;my $n_error = 0;my $n_drbx = 0;my $n_fail = 0;
 			foreach my $s_loc (keys %{$h_verified{$s_exp}{$s_ID}}){
 				my $n_typings = 0;my $n_qc_typings = 0;
 				foreach my $s_typing (keys %{$h_verified{$s_exp}{$s_ID}{$s_loc}}){
@@ -790,7 +818,8 @@ sub loadFiles{
 					$h_counts{$s_exp}{LOCUS}{$s_loc}{FAIL}++;
 					$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}++;
 					$h_locus_verdict{$s_exp}{$s_ID}{$s_loc} = "FAIL";
-					$h_fails{$s_exp}{$s_ID}{$s_loc}++;			
+					$h_fails{$s_exp}{$s_ID}{$s_loc}++;
+					$n_fail++;		
 				}
 
 			}
@@ -815,14 +844,13 @@ sub loadFiles{
 
 			if($loc_cnt == 5 && $n_error == 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}++;
-			}elsif($loc_cnt != 5 && $n_error == 0 && $n_drbx == 0){
+			}elsif($loc_cnt != 5 && $n_error == 0 && $n_drbx == 0 && $n_fail != 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}++;
 			}elsif($loc_cnt != 5 && $n_error != 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}++;
 			}elsif($loc_cnt != 5 && $n_drbx > 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}++;
-			}
-			else{
+			}else{
 				# TODO log these 
 
 			}
@@ -903,8 +931,7 @@ sub loadFiles{
 		foreach my $s_ID (keys %{$h_observed_gls{$s_exp}}){
 			foreach my $s_loc (keys %{$h_observed_gls{$s_exp}{$s_ID}}){
 				$n_max = ($#{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}} + 1) > $n_max ? 
-					($#{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}} + 1) : $n_max;
-				
+					($#{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}} + 1) : $n_max;			
 				if(defined $h_consensus_counts{$s_exp}{$s_ID}{$s_loc}){
 					if( $h_consensus_counts{$s_exp}{$s_ID}{$s_loc} < ($#{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}} + 1)){
 						$h_consensus_counts{$s_exp}{$s_ID}{$s_loc} = ($#{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}} + 1);
@@ -912,7 +939,6 @@ sub loadFiles{
 				}else{
 					$h_consensus_counts{$s_exp}{$s_ID}{$s_loc} = ($#{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}} + 1);
 				}
-				
 			}
 		}
 		print STDERR "Max number of observed consensus sequences: $s_exp\t$n_max\n"	if $b_verbose;	
@@ -926,7 +952,6 @@ sub loadFiles{
 			if(!defined $h_observed{$s_exp}{$s_ID}){
 				print STDERR "No data in observed FILE!!! $s_exp $s_ID\n";
 			}
-
 			if(!defined $h_observed{$s_exp}{$s_ID} && !defined $h_no_data{$s_exp}{$s_ID}){
 				print STDERR "WTF no data $s_exp $s_ID\n";
 			}
@@ -1058,7 +1083,6 @@ sub emailReport{
 
 	my $s_emails_list = shift;
 	my @a_emails      = split(/;/,$s_emails_list);
-
 	$report_directory = "report/";
 	print `tar cvzf report.tar.gz $report_directory`; 
 	print `echo "Report" | mailx -a report.tar.gz -s Report $s_emails_list`;
@@ -1092,6 +1116,7 @@ sub g2p{
 
 =cut
 sub expand{
+
 	my $gl = shift;
 	my ($s_gl1,$s_gl2) = split(/\+/,$gl);
 
@@ -1147,7 +1172,7 @@ sub printParams{
 =cut
 sub perlParseHML{
 
-	my ($hml_file, $s_exp) = @_;
+	my ($hml_file, $s_exp, $b_qc) = @_;
 
 	# Initial HML variables
 	my $sample_id; 
@@ -1168,8 +1193,8 @@ sub perlParseHML{
 	my $b_seq = 0; 
 	my $b_glstring = 0;
 
-	open(HML,$hml_file) or die "CANT OPEN FILE $! $0";
-	while(<HML>){
+	open(my $hml,"<",$hml_file) or die "CANT OPEN FILE $! $0";
+	while(<$hml>){
 		chomp;
 		
 		if($b_seq){ # If the previous line was a sequence header then..
@@ -1190,11 +1215,20 @@ sub perlParseHML{
 			my @a_haps = split(/\|/,$glstring);
 			foreach my $s_hap (@a_haps){
 				my($s_g1,$s_g2) = split(/\+/,$s_hap);
+				if(!$b_qc){
+					$h_expected_zygosity{$s_exp}{$sample_id}{$locus} = $s_g1 eq $s_g2 ? 1 : 2;
+				}else{
+					$h_qc_zygosity{$s_exp}{$sample_id}{$locus} = $s_g1 eq $s_g2 ? 1 : 2;
+				}
 				my $gls = (isAC($s_g1) || isAC($s_g2)) ? (getGL($s_g1,$s_g2)) : join("+",sort $s_g2, $s_g1);
 				foreach(split(/\|/,$gls)){ $h_gls{$_}++; }
 			}
 			$glstring = join("|",sort keys %h_gls);
-			$h_expected{$s_exp}{$sample_id}{$locus} = $glstring;
+			if(!$b_qc){
+				$h_expected{$s_exp}{$sample_id}{$locus}    = $glstring;
+			}else{
+				$h_qc_expected{$s_exp}{$sample_id}{$locus} = $glstring;
+			}
 			#$h_interp{$sample_id}{$locus}  = $interp_info;
 			next;
 		}
@@ -1219,7 +1253,7 @@ sub perlParseHML{
 		}
 		
 	}
-	close HML;
+	close $hml;
 
 
 }
@@ -1235,7 +1269,7 @@ sub perlParseHML{
 =cut
 sub javaParseHML{
 
-	my ($hml_file, $s_exp) = @_;
+	my ($hml_file, $s_exp, $b_qc) = @_;
 
 	foreach(`ngs-extract-expected -i $hml_file -g`){
 		chomp($_);
@@ -1259,9 +1293,15 @@ sub javaParseHML{
 		$s_typ1 = !defined $s_typ1 || $s_typ1 !~ /\S/ ? $s_typ2 : $s_typ1;
 		$s_typ2 = !defined $s_typ2 || $s_typ2 !~ /\S/ ? $s_typ1 : $s_typ2;
 
-		$h_expected{$s_exp}{$ID}{$s_loc} = (isAC($s_typ1) || isAC($s_typ2)) ? (getGL($s_typ1,$s_typ2)) : expand(join("+",sort $s_typ2, $s_typ1));			
-		$h_expected_zygosity{$s_exp}{$ID}{$s_loc} = $s_typ1 eq $s_typ2 ? 1 : 2;
+		if(!$b_qc){
+			$h_expected{$s_exp}{$ID}{$s_loc} = (isAC($s_typ1) || isAC($s_typ2)) ? (getGL($s_typ1,$s_typ2)) : expand(join("+",sort $s_typ2, $s_typ1));			
+			$h_expected_zygosity{$s_exp}{$ID}{$s_loc} = $s_typ1 eq $s_typ2 ? 1 : 2;
+		}else{
+			$h_qc_expected{$s_exp}{$ID}{$s_loc} = (isAC($s_typ1) || isAC($s_typ2)) ? (getGL($s_typ1,$s_typ2)) : expand(join("+",sort $s_typ2, $s_typ1));			
+			$h_qc_zygosity{$s_exp}{$ID}{$s_loc} = $s_typ1 eq $s_typ2 ? 1 : 2;
+		}
 	}
+
 
 }
 ################################################################################################################

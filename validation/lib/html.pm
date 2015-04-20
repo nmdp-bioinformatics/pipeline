@@ -47,7 +47,579 @@
 package html;
 
 use Data::Dumper;
+use warnings;
+use strict;
 
+
+################################################################################################################
+=head2 subjectsHeader
+
+  Title: subjectsHeader
+  Usage:
+  Function:
+  Returns:
+  Args:
+
+=cut
+sub subjectsHeader{
+
+  my ( $html, $s_exp, $s_ID, $rh_qc_verdict ) = @_;
+
+  my $s_experiment = $s_exp;
+
+  my $header = qq{
+    <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="">
+      <meta name="author" content="">
+      
+      <title>Validation Report</title>
+
+      <!-- Bootstrap core CSS -->
+      <link href="../../css/bootstrap.min.css" rel="stylesheet">
+      <script src="../../js/Chart.js"></script>
+      <!-- Custom styles for this template -->
+      <link href="../../css/dashboard.css" rel="stylesheet">
+
+      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+      <script src="../../js/ie-emulation-modes-warning.js"></script>
+
+      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+      <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+      <![endif]-->
+        <style type='text/css'>
+    .my-legend .legend-scale ul {
+      margin: 0;
+      padding: 0;
+      float: left;
+      list-style: none;
+      }
+    .my-legend .legend-scale ul li {
+      display: block;
+      float: left;
+      width: 50px;
+      margin-bottom: 6px;
+      text-align: center;
+      font-size: 80%;
+      list-style: none;
+      }
+    .my-legend ul.legend-labels li span {
+      display: block;
+      float: left;
+      height: 15px;
+      width: 50px;
+      }
+    .my-legend .legend-source {
+      font-size: 70%;
+      color: #999;
+      clear: both;
+      }
+    .my-legend a {
+      color: #777;
+      }
+
+      #expanding{
+        display:none;
+      }
+
+
+      </style>
+    </head>
+
+    <body>
+
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="../../experiment.html">Validation Report - $s_experiment </a>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="../../experiment.html">Experiments</a></li>
+              <li><a href="../../log.html">Log</a></li>
+              <li><a href="../../help.html">Help</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-sm-3 col-md-2 sidebar">
+            <ul class="nav nav-sidebar">
+              <li><a href="../index.html">Overview</a></li>
+              <li class="active"><a href="../results.html">Results<span class="sr-only">(current)</span></a></li>
+              <li><a href="../fails.html">Failed</a></li>
+              <li><a href="../errors.html">Dropout</a></li>
+              <li><a href="../drbx.html">DRBX</a></li>
+      };
+      print $html $header;
+      print $html "<li><a href=\"../qc.html\">QC</a></li>\n" if defined $$rh_qc_verdict{$s_exp};
+
+      my $header2 = qq{
+            </ul>
+          </div>
+          <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <h1 class="page-header">$s_ID Validation Results</h1>
+        <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Locus</th>
+                    <th>Locus Verdict</th>
+                    <th>Expected</th>
+                    <th>Allele Call 1</th>
+                    <th>Allele Call 1</th>
+                  </tr>
+                </thead>
+              <tbody> 
+
+          };
+          print $html $header2;
+
+}
+
+################################################################################################################
+=head2 htmlFooter
+
+  Title: htmlFooter
+  Usage:
+  Function:
+  Returns:
+  Args:
+
+=cut
+sub htmlFooter{
+
+  my ( $html ) = @_;
+
+  my $footer = qq{
+
+    <script type="text/javascript">
+      function downloadcsv() {
+      \$("table").toCSV();
+      }
+      </script>
+      <script type="text/javascript">
+      jQuery.fn.toCSV = function() {
+
+        var i = 9;
+        var checks     = \$('body').find('input');
+
+        var data    = \$(this).first(); //Only one table
+        var csvData = [];
+        var tmpArr  = [];
+        var tmpStr  = '';
+
+        data.find("tr").each(function() {
+
+              if(\$(this).find("th").length) {
+                  \$(this).find("th").each(function() {
+                    tmpStr = \$(this).text().replace(/"/g, '""');
+                    tmpArr.push(tmpStr);
+                  });
+                  csvData.push(tmpArr);
+              } else {
+
+                if(typeof(checks[i]) !== 'undefined' && checks[i].checked == true){
+                    tmpArr = [];
+                       \$(this).find("td").each(function() {
+                            if(\$(this).text().match(/^\\n/) && \$(this).text().match(/    /)) {
+                                
+                            } else {
+                                tmpStr = \$(this).text().replace(/(\\r\\n|\\n|\\r)/gm,"");
+                                tmpArr.push(tmpStr);
+                            }
+                       });
+                    csvData.push(tmpArr.join(','));
+                }
+                i++;
+              }
+        });
+
+        var output = csvData.join('\\n');
+        var uri = 'data:application/csv;charset=UTF-8,' + encodeURIComponent(output);
+        window.open(uri);
+      }
+      </script>
+      
+  <script>
+       // If the user clicks in the window, set the background color of  to yellow
+        function expand(obj) {
+          if(obj.getElementsByTagName("span")[0].style.display == "table"){
+            obj.getElementsByTagName("span")[0].style.display = "none";
+          }else{
+             obj.getElementsByTagName("span")[0].style.display = "table";
+          }
+        }
+
+    
+      </script>
+              <script>
+       // If the user clicks in the window, set the background color of  to yellow
+        function Addfilter() {
+
+          if(document.getElementsByClassName("tablesorter-filter-row")[0].style.display == "none"){
+            \$('.tablesorter-filter-row').css('display', 'table-row');
+          }else{
+            \$('.tablesorter-filter-row').css('display', 'none');
+          }
+          
+        }
+
+    
+      </script>
+
+            <script>
+       // If the user clicks in the window, set the background color of <body> to yellow
+        function expand(obj) {
+          if(obj.getElementsByTagName("span")[0].style.display == "table"){
+            obj.getElementsByTagName("span")[0].style.display = "none";
+          }else{
+             obj.getElementsByTagName("span")[0].style.display = "table";
+          }
+        }
+      </script>
+            <footer>
+        <div class="footer">
+          <img src="../img/bethematch.jpeg" alt="img02">
+          <p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
+        </div>
+      </footer> 
+      <style type="text/css">
+          .bargraph {
+            list-style: none;
+            padding-top: 20px;
+            width:560px;
+          }
+          a.id_links {
+        text-decoration: none;
+        font:bold;
+        color:black;
+          }
+          a.id_links:hover {
+        color:#A8A8A8;
+          }
+          footer {
+          color: #888;
+          clear:both;
+          position: relative; 
+          bottom: 10px;
+          left: 0; width: 100%; 
+          text-align: center;
+          font-size:9px;
+          
+          background: rgba(255, 255, 255, 0.6);
+      }         
+
+                        .hovering{
+        color:black;
+        text-decoration: none;    
+          }
+          .hovering:hover{
+        color:#AAA;
+        text-decoration: none;
+          }  
+      </style>
+      <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+      <script src="../js/bootstrap.min.js"></script>
+      <script src="../js/docs.min.js"></script>
+      <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+      <script src="../js/ie10-viewport-bug-workaround.js"></script>
+    
+    </body>
+  </html>
+  };
+  print $html $footer;
+
+}
+################################################################################################################
+=head2 htmlHeader
+
+  Title:     htmlHeader
+  Usage:
+  Function:  Prints the header to the failed.html file
+  Returns:
+  Args:
+
+=cut
+sub htmlHeader{
+
+  my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed, $s_type, $b_drbx, $b_error, $b_failed  ) = @_;
+
+
+  my $s_experiment = $s_exp;
+
+  my $header = qq{
+    <!DOCTYPE html>
+  <html lang="en">
+    <head>
+         <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="">
+      <meta name="author" content="">
+      
+      <title>Validation Report</title>
+
+      <!-- Bootstrap core CSS -->
+      <link href="../css/bootstrap.min.css" rel="stylesheet">
+      <script src="../js/Chart.js"></script>
+      <!-- Custom styles for this template -->
+      <link href="../css/dashboard.css" rel="stylesheet">
+
+      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+      <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+      <![endif]-->
+
+    <script type="text/javascript" src="../js/jquery.js"></script> 
+  <script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
+  <script type="text/javascript" src="../js/jquery.tablesorter.widgets.js"></script> 
+  
+  <script src="../js/jquery-latest.min.js"></script>
+  <script src="../js/jquery-ui.min.js"></script>
+  <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/docs.js"></script>
+
+  <script src="../js/prettify.js"></script>
+  <script src="../js/jquery-latest.min.js"></script>
+
+  <!-- Tablesorter: theme -->
+  <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
+
+
+  <!-- Tablesorter script: required -->
+  <script src="../js/jquery.tablesorter.js"></script>
+  <script src="../js/jquery.tablesorter.widgets.js"></script>
+
+  <script id="js">\$(function(){
+
+    \$(\'#table1\').tablesorter({
+      widthFixed : true,
+      showProcessing: true,
+      headerTemplate : '{content} {icon}', // Add icon for various themes
+
+      widgets: [ 'stickyHeaders', 'filter' ],
+
+      widgetOptions: {
+
+        // extra class name added to the sticky header row
+        stickyHeaders : '',
+        // number or jquery selector targeting the position:fixed element
+        stickyHeaders_offset : 50,
+        // added to table ID, if it exists
+        stickyHeaders_cloneId : '-sticky',
+        // trigger "resize" event on headers
+        stickyHeaders_addResizeEvent : false,
+        // if false and a caption exist, it won't be included in the sticky header
+        stickyHeaders_includeCaption : false,
+        // The zIndex of the stickyHeaders, allows the user to adjust this to their needs
+        stickyHeaders_zIndex : 2,
+        // jQuery selector or object to attach sticky header to
+        stickyHeaders_attachTo : null,
+        // jQuery selector or object to monitor horizontal scroll position (defaults: xScroll > attachTo > window)
+        stickyHeaders_xScroll : null,
+        // jQuery selector or object to monitor vertical scroll position (defaults: yScroll > attachTo > window)
+        stickyHeaders_yScroll : null,
+        // scroll table top into view after filtering
+        stickyHeaders_filteredToTop: true,
+
+      }
+    });
+    \$('input[type=\"checkbox\"][value=\"change\"]').change(function() {
+         if(this.checked) {
+            var checkboxes = \$('body').find('input');
+            for(var i =0;i<checkboxes.length;i++){
+              if(checkboxes[i].value !== "change"){
+                checkboxes[i].checked = true;
+              }
+            }
+         }
+         if(!this.checked) {
+            var checkboxes = \$('body').find('input');
+            for(var i =0;i<checkboxes.length;i++){
+              if(checkboxes[i].value !== "change"){
+                checkboxes[i].checked = false;
+              }
+            }
+         }
+
+     });
+    
+});</script>
+        <style type='text/css'>
+    .my-legend .legend-scale ul {
+      margin: 0;
+      padding: 0;
+      float: left;
+      list-style: none;
+      }
+    .my-legend .legend-scale ul li {
+      display: block;
+      float: left;
+      width: 50px;
+      margin-bottom: 6px;
+      text-align: center;
+      font-size: 80%;
+      list-style: none;
+      }
+    .my-legend ul.legend-labels li span {
+      display: block;
+      float: left;
+      height: 15px;
+      width: 50px;
+      }
+    .my-legend .legend-source {
+      font-size: 70%;
+      color: #999;
+      clear: both;
+      }
+    .my-legend a {
+      color: #777;
+      }
+
+      #expanding{
+        display:none;
+      }
+
+
+      </style>
+};
+print $html $header;
+
+my $header2 = qq{
+    </head>
+
+    <body>
+
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment </a>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="../experiment.html">Experiments</a></li>
+              <li><a href="../log.html">Log</a></li>
+              <li><a href="../help.html">Help</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-sm-3 col-md-2 sidebar">
+            <ul class="nav nav-sidebar">
+    };
+
+ print $html $header2;
+
+  my $index_results   = qq{
+    <li ><a href="index.html">Overview</a></li>
+  };
+  print $html $index_results;
+  my $result_inactive = qq{
+    <li ><a href="results.html">Results</a></li>
+  };
+  print $html $result_inactive,"\n" if($s_type ne "results");    
+  my $results_active   = qq{
+    <li class="active"><a href="results.html">Results<span class="sr-only">(current)</span></a></li>
+  };
+  print $html $results_active,"\n" if($s_type eq "results");    
+
+  my $failed_inactive = qq{
+    <li ><a href="fails.html">Failed</a></li>
+  };
+  print $html $failed_inactive,"\n" if($s_type ne "failed" && $b_failed);
+  my $fails_active   = qq{
+    <li class="active"><a href="fails.html">Failed<span class="sr-only">(current)</span></a></li>
+  };
+  print $html $fails_active,"\n" if( $s_type eq "failed");
+
+  my $error_inactive  = qq{
+    <li ><a href="errors.html">Dropout</a></li>
+  };
+  print $html $error_inactive if($s_type ne "error" && $b_error);
+  my $error_active   = qq{
+    <li class="active"><a href="errors.html">Dropout<span class="sr-only">(current)</span></a></li>
+  };
+  print $html $error_active,"\n" if( $s_type eq "error");
+
+  my $drbx_inactive   = qq{
+    <li ><a href="drbx.html">DRBX</a></li>
+  };
+  print $html $drbx_inactive if($s_type ne "drbx" && $b_drbx);
+  my $drbx_active    = qq{
+    <li class="active"><a href="drbx.html">DRBX<span class="sr-only">(current)</span></a></li>
+  };
+  print $html $drbx_active,"\n" if( $s_type eq "drbx");
+      
+  print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $$rh_qc_verdict{$s_exp};
+  my $header3 = qq{
+            </ul>
+          </div>
+          <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+          <div style="float:right;margin-top:20px;">
+                <a class="hovering" >
+              <span  onclick="Addfilter()" style="font-weight:bold;">Filter Rows</span>         
+            </a>
+            <span  style="font-weight:bold;"> | </span>
+                <a class="hovering" >
+                  <span  onclick="downloadcsv()" style="font-weight:bold;">Download to CSV</span>
+                </a>
+            </div>
+            <h1 class="page-header">Validation Results</h1>
+            <div class="table-responsive">
+              <table class="table table-striped tablesorter-bootstrap" id="table1">
+                <thead>
+                  <tr>
+                    <td style="border-color:#dddddd;border-style:solid;border-left-width:0px;border-right-width:0px;border-bottom-width:2px;" class="filter-false sorter-false">
+                      <div style="margin-top:17px;"><input type = "checkbox" value="change"/></div>
+                    </td>  
+                    <th>Sample ID</th>
+                    <th>Locus</th>
+                    <th>Locus Verdict</th>
+                    <th>Allele Verdict</th>
+                    <th>Observed Seqs</th>
+                    <th>Expected Allele</th>
+          };
+          print $html $header3;
+          for(1..$n_max_observed){
+            print $html "<th>Observed Allele Call ",$_,"</th>\n";
+          }
+          my $header4 = qq{
+                  </tr>
+                </thead>
+                <tbody>
+          };
+          print $html $header4;
+
+}
 
 ################################################################################################################
 =head2 logHeader
@@ -179,7 +751,7 @@ sub logHeader{
 =cut
 sub experimentsHtml{
 
-	my ($html, $rh_counts, $rh_experiments) = @_;
+	my ($html, $rh_counts, $rh_experiments, $b_verbose) = @_;
 
 	my %h_counts = %$rh_counts;
 	my %h_experiments = %$rh_experiments;
@@ -348,6 +920,13 @@ my $table2 = qq{
    foreach my $s_exp (sort keys %h_experiments){
     print $html "\t<tr>\n";
     print $html "\t\t<td>$s_exp</td>\n";
+    for my $s_type (qw(SUBJECT LOCUS ALLELE)){
+      for my $s_report_cde (qw(DRBX ERROR FAIL PASS)){
+          $h_counts{$s_exp}{$s_type}{TOTAL}{$s_report_cde} = !defined $h_counts{$s_exp}{$s_type}{TOTAL}{$s_report_cde} ? 
+            0 : $h_counts{$s_exp}{$s_type}{TOTAL}{$s_report_cde};
+      }
+    }
+
     my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
       $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
@@ -475,6 +1054,9 @@ my $table4 = qq{
    foreach my $s_exp (sort keys %h_experiments){
     print $html "\t<tr>\n";
     print $html "\t\t<td>$s_exp</td>\n";
+
+    $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} = defined $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} ? 0 : $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS};
+
     my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
       $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
@@ -852,7 +1434,7 @@ sub helpHtml{
     <!-- Bootstrap core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <script src="js/Chart.js"></script>
-
+    <script src="js/jquery-latest.min.js"></script>
 
     <!-- Custom styles for this template -->
     <link href="css/dashboard.css" rel="stylesheet">
@@ -941,49 +1523,49 @@ sub helpHtml{
           <div>
 <ul id="mobile" class="cd-faq-group">
       <li>
-        <a class="cd-faq-trigger" href="#0">How do I run ngs-validation-report?</a>
+        <a class="cd-faq-trigger  faq-format" href="#0">How do I run ngs-validation-report?</a>
         <div class="cd-faq-content">
           <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Impedit quidem delectus rerum eligendi mollitia, repudiandae quae beatae. Et repellat quam atque corrupti iusto architecto impedit explicabo repudiandae qui similique aut iure ipsum quis inventore nulla error aliquid alias quia dolorem dolore, odio excepturi veniam odit veritatis. Quo iure magnam, et cum. Laudantium, eaque non? Tempore nihil corporis cumque dolor ipsum accusamus sapiente aliquid quis ea assumenda deserunt praesentium voluptatibus, accusantium a mollitia necessitatibus nostrum voluptatem numquam modi ab, sint rem.</p>
         </div> <!-- cd-faq-content -->
       </li>
       <li>
-        <a class="cd-faq-trigger" href="#0">What does it mean for the typing to be designated as a fail?</a>
+        <a class="cd-faq-trigger faq-format" href="#0">What does it mean for the typing to be designated as a fail?</a>
         <div class="cd-faq-content">
           <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis provident officiis, reprehenderit numquam. Praesentium veritatis eos tenetur magni debitis inventore fugit, magnam, reiciendis, saepe obcaecati ex vero quaerat distinctio velit.</p>
         </div> <!-- cd-faq-content -->
       </li>
       <li>
-        <a class="cd-faq-trigger" href="#0">What does it mean for the typing to be designated as a dropout?</a>
+        <a class="cd-faq-trigger faq-format" href="#0">What does it mean for the typing to be designated as a dropout?</a>
         <div class="cd-faq-content">
           <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis provident officiis, reprehenderit numquam. Praesentium veritatis eos tenetur magni debitis inventore fugit, magnam, reiciendis, saepe obcaecati ex vero quaerat distinctio velit.</p>
         </div> <!-- cd-faq-content -->
       </li>
       <li>
-        <a class="cd-faq-trigger" href="#0">What does it mean for the typing to be designated as a DRBX?</a>
+        <a class="cd-faq-trigger faq-format" href="#0">What does it mean for the typing to be designated as a DRBX?</a>
         <div class="cd-faq-content">
           <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis provident officiis, reprehenderit numquam. Praesentium veritatis eos tenetur magni debitis inventore fugit, magnam, reiciendis, saepe obcaecati ex vero quaerat distinctio velit.</p>
         </div> <!-- cd-faq-content -->
       </li>
       <li>
-        <a class="cd-faq-trigger" href="#0">Can a subject's DRB1 typing still pass if they have DRBX typing being called?</a>
+        <a class="cd-faq-trigger faq-format" href="#0">Can a subject's DRB1 typing still pass if they have DRBX typing being called?</a>
         <div class="cd-faq-content">
           <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis provident officiis, reprehenderit numquam. Praesentium veritatis eos tenetur magni debitis inventore fugit, magnam, reiciendis, saepe obcaecati ex vero quaerat distinctio velit.</p>
         </div> <!-- cd-faq-content -->
       </li>
       <li>
-        <a class="cd-faq-trigger" href="#0">How do I include my QC data?</a>
+        <a class="cd-faq-trigger faq-format" href="#0">How do I include my QC data?</a>
         <div class="cd-faq-content">
           <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nisi tempore, placeat quisquam rerum! Eligendi fugit dolorum tenetur modi fuga nisi rerum, autem officiis quaerat quos. Magni quia, quo quibusdam odio. Error magni aperiam amet architecto adipisci aspernatur! Officia, quaerat magni architecto nostrum magnam fuga nihil, ipsum laboriosam similique voluptatibus facilis nobis? Eius non asperiores, nesciunt suscipit veniam blanditiis veritatis provident possimus iusto voluptas, eveniet architecto quidem quos molestias, aperiam eum reprehenderit dolores ad deserunt eos amet. Vero molestiae commodi unde dolor dicta maxime alias, velit, nesciunt cum dolorem, ipsam soluta sint suscipit maiores mollitia assumenda ducimus aperiam neque enim! Quas culpa dolorum ipsam? Ipsum voluptatibus numquam natus? Eligendi explicabo eos, perferendis voluptatibus hic sed ipsam rerum maiores officia! Beatae, molestias!</p>
         </div> <!-- cd-faq-content -->
       </li>
       <li>
-        <a class="cd-faq-trigger" href="#0">Why is there no log output?</a>
+        <a class="cd-faq-trigger faq-format" href="#0">Why is there no log output?</a>
         <div class="cd-faq-content">
           <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis provident officiis, reprehenderit numquam. Praesentium veritatis eos tenetur magni debitis inventore fugit, magnam, reiciendis, saepe obcaecati ex vero quaerat distinctio velit.</p>
         </div> <!-- cd-faq-content -->
       </li>
       <li>
-        <a class="cd-faq-trigger" href="#0">Why do the number of loci and alleles defer between experiments?</a>
+        <a class="cd-faq-trigger faq-format" href="#0">Why do the number of loci and alleles defer between experiments?</a>
         <div class="cd-faq-content">
           <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis provident officiis, reprehenderit numquam. Praesentium veritatis eos tenetur magni debitis inventore fugit, magnam, reiciendis, saepe obcaecati ex vero quaerat distinctio velit.</p>
         </div> <!-- cd-faq-content -->
@@ -1019,7 +1601,11 @@ sub helpHtml{
         margin-top: 300px;
         background: rgba(255, 255, 255, 0.6);
     }
+    .faq-format{
+       text-decoration: none;
+       color:black;
 
+    }
     .cd-faq-group {
   /* hide group not selected */
   display: none;
@@ -1040,7 +1626,7 @@ sub helpHtml{
   display: block;
 
 }
-@media only screen and (min-width: 768px) {
+\@media only screen and (min-width: 768px) {
   .cd-faq-group {
     /* all groups visible */
     display: block;
@@ -1075,7 +1661,7 @@ sub helpHtml{
   line-height: 1.2;
   text-decoration: none;
 }
-@media only screen and (min-width: 768px) {
+\@media only screen and (min-width: 768px) {
   
   .cd-faq-trigger {
     font-size: 24px;
@@ -1143,7 +1729,7 @@ font-color:black;
   line-height: 1.4;
   color: #6c7d8e;
 }
-@media only screen and (min-width: 768px) {
+\@media only screen and (min-width: 768px) {
   .cd-faq-content {
     display: none;
     padding: 0 24px 30px;
@@ -1182,7 +1768,7 @@ font-color:black;
 =cut
 sub indexHeader{
 
-	my ($html, $s_exp, $rh_qc_verdict) = @_;
+	my ($html, $s_exp, $rh_qc_verdict, $b_drbx, $b_error, $b_failed) = @_;
 
 	my $s_experiment = $s_exp;
 	my $header = 
@@ -1280,13 +1866,27 @@ sub indexHeader{
         <div class="col-sm-3 col-md-2 sidebar">
           <ul class="nav nav-sidebar">
             <li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>
-             <li><a href="results.html">Results</a></li>
-            <li><a href="fails.html">Failed</a></li>
-            <li><a href="errors.html">Dropout</a></li>
-            <li><a href="drbx.html">DRBX</a></li>
     };
-    print $html $header;
-    print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $$rh_qc_verdict{$s_exp};
+
+  print $html $header;
+
+  my $results_inactive = qq{
+    <li ><a href="results.html">Results</a></li>
+  };
+  print $html $results_inactive;
+  my $failed_inactive = qq{
+    <li ><a href="fails.html">Failed</a></li>
+  };
+  print $html $failed_inactive if($b_failed);
+  my $error_inactive  = qq{
+    <li ><a href="errors.html">Dropout</a></li>
+  };
+  print $html $error_inactive if($b_error);
+  my $drbx_inactive   = qq{
+    <li ><a href="drbx.html">DRBX</a></li>
+  };
+  print $html $drbx_inactive if($b_drbx);
+  print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $$rh_qc_verdict{$s_exp};
     
     my $header2 = qq{      </ul>
         </div>
@@ -1759,246 +2359,6 @@ sub indexBody{
 
 
 }
-
-################################################################################################################
-=head2 resultsHeader
-
-	Title:     resultsHeader
-	Usage:
-	Function:  Prints the header to the results.html file
-	Returns:
-	Args:
-
-=cut
-sub resultsHeader{
-
-	my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed ) = @_;
-
-	my $s_experiment = $s_exp;
-
-	my $header = qq{
-		<!DOCTYPE html>
-	<html lang="en">
-	  <head>
-	       <meta charset="utf-8">
-      <meta http-equiv="X-UA-Compatible" content="IE=edge">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
-      <meta name="author" content="">
-      
-      <title>Validation Report</title>
-
-      <!-- Bootstrap core CSS -->
-      <link href="../css/bootstrap.min.css" rel="stylesheet">
-      <script src="../js/Chart.js"></script>
-      <!-- Custom styles for this template -->
-      <link href="../css/dashboard.css" rel="stylesheet">
-
-      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-
-      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-      <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-      <![endif]-->
-
-    <script type="text/javascript" src="../js/jquery.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.widgets.js"></script> 
-  
-  <script src="../js/jquery-latest.min.js"></script>
-  <script src="../js/jquery-ui.min.js"></script>
-  <script src="../js/bootstrap.min.js"></script>
-    <script src="../js/docs.js"></script>
-
-  <script src="../js/prettify.js"></script>
-  <script src="../js/jquery-latest.min.js"></script>
-
-  <!-- Tablesorter: theme -->
-  <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
-
-
-  <!-- Tablesorter script: required -->
-  <script src="../js/jquery.tablesorter.js"></script>
-  <script src="../js/jquery.tablesorter.widgets.js"></script>
-
-  <script id=\"js\">\$(function(){
-
-    \$(\'#table1\').tablesorter({
-      widthFixed : true,
-      showProcessing: true,
-      headerTemplate : '{content} {icon}', // Add icon for various themes
-
-      widgets: [ 'stickyHeaders', 'filter' ],
-
-      widgetOptions: {
-
-        // extra class name added to the sticky header row
-        stickyHeaders : '',
-        // number or jquery selector targeting the position:fixed element
-        stickyHeaders_offset : 50,
-        // added to table ID, if it exists
-        stickyHeaders_cloneId : '-sticky',
-        // trigger "resize" event on headers
-        stickyHeaders_addResizeEvent : false,
-        // if false and a caption exist, it won't be included in the sticky header
-        stickyHeaders_includeCaption : false,
-        // The zIndex of the stickyHeaders, allows the user to adjust this to their needs
-        stickyHeaders_zIndex : 2,
-        // jQuery selector or object to attach sticky header to
-        stickyHeaders_attachTo : null,
-        // jQuery selector or object to monitor horizontal scroll position (defaults: xScroll > attachTo > window)
-        stickyHeaders_xScroll : null,
-        // jQuery selector or object to monitor vertical scroll position (defaults: yScroll > attachTo > window)
-        stickyHeaders_yScroll : null,
-        // scroll table top into view after filtering
-        stickyHeaders_filteredToTop: true,
-
-      }
-    });
-    \$(\'input[type=\"checkbox\"][value=\"change\"]\').change(function() {
-         if(this.checked) {
-            var checkboxes = \$(\'body\').find(\'input\');
-            for(var i =0;i<checkboxes.length;i++){
-              if(checkboxes[i].value !== "change"){
-                checkboxes[i].checked = true;
-              }
-            }
-         }
-         if(!this.checked) {
-            var checkboxes = \$(\'body\').find(\'input\');
-            for(var i =0;i<checkboxes.length;i++){
-              if(checkboxes[i].value !== "change"){
-                checkboxes[i].checked = false;
-              }
-            }
-         }
-
-     });
-    
-});</script>
-        <style type='text/css'>
-    .my-legend .legend-scale ul {
-      margin: 0;
-      padding: 0;
-      float: left;
-      list-style: none;
-      }
-    .my-legend .legend-scale ul li {
-      display: block;
-      float: left;
-      width: 50px;
-      margin-bottom: 6px;
-      text-align: center;
-      font-size: 80%;
-      list-style: none;
-      }
-    .my-legend ul.legend-labels li span {
-      display: block;
-      float: left;
-      height: 15px;
-      width: 50px;
-      }
-    .my-legend .legend-source {
-      font-size: 70%;
-      color: #999;
-      clear: both;
-      }
-    .my-legend a {
-      color: #777;
-      }
-
-      #expanding{
-        display:none;
-      }
-
-
-      </style>
-};
-print $html $header;
-
-
-my $header2 = qq{
-	  </head>
-
-	  <body>
-
-	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-	      <div class="container-fluid">
-	        <div class="navbar-header">
-	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-	            <span class="sr-only">Toggle navigation</span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	          </button>
-	          <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment </a>
-	        </div>
-	        <div id="navbar" class="navbar-collapse collapse">
-	          <ul class="nav navbar-nav navbar-right">
-	            <li><a href="../experiment.html">Experiments</a></li>
-	            <li><a href="../log.html">Log</a></li>
-	            <li><a href="../help.html">Help</a></li>
-	          </ul>
-	        </div>
-	      </div>
-	    </nav>
-
-	    <div class="container-fluid">
-	      <div class="row">
-	        <div class="col-sm-3 col-md-2 sidebar">
-	          <ul class="nav nav-sidebar">
-	            <li><a href="index.html">Overview</a></li>
-	            <li class="active"><a href="results.html">Results<span class="sr-only">(current)</span></a></li>
-	            <li><a href="fails.html">Failed</a></li>
-	            <li><a href="errors.html">Dropout</a></li>
-              <li><a href="drbx.html">DRBX</a></li>
-	    };
-	    print $html $header2;
-
-	print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $$rh_qc_verdict{$s_exp};
-	my $header3 = qq{
-	          </ul>
-	        </div>
-	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          <div style="float:right;margin-top:20px;">
-                <a class="hovering" >
-              <span  onclick="Addfilter()" style="font-weight:bold;">Filter Rows</span>         
-            </a>
-            <span  style="font-weight:bold;"> | </span>
-                <a class="hovering" >
-                  <span  onclick="downloadcsv()" style="font-weight:bold;">Download to CSV</span>
-                </a>
-            </div>
-
-	          <h1 class="page-header">Validation Results</h1>
-	          <div class="table-responsive">
-	             <table class="table table-striped tablesorter-bootstrap" id="table1">
-	              <thead>
-	                <tr>
-                  <td style="border-color:#dddddd;border-style:solid;border-left-width:0px;border-right-width:0px;border-bottom-width:2px;" class="filter-false sorter-false">
-                      <div style="margin-top:17px;"><input type = "checkbox" value="change"/></div>
-                  </td>                  
-	                  <th>Sample ID</th>
-	                  <th>Locus</th>
-	                  <th>Locus Verdict</th>
-	                  <th>Allele Verdict</th>
-	                  <th>Observed Seqs</th>
-	                  <th>Expected Allele</th>
-          };
-          print $html $header3;
-          for(1..$n_max_observed){
-            print $html "<th>Observed Allele Call ",$_,"</th>\n";
-          }
-          my $header4 = qq{
-	                </tr>
-	              </thead>
-	              <tbody>
-          };
-          print $html $header4;
-
-}
 ################################################################################################################
 =head2 resultsBody
 
@@ -2026,8 +2386,7 @@ sub resultsBody{
 				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
 				
 				if(!defined $$ra_subject_pages{$s_ID}){
-					print STDERR "Subject has no valid loci defined!! $s_ID\n" if !defined $rh_subject_errors || !defined $h_subject_errors{$s_ID} && $b_verbose;
-					#print $log_html "Subject has no valid loci defined!! <b>$s_exp $s_ID</b><br>" if !defined $rh_subject_errors || !defined $$rh_subject_errors{$s_ID};
+					print STDERR "Subject has no valid loci defined!! $s_ID\n" if !defined $rh_subject_errors || !defined $h_subject_errors{$s_ID};
 					$h_subject_errors{$s_ID}++;
 					next;
 				}
@@ -2106,6 +2465,16 @@ sub resultsBody{
 
 }
 
+################################################################################################################
+=head2 printObservedAlleles
+
+  Title:     printObservedAlleles
+  Usage:
+  Function:  Prints the body to the failed.html file
+  Returns:
+  Args:
+
+=cut
 sub printObservedAlleles{
 
     my( $html, $observed_gl, $s_typing, $n_cutoff2, $n_cutoff1) = @_;
@@ -2172,376 +2541,6 @@ sub printObservedAlleles{
 
 }
 
-sub resultsFooter{
-
-	my ( $html ) = @_;
-
-	my $footer = qq{
-
-<script type="text/javascript">
-      function downloadcsv() {
-      \$("table").toCSV();
-      }
-      </script>
-      <script type="text/javascript">
-      jQuery.fn.toCSV = function() {
-
-        var i = 9;
-        var checks     = \$('body').find('input');
-
-        var data    = \$(this).first(); //Only one table
-        var csvData = [];
-        var tmpArr  = [];
-        var tmpStr  = '';
-
-        data.find("tr").each(function() {
-
-              if(\$(this).find("th").length) {
-                  \$(this).find("th").each(function() {
-                    tmpStr = \$(this).text().replace(/"/g, '""');
-                    tmpArr.push(tmpStr);
-                  });
-                  csvData.push(tmpArr);
-              } else {
-
-                if(typeof(checks[i]) !== 'undefined' && checks[i].checked == true){
-                    tmpArr = [];
-                       \$(this).find("td").each(function() {
-                            if(\$(this).text().match(/^\\n/) && \$(this).text().match(/    /)) {
-                                
-                            } else {
-                                tmpStr = \$(this).text().replace(/(\\r\\n|\\n|\\r)/gm,"");
-                                tmpArr.push(tmpStr);
-                            }
-                       });
-                    csvData.push(tmpArr.join(','));
-                }
-                i++;
-              }
-        });
-
-        var output = csvData.join('\\n');
-        var uri = 'data:application/csv;charset=UTF-8,' + encodeURIComponent(output);
-        window.open(uri);
-      }
-      </script>
-			
-	<script>
-	     // If the user clicks in the window, set the background color of  to yellow
-	      function expand(obj) {
-	        if(obj.getElementsByTagName("span")[0].style.display == "table"){
-	          obj.getElementsByTagName("span")[0].style.display = "none";
-	        }else{
-	           obj.getElementsByTagName("span")[0].style.display = "table";
-	        }
-	      }
-
-    
-	    </script>
-              <script>
-       // If the user clicks in the window, set the background color of  to yellow
-        function Addfilter() {
-
-          if(document.getElementsByClassName("tablesorter-filter-row")[0].style.display == "none"){
-            \$('.tablesorter-filter-row').css('display', 'table-row');
-          }else{
-            \$('.tablesorter-filter-row').css('display', 'none');
-          }
-          
-        }
-
-    
-      </script>
-	    			<footer>
-				<div class="footer">
-					<img src="../img/bethematch.jpeg" alt="img02">
-					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
-				</div>
-			</footer>	
-	    <style type="text/css">
-	        .bargraph {
-	          list-style: none;
-	          padding-top: 20px;
-	          width:560px;
-	        }
-	        a.id_links {
-				text-decoration: none;
-				font:bold;
-				color:black;
-	        }
-	        a.id_links:hover {
-				color:#A8A8A8;
-	        }
-	        footer {
-					color: #888;
-					clear:both;
-					position: relative; 
-					bottom: 10px;
-					left: 0; width: 100%; 
-					text-align: center;
-					font-size:9px;
-					
-					background: rgba(255, 255, 255, 0.6);
-			   }
-                  .hovering{
-        color:black;
-        text-decoration: none;    
-          }
-          .hovering:hover{
-        color:#AAA;
-        text-decoration: none;
-          }	        
-	    </style>
-	     <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-	    <script src="../js/bootstrap.min.js"></script>
-	    <script src="../js/docs.min.js"></script>
-	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-	    <script src="../js/ie10-viewport-bug-workaround.js"></script>
-	  
-	  </body>
-	</html>
-	};
-	print $html $footer;
-
-}
-
-################################################################################################################
-=head2 failedHeader
-
-	Title:     failedHeader
-	Usage:
-	Function:  Prints the header to the failed.html file
-	Returns:
-	Args:
-
-=cut
-sub failedHeader{
-
-	my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed  ) = @_;
-
-	my $s_experiment = $s_exp;
-
-  my $header = qq{
-    <!DOCTYPE html>
-  <html lang="en">
-    <head>
-         <meta charset="utf-8">
-      <meta http-equiv="X-UA-Compatible" content="IE=edge">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
-      <meta name="author" content="">
-      
-      <title>Validation Report</title>
-
-      <!-- Bootstrap core CSS -->
-      <link href="../css/bootstrap.min.css" rel="stylesheet">
-      <script src="../js/Chart.js"></script>
-      <!-- Custom styles for this template -->
-      <link href="../css/dashboard.css" rel="stylesheet">
-
-      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-
-      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-      <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-      <![endif]-->
-
-    <script type="text/javascript" src="../js/jquery.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.widgets.js"></script> 
-  
-  <script src="../js/jquery-latest.min.js"></script>
-  <script src="../js/jquery-ui.min.js"></script>
-  <script src="../js/bootstrap.min.js"></script>
-    <script src="../js/docs.js"></script>
-
-  <script src="../js/prettify.js"></script>
-  <script src="../js/jquery-latest.min.js"></script>
-
-  <!-- Tablesorter: theme -->
-  <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
-
-
-  <!-- Tablesorter script: required -->
-  <script src="../js/jquery.tablesorter.js"></script>
-  <script src="../js/jquery.tablesorter.widgets.js"></script>
-
-  <script id="js">\$(function(){
-
-    \$(\'#table1\').tablesorter({
-      widthFixed : true,
-      showProcessing: true,
-      headerTemplate : '{content} {icon}', // Add icon for various themes
-
-      widgets: [ 'stickyHeaders', 'filter' ],
-
-      widgetOptions: {
-
-        // extra class name added to the sticky header row
-        stickyHeaders : '',
-        // number or jquery selector targeting the position:fixed element
-        stickyHeaders_offset : 50,
-        // added to table ID, if it exists
-        stickyHeaders_cloneId : '-sticky',
-        // trigger "resize" event on headers
-        stickyHeaders_addResizeEvent : false,
-        // if false and a caption exist, it won't be included in the sticky header
-        stickyHeaders_includeCaption : false,
-        // The zIndex of the stickyHeaders, allows the user to adjust this to their needs
-        stickyHeaders_zIndex : 2,
-        // jQuery selector or object to attach sticky header to
-        stickyHeaders_attachTo : null,
-        // jQuery selector or object to monitor horizontal scroll position (defaults: xScroll > attachTo > window)
-        stickyHeaders_xScroll : null,
-        // jQuery selector or object to monitor vertical scroll position (defaults: yScroll > attachTo > window)
-        stickyHeaders_yScroll : null,
-        // scroll table top into view after filtering
-        stickyHeaders_filteredToTop: true,
-
-      }
-    });
-    \$('input[type=\"checkbox\"][value=\"change\"]').change(function() {
-         if(this.checked) {
-            var checkboxes = \$('body').find('input');
-            for(var i =0;i<checkboxes.length;i++){
-              if(checkboxes[i].value !== "change"){
-                checkboxes[i].checked = true;
-              }
-            }
-         }
-         if(!this.checked) {
-            var checkboxes = \$('body').find('input');
-            for(var i =0;i<checkboxes.length;i++){
-              if(checkboxes[i].value !== "change"){
-                checkboxes[i].checked = false;
-              }
-            }
-         }
-
-     });
-    
-});</script>
-        <style type='text/css'>
-    .my-legend .legend-scale ul {
-      margin: 0;
-      padding: 0;
-      float: left;
-      list-style: none;
-      }
-    .my-legend .legend-scale ul li {
-      display: block;
-      float: left;
-      width: 50px;
-      margin-bottom: 6px;
-      text-align: center;
-      font-size: 80%;
-      list-style: none;
-      }
-    .my-legend ul.legend-labels li span {
-      display: block;
-      float: left;
-      height: 15px;
-      width: 50px;
-      }
-    .my-legend .legend-source {
-      font-size: 70%;
-      color: #999;
-      clear: both;
-      }
-    .my-legend a {
-      color: #777;
-      }
-
-      #expanding{
-        display:none;
-      }
-
-
-      </style>
-};
-print $html $header;
-
-my $header2 = qq{
-	  </head>
-
-	  <body>
-
-	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-	      <div class="container-fluid">
-	        <div class="navbar-header">
-	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-	            <span class="sr-only">Toggle navigation</span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	          </button>
-	          <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment </a>
-	        </div>
-	        <div id="navbar" class="navbar-collapse collapse">
-	          <ul class="nav navbar-nav navbar-right">
-	            <li><a href="../experiment.html">Experiments</a></li>
-	            <li><a href="../log.html">Log</a></li>
-	            <li><a href="../help.html">Help</a></li>
-	          </ul>
-	        </div>
-	      </div>
-	    </nav>
-
-	    <div class="container-fluid">
-	      <div class="row">
-	        <div class="col-sm-3 col-md-2 sidebar">
-	          <ul class="nav nav-sidebar">
-	            <li><a href="index.html">Overview</a></li>
-	            <li><a href="results.html">Results</a></li>
-	            <li class="active"><a href="fails.html">Failed<span class="sr-only">(current)</span></a></li>
-	            <li><a href="errors.html">Dropout</a></li>
-              <li><a href="drbx.html">DRBX</a></li>
-	    };
-	    print $html $header2;
-
-	print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $$rh_qc_verdict{$s_exp};
-	my $header3 = qq{
-	          </ul>
-	        </div>
-	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          <div style="float:right;margin-top:20px;">
-                <a class="hovering" >
-              <span  onclick="Addfilter()" style="font-weight:bold;">Filter Rows</span>         
-            </a>
-            <span  style="font-weight:bold;"> | </span>
-                <a class="hovering" >
-                  <span  onclick="downloadcsv()" style="font-weight:bold;">Download to CSV</span>
-                </a>
-            </div>
-	          <h1 class="page-header">Validation Results</h1>
-	          <div class="table-responsive">
-	            <table class="table table-striped tablesorter-bootstrap" id="table1">
-	              <thead>
-	                <tr>
-                    <td style="border-color:#dddddd;border-style:solid;border-left-width:0px;border-right-width:0px;border-bottom-width:2px;" class="filter-false sorter-false">
-                      <div style="margin-top:17px;"><input type = "checkbox" value="change"/></div>
-                    </td>  
-	                  <th>Sample ID</th>
-	                  <th>Locus</th>
-	                  <th>Locus Verdict</th>
-	                  <th>Allele Verdict</th>
-	                  <th>Observed Seqs</th>
-	                  <th>Expected Allele</th>
-          };
-          print $html $header3;
-          for(1..$n_max_observed){
-            print $html "<th>Observed Allele Call ",$_,"</th>\n";
-          }
-          my $header4 = qq{
-                  </tr>
-                </thead>
-                <tbody>
-          };
-          print $html $header4;
-
-}
 ################################################################################################################
 =head2 failedBody
 
@@ -2636,397 +2635,7 @@ sub failedBody{
 
 
 }
-################################################################################################################
-=head2 failedFooter
 
-	Title:     failedFooter
-	Usage:
-	Function:
-	Returns:
-	Args:
-
-=cut
-sub failedFooter{
-
-	my ( $html ) = @_;
-
-	my $footer = qq{
-
-    <script type="text/javascript">
-      function downloadcsv() {
-      \$("table").toCSV();
-      }
-      </script>
-      <script type="text/javascript">
-      jQuery.fn.toCSV = function() {
-
-        var i = 9;
-        var checks     = \$('body').find('input');
-
-        var data    = \$(this).first(); //Only one table
-        var csvData = [];
-        var tmpArr  = [];
-        var tmpStr  = '';
-
-        data.find("tr").each(function() {
-
-              if(\$(this).find("th").length) {
-                  \$(this).find("th").each(function() {
-                    tmpStr = \$(this).text().replace(/"/g, '""');
-                    tmpArr.push(tmpStr);
-                  });
-                  csvData.push(tmpArr);
-              } else {
-
-                if(typeof(checks[i]) !== 'undefined' && checks[i].checked == true){
-                    tmpArr = [];
-                       \$(this).find("td").each(function() {
-                            if(\$(this).text().match(/^\\n/) && \$(this).text().match(/    /)) {
-                                
-                            } else {
-                                tmpStr = \$(this).text().replace(/(\\r\\n|\\n|\\r)/gm,"");
-                                tmpArr.push(tmpStr);
-                            }
-                       });
-                    csvData.push(tmpArr.join(','));
-                }
-                i++;
-              }
-        });
-
-        var output = csvData.join('\\n');
-        var uri = 'data:application/csv;charset=UTF-8,' + encodeURIComponent(output);
-        window.open(uri);
-      }
-      </script>
-      
-  <script>
-       // If the user clicks in the window, set the background color of  to yellow
-        function expand(obj) {
-          if(obj.getElementsByTagName("span")[0].style.display == "table"){
-            obj.getElementsByTagName("span")[0].style.display = "none";
-          }else{
-             obj.getElementsByTagName("span")[0].style.display = "table";
-          }
-        }
-
-    
-      </script>
-              <script>
-       // If the user clicks in the window, set the background color of  to yellow
-        function Addfilter() {
-
-          if(document.getElementsByClassName("tablesorter-filter-row")[0].style.display == "none"){
-            \$('.tablesorter-filter-row').css('display', 'table-row');
-          }else{
-            \$('.tablesorter-filter-row').css('display', 'none');
-          }
-          
-        }
-
-    
-      </script>
-
-			      <script>
-	     // If the user clicks in the window, set the background color of <body> to yellow
-	      function expand(obj) {
-	        if(obj.getElementsByTagName("span")[0].style.display == "table"){
-	          obj.getElementsByTagName("span")[0].style.display = "none";
-	        }else{
-	           obj.getElementsByTagName("span")[0].style.display = "table";
-	        }
-	      }
-	    </script>
-	    			<footer>
-				<div class="footer">
-					<img src="../img/bethematch.jpeg" alt="img02">
-					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
-				</div>
-			</footer>	
-	    <style type="text/css">
-	        .bargraph {
-	          list-style: none;
-	          padding-top: 20px;
-	          width:560px;
-	        }
-	        a.id_links {
-				text-decoration: none;
-				font:bold;
-				color:black;
-	        }
-	        a.id_links:hover {
-				color:#A8A8A8;
-	        }
-	        footer {
-					color: #888;
-					clear:both;
-					position: relative; 
-					bottom: 10px;
-					left: 0; width: 100%; 
-					text-align: center;
-					font-size:9px;
-					
-					background: rgba(255, 255, 255, 0.6);
-			}	        
-
-                        .hovering{
-        color:black;
-        text-decoration: none;    
-          }
-          .hovering:hover{
-        color:#AAA;
-        text-decoration: none;
-          }  
-	    </style>
-	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-	    <script src="../js/bootstrap.min.js"></script>
-	    <script src="../js/docs.min.js"></script>
-	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-	    <script src="../js/ie10-viewport-bug-workaround.js"></script>
-	  
-	  </body>
-	</html>
-	};
-	print $html $footer;
-
-}
-################################################################################################################
-=head2 failedHeader
-
-  Title:     failedHeader
-  Usage:
-  Function:  Prints the header to the failed.html file
-  Returns:
-  Args:
-
-=cut
-sub drbxHeader{
-
-  my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed  ) = @_;
-
-  my $s_experiment = $s_exp;
-
-  my $header = qq{
-    <!DOCTYPE html>
-  <html lang="en">
-    <head>
-         <meta charset="utf-8">
-      <meta http-equiv="X-UA-Compatible" content="IE=edge">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
-      <meta name="author" content="">
-      
-      <title>Validation Report</title>
-
-      <!-- Bootstrap core CSS -->
-      <link href="../css/bootstrap.min.css" rel="stylesheet">
-      <script src="../js/Chart.js"></script>
-      <!-- Custom styles for this template -->
-      <link href="../css/dashboard.css" rel="stylesheet">
-
-      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-
-      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-      <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-      <![endif]-->
-
-    <script type="text/javascript" src="../js/jquery.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.widgets.js"></script> 
-  
-  <script src="../js/jquery-latest.min.js"></script>
-  <script src="../js/jquery-ui.min.js"></script>
-  <script src="../js/bootstrap.min.js"></script>
-    <script src="../js/docs.js"></script>
-
-  <script src="../js/prettify.js"></script>
-  <script src="../js/jquery-latest.min.js"></script>
-
-  <!-- Tablesorter: theme -->
-  <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
-
-
-  <!-- Tablesorter script: required -->
-  <script src="../js/jquery.tablesorter.js"></script>
-  <script src="../js/jquery.tablesorter.widgets.js"></script>
-
-  <script id="js">\$(function(){
-
-    \$(\'#table1\').tablesorter({
-      widthFixed : true,
-      showProcessing: true,
-      headerTemplate : '{content} {icon}', // Add icon for various themes
-
-      widgets: [ 'stickyHeaders', 'filter' ],
-
-      widgetOptions: {
-
-        // extra class name added to the sticky header row
-        stickyHeaders : '',
-        // number or jquery selector targeting the position:fixed element
-        stickyHeaders_offset : 50,
-        // added to table ID, if it exists
-        stickyHeaders_cloneId : '-sticky',
-        // trigger "resize" event on headers
-        stickyHeaders_addResizeEvent : false,
-        // if false and a caption exist, it won't be included in the sticky header
-        stickyHeaders_includeCaption : false,
-        // The zIndex of the stickyHeaders, allows the user to adjust this to their needs
-        stickyHeaders_zIndex : 2,
-        // jQuery selector or object to attach sticky header to
-        stickyHeaders_attachTo : null,
-        // jQuery selector or object to monitor horizontal scroll position (defaults: xScroll > attachTo > window)
-        stickyHeaders_xScroll : null,
-        // jQuery selector or object to monitor vertical scroll position (defaults: yScroll > attachTo > window)
-        stickyHeaders_yScroll : null,
-        // scroll table top into view after filtering
-        stickyHeaders_filteredToTop: true,
-
-      }
-    });
-    \$('input[type=\"checkbox\"][value=\"change\"]').change(function() {
-         if(this.checked) {
-            var checkboxes = \$('body').find('input');
-            for(var i =0;i<checkboxes.length;i++){
-              if(checkboxes[i].value !== "change"){
-                checkboxes[i].checked = true;
-              }
-            }
-         }
-         if(!this.checked) {
-            var checkboxes = \$('body').find('input');
-            for(var i =0;i<checkboxes.length;i++){
-              if(checkboxes[i].value !== "change"){
-                checkboxes[i].checked = false;
-              }
-            }
-         }
-
-     });
-    
-});</script>
-        <style type='text/css'>
-    .my-legend .legend-scale ul {
-      margin: 0;
-      padding: 0;
-      float: left;
-      list-style: none;
-      }
-    .my-legend .legend-scale ul li {
-      display: block;
-      float: left;
-      width: 50px;
-      margin-bottom: 6px;
-      text-align: center;
-      font-size: 80%;
-      list-style: none;
-      }
-    .my-legend ul.legend-labels li span {
-      display: block;
-      float: left;
-      height: 15px;
-      width: 50px;
-      }
-    .my-legend .legend-source {
-      font-size: 70%;
-      color: #999;
-      clear: both;
-      }
-    .my-legend a {
-      color: #777;
-      }
-
-      #expanding{
-        display:none;
-      }
-
-
-      </style>
-};
-print $html $header;
-
-my $header2 = qq{
-    </head>
-
-    <body>
-
-      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-        <div class="container-fluid">
-          <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-              <span class="sr-only">Toggle navigation</span>
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment </a>
-          </div>
-          <div id="navbar" class="navbar-collapse collapse">
-            <ul class="nav navbar-nav navbar-right">
-              <li><a href="../experiment.html">Experiments</a></li>
-              <li><a href="../log.html">Log</a></li>
-              <li><a href="../help.html">Help</a></li>
-            </ul>
-          </div>
-        </div>
-      </nav>
-
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col-sm-3 col-md-2 sidebar">
-            <ul class="nav nav-sidebar">
-              <li ><a href="index.html">Overview</a></li>
-              <li ><a href="results.html">Results</a></li>
-              <li ><a href="fails.html">Failed</a></li>
-              <li ><a href="errors.html">Dropout</a></li>
-              <li class="active"><a href="drbx.html">DRBX<span class="sr-only">(current)</span></a></li>
-      };
-      print $html $header2;
-
-  print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $$rh_qc_verdict{$s_exp};
-  my $header3 = qq{
-            </ul>
-          </div>
-          <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          <div style="float:right;margin-top:20px;">
-                <a class="hovering" >
-              <span  onclick="Addfilter()" style="font-weight:bold;">Filter Rows</span>         
-            </a>
-            <span  style="font-weight:bold;"> | </span>
-                <a class="hovering" >
-                  <span  onclick="downloadcsv()" style="font-weight:bold;">Download to CSV</span>
-                </a>
-            </div>
-            <h1 class="page-header">Validation Results</h1>
-            <div class="table-responsive">
-              <table class="table table-striped tablesorter-bootstrap" id="table1">
-                <thead>
-                  <tr>
-                    <td style="border-color:#dddddd;border-style:solid;border-left-width:0px;border-right-width:0px;border-bottom-width:2px;" class="filter-false sorter-false">
-                      <div style="margin-top:17px;"><input type = "checkbox" value="change"/></div>
-                    </td>  
-                    <th>Sample ID</th>
-                    <th>Locus</th>
-                    <th>Locus Verdict</th>
-                    <th>Allele Verdict</th>
-                    <th>Observed Seqs</th>
-                    <th>Expected Allele</th>
-          };
-          print $html $header3;
-          for(1..$n_max_observed){
-            print $html "<th>Observed Allele Call ",$_,"</th>\n";
-          }
-          my $header4 = qq{
-                  </tr>
-                </thead>
-                <tbody>
-          };
-          print $html $header4;
-
-}
 ################################################################################################################
 =head2 drbxBody
 
@@ -3123,160 +2732,7 @@ sub drbxBody{
 
 
 }
-################################################################################################################
-=head2 drbxFooter
 
-  Title:     drbxFooter
-  Usage:
-  Function:
-  Returns:
-  Args:
-
-=cut
-sub drbxFooter{
-
-  my ( $html ) = @_;
-
-  my $footer = qq{
-
-    <script type="text/javascript">
-      function downloadcsv() {
-      \$("table").toCSV();
-      }
-      </script>
-      <script type="text/javascript">
-      jQuery.fn.toCSV = function() {
-
-        var i = 9;
-        var checks     = \$('body').find('input');
-
-        var data    = \$(this).first(); //Only one table
-        var csvData = [];
-        var tmpArr  = [];
-        var tmpStr  = '';
-
-        data.find("tr").each(function() {
-
-              if(\$(this).find("th").length) {
-                  \$(this).find("th").each(function() {
-                    tmpStr = \$(this).text().replace(/"/g, '""');
-                    tmpArr.push(tmpStr);
-                  });
-                  csvData.push(tmpArr);
-              } else {
-
-                if(typeof(checks[i]) !== 'undefined' && checks[i].checked == true){
-                    tmpArr = [];
-                       \$(this).find("td").each(function() {
-                            if(\$(this).text().match(/^\\n/) && \$(this).text().match(/    /)) {
-                                
-                            } else {
-                                tmpStr = \$(this).text().replace(/(\\r\\n|\\n|\\r)/gm,"");
-                                tmpArr.push(tmpStr);
-                            }
-                       });
-                    csvData.push(tmpArr.join(','));
-                }
-                i++;
-              }
-        });
-
-        var output = csvData.join('\\n');
-        var uri = 'data:application/csv;charset=UTF-8,' + encodeURIComponent(output);
-        window.open(uri);
-      }
-      </script>
-      
-  <script>
-       // If the user clicks in the window, set the background color of  to yellow
-        function expand(obj) {
-          if(obj.getElementsByTagName("span")[0].style.display == "table"){
-            obj.getElementsByTagName("span")[0].style.display = "none";
-          }else{
-             obj.getElementsByTagName("span")[0].style.display = "table";
-          }
-        }
-
-    
-      </script>
-              <script>
-       // If the user clicks in the window, set the background color of  to yellow
-        function Addfilter() {
-
-          if(document.getElementsByClassName("tablesorter-filter-row")[0].style.display == "none"){
-            \$('.tablesorter-filter-row').css('display', 'table-row');
-          }else{
-            \$('.tablesorter-filter-row').css('display', 'none');
-          }
-          
-        }
-
-    
-      </script>
-
-            <script>
-       // If the user clicks in the window, set the background color of <body> to yellow
-        function expand(obj) {
-          if(obj.getElementsByTagName("span")[0].style.display == "table"){
-            obj.getElementsByTagName("span")[0].style.display = "none";
-          }else{
-             obj.getElementsByTagName("span")[0].style.display = "table";
-          }
-        }
-      </script>
-            <footer>
-        <div class="footer">
-          <img src="../img/bethematch.jpeg" alt="img02">
-          <p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
-        </div>
-      </footer> 
-      <style type="text/css">
-          .bargraph {
-            list-style: none;
-            padding-top: 20px;
-            width:560px;
-          }
-          a.id_links {
-        text-decoration: none;
-        font:bold;
-        color:black;
-          }
-          a.id_links:hover {
-        color:#A8A8A8;
-          }
-          footer {
-          color: #888;
-          clear:both;
-          position: relative; 
-          bottom: 10px;
-          left: 0; width: 100%; 
-          text-align: center;
-          font-size:9px;
-          
-          background: rgba(255, 255, 255, 0.6);
-      }         
-
-                        .hovering{
-        color:black;
-        text-decoration: none;    
-          }
-          .hovering:hover{
-        color:#AAA;
-        text-decoration: none;
-          }  
-      </style>
-      <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-      <script src="../js/bootstrap.min.js"></script>
-      <script src="../js/docs.min.js"></script>
-      <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-      <script src="../js/ie10-viewport-bug-workaround.js"></script>
-    
-    </body>
-  </html>
-  };
-  print $html $footer;
-
-}
 ################################################################################################################
 =head2 failedHeader
 
@@ -3288,7 +2744,7 @@ sub drbxFooter{
 
 =cut
 sub qcHeader{
-  my ( $html, $s_exp, $n_max_observed ) = @_;
+  my ( $html, $s_exp, $n_max_observed, $b_drbx, $b_error, $b_failed ) = @_;
 
   my $s_experiment = $s_exp;
 
@@ -3467,12 +2923,26 @@ my $header2 = qq{
             <ul class="nav nav-sidebar">
               <li><a href="index.html">Overview</a></li>
               <li><a href="results.html">Results</a></li>
-              <li><a href="fails.html">Failed</a></li>
-              <li><a href="errors.html">Dropout</a></li>
-              <li><a href="drbx.html">DRBX</a></li>
-              <li  class="active"><a href="qc.html">QC<span class="sr-only">(current)</span></a></li>
-      };
-      print $html $header2;
+    };
+
+  print $html $header2;
+
+  my $failed_inactive = qq{
+    <li ><a href="fails.html">Failed</a></li>
+  };
+  print $html $failed_inactive if($b_failed);
+  my $error_inactive  = qq{
+    <li ><a href="errors.html">Dropout</a></li>
+  };
+  print $html $error_inactive if($b_error);
+  my $drbx_inactive   = qq{
+    <li ><a href="drbx.html">DRBX</a></li>
+  };
+  print $html $drbx_inactive if($b_drbx);
+  my $qc_active = qq{
+          <li  class="active"><a href="qc.html">QC<span class="sr-only">(current)</span></a></li>
+  };
+  print $html $qc_active;
 
   my $header3 = qq{
             </ul>
@@ -3585,16 +3055,17 @@ sub qcBody{
 
 				if(defined $$rh_qc_expected{$s_ID}{$s_loc}){
 
-          my %h_haps   = split(/\|/,$$rh_qc_expected{$s_ID}{$s_loc});
-          my $num_haps = keys %h_haps;
-          if($num_haps < 2){
+          if($$rh_qc_expected{$s_ID}{$s_loc} !~ /\|/){
               my ($h1,$h2) = split(/\+/,$$rh_qc_expected{$s_ID}{$s_loc});
               $h1 =~ s/ //g;$h2 =~ s/ //g;
               $h1 = g2p($h1) eq g2p($s_typing) ? "<b>".$h1."</b>" : $h1;
               $h2 = g2p($h2) eq g2p($s_typing) ? "<b>".$h2."</b>" : $h2;
-              $hap = join("+",$h1,$h2);
+              my $hap = join("+",$h1,$h2);
               print $html  "\t\t\t<td>$hap</td>\n";
           }else{
+
+            my %h_haps   = split(/\|/,$$rh_qc_expected{$s_ID}{$s_loc});
+            my $num_haps = keys %h_haps;
             my $cnt = 1;
             print $html "<td>";
             foreach my $hap (keys %h_haps){
@@ -3654,9 +3125,9 @@ sub qcBody{
 
 }
 ################################################################################################################
-=head2 failedFooter
+=head2 qcFooter
 
-	Title:     failedFooter
+	Title:     qcFooter
 	Usage:
 	Function:
 	Returns:
@@ -3729,246 +3200,7 @@ sub qcFooter{
 	print $html $footer;
 
 }
-################################################################################################################
-=head2 failedHeader
 
-	Title:     failedHeader
-	Usage:
-	Function:  Prints the header to the failed.html file
-	Returns:
-	Args:
-
-=cut
-sub errorsHeader{
-
-	my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed  ) = @_;
-
-	my $s_experiment = $s_exp;
-
-	my $header = qq{
-		<!DOCTYPE html>
-	<html lang="en">
-	    <head>
-         <meta charset="utf-8">
-      <meta http-equiv="X-UA-Compatible" content="IE=edge">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
-      <meta name="author" content="">
-      
-      <title>Validation Report</title>
-
-      <!-- Bootstrap core CSS -->
-      <link href="../css/bootstrap.min.css" rel="stylesheet">
-      <script src="../js/Chart.js"></script>
-      <!-- Custom styles for this template -->
-      <link href="../css/dashboard.css" rel="stylesheet">
-
-      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-
-      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-      <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-      <![endif]-->
-
-    <script type="text/javascript" src="../js/jquery.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.widgets.js"></script> 
-  
-  <script src="../js/jquery-latest.min.js"></script>
-  <script src="../js/jquery-ui.min.js"></script>
-  <script src="../js/bootstrap.min.js"></script>
-    <script src="../js/docs.js"></script>
-
-  <script src="../js/prettify.js"></script>
-  <script src="../js/jquery-latest.min.js"></script>
-
-  <!-- Tablesorter: theme -->
-  <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
-
-
-  <!-- Tablesorter script: required -->
-  <script src="../js/jquery.tablesorter.js"></script>
-  <script src="../js/jquery.tablesorter.widgets.js"></script>
-
-  <script id="js">\$(function(){
-
-    \$(\'#table1\').tablesorter({
-      widthFixed : true,
-      showProcessing: true,
-      headerTemplate : '{content} {icon}', // Add icon for various themes
-
-      widgets: [ 'stickyHeaders', 'filter' ],
-
-      widgetOptions: {
-
-        // extra class name added to the sticky header row
-        stickyHeaders : '',
-        // number or jquery selector targeting the position:fixed element
-        stickyHeaders_offset : 50,
-        // added to table ID, if it exists
-        stickyHeaders_cloneId : '-sticky',
-        // trigger "resize" event on headers
-        stickyHeaders_addResizeEvent : false,
-        // if false and a caption exist, it won't be included in the sticky header
-        stickyHeaders_includeCaption : false,
-        // The zIndex of the stickyHeaders, allows the user to adjust this to their needs
-        stickyHeaders_zIndex : 2,
-        // jQuery selector or object to attach sticky header to
-        stickyHeaders_attachTo : null,
-        // jQuery selector or object to monitor horizontal scroll position (defaults: xScroll > attachTo > window)
-        stickyHeaders_xScroll : null,
-        // jQuery selector or object to monitor vertical scroll position (defaults: yScroll > attachTo > window)
-        stickyHeaders_yScroll : null,
-        // scroll table top into view after filtering
-        stickyHeaders_filteredToTop: true,
-
-      }
-    });
-    \$('input[type=\"checkbox\"][value=\"change\"]').change(function() {
-         if(this.checked) {
-            var checkboxes = \$('body').find('input');
-            for(var i =0;i<checkboxes.length;i++){
-              if(checkboxes[i].value !== "change"){
-                checkboxes[i].checked = true;
-              }
-            }
-         }
-         if(!this.checked) {
-            var checkboxes = \$('body').find('input');
-            for(var i =0;i<checkboxes.length;i++){
-              if(checkboxes[i].value !== "change"){
-                checkboxes[i].checked = false;
-              }
-            }
-         }
-
-     });
-    
-});</script>
-
-	      <style type='text/css'>
-	  .my-legend .legend-scale ul {
-	    margin: 0;
-	    padding: 0;
-	    float: left;
-	    list-style: none;
-	    }
-	  .my-legend .legend-scale ul li {
-	    display: block;
-	    float: left;
-	    width: 50px;
-	    margin-bottom: 6px;
-	    text-align: center;
-	    font-size: 80%;
-	    list-style: none;
-	    }
-	  .my-legend ul.legend-labels li span {
-	    display: block;
-	    float: left;
-	    height: 15px;
-	    width: 50px;
-	    }
-	  .my-legend .legend-source {
-	    font-size: 70%;
-	    color: #999;
-	    clear: both;
-	    }
-	  .my-legend a {
-	    color: #777;
-	    }
-
-	    #expanding{
-	      display:none;
-	    }
-
-
-	    </style>
-};
-print $html $header;
-
-
-my $header2 = qq{
-	  </head>
-
-	  <body>
-
-	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-	      <div class="container-fluid">
-	        <div class="navbar-header">
-	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-	            <span class="sr-only">Toggle navigation</span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	          </button>
-	          <a class="navbar-brand" href="../experiment.html">Validation Report - $s_experiment </a>
-	        </div>
-	        <div id="navbar" class="navbar-collapse collapse">
-	          <ul class="nav navbar-nav navbar-right">
-	            <li><a href="../experiment.html">Experiments</a></li>
-	            <li><a href="../log.html">Log</a></li>
-	            <li><a href="../help.html">Help</a></li>
-	          </ul>
-	        </div>
-	      </div>
-	    </nav>
-
-	    <div class="container-fluid">
-	      <div class="row">
-	        <div class="col-sm-3 col-md-2 sidebar">
-	          <ul class="nav nav-sidebar">
-	            <li><a href="index.html">Overview</a></li>
-	            <li><a href="results.html">Results</a></li>
-	            <li><a href="fails.html">Failed</a></li>
-	            <li class="active"><a href="errors.html">Dropout<span class="sr-only">(current)</span></a></li>
-              <li><a href="drbx.html">DRBX</a></li>
-	    };
-	    print $html $header2;
-
-	print $html "<li><a href=\"qc.html\">QC</a></li>\n" if defined $$rh_qc_verdict{$s_exp};
-	my $header3 = qq{
-	          </ul>
-	        </div>
-	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          <div style="float:right;margin-top:20px;">
-                <a class="hovering" >
-              <span  onclick="Addfilter()" style="font-weight:bold;">Filter Rows</span>         
-            </a>
-            <span  style="font-weight:bold;"> | </span>
-                <a class="hovering" >
-                  <span  onclick="downloadcsv()" style="font-weight:bold;">Download to CSV</span>
-                </a>
-            </div>
-
-            <h1 class="page-header">Validation Results</h1>
-            <div class="table-responsive">
-               <table class="table table-striped tablesorter-bootstrap" id="table1">
-	              <thead>
-	                <tr>
-                    <td style="border-color:#dddddd;border-style:solid;border-left-width:0px;border-right-width:0px;border-bottom-width:2px;" class="filter-false sorter-false">
-                      <div style="margin-top:17px;"><input type = "checkbox" value="change"/></div>
-                    </td>     
-	                  <th>Sample ID</th>
-	                  <th>Locus</th>
-	                  <th>Locus Verdict</th>
-	                  <th>Allele Verdict</th>
-	                  <th>Observed Seqs</th>
-	                  <th>Expected Allele</th>
-          };
-          print $html $header3;
-          for(1..$n_max_observed){
-            print $html "<th>Observed Allele Call ",$_,"</th>\n";
-          }
-          my $header4 = qq{
-                  </tr>
-                </thead>
-                <tbody>
-          };
-          print $html $header4;
-
-}
 ################################################################################################################
 =head2 failedBody
 
@@ -4062,289 +3294,6 @@ sub errorsBody{
 		};
 		print $html $end_body,"\n";
 
-
-}
-################################################################################################################
-=head2 failedFooter
-
-	Title:     failedFooter
-	Usage:
-	Function:
-	Returns:
-	Args:
-
-=cut
-sub errorsFooter{
-
-	my ( $html ) = @_;
-
-	my $footer = qq{
-
-<script type="text/javascript">
-      function downloadcsv() {
-      \$("table").toCSV();
-      }
-      </script>
-      <script type="text/javascript">
-      jQuery.fn.toCSV = function() {
-
-        var i = 9;
-        var checks     = \$('body').find('input');
-
-        var data    = \$(this).first(); //Only one table
-        var csvData = [];
-        var tmpArr  = [];
-        var tmpStr  = '';
-
-        data.find("tr").each(function() {
-
-              if(\$(this).find("th").length) {
-                  \$(this).find("th").each(function() {
-                    tmpStr = \$(this).text().replace(/"/g, '""');
-                    tmpArr.push(tmpStr);
-                  });
-                  csvData.push(tmpArr);
-              } else {
-
-                if(typeof(checks[i]) !== 'undefined' && checks[i].checked == true){
-                    tmpArr = [];
-                       \$(this).find("td").each(function() {
-                            if(\$(this).text().match(/^\\n/) && \$(this).text().match(/    /)) {
-                                
-                            } else {
-                                tmpStr = \$(this).text().replace(/(\\r\\n|\\n|\\r)/gm,"");
-                                tmpArr.push(tmpStr);
-                            }
-                       });
-                    csvData.push(tmpArr.join(','));
-                }
-                i++;
-              }
-        });
-
-        var output = csvData.join('\\n');
-        var uri = 'data:application/csv;charset=UTF-8,' + encodeURIComponent(output);
-        window.open(uri);
-      }
-      </script>
-      
-  <script>
-       // If the user clicks in the window, set the background color of  to yellow
-        function expand(obj) {
-          if(obj.getElementsByTagName("span")[0].style.display == "table"){
-            obj.getElementsByTagName("span")[0].style.display = "none";
-          }else{
-             obj.getElementsByTagName("span")[0].style.display = "table";
-          }
-        }
-
-    
-      </script>
-              <script>
-       // If the user clicks in the window, set the background color of  to yellow
-        function Addfilter() {
-
-          if(document.getElementsByClassName("tablesorter-filter-row")[0].style.display == "none"){
-            \$('.tablesorter-filter-row').css('display', 'table-row');
-          }else{
-            \$('.tablesorter-filter-row').css('display', 'none');
-          }
-          
-        }
-
-    
-      </script>
-            <footer>
-        <div class="footer">
-          <img src="../img/bethematch.jpeg" alt="img02">
-          <p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
-        </div>
-      </footer> 
-      <style type="text/css">
-          .bargraph {
-            list-style: none;
-            padding-top: 20px;
-            width:560px;
-          }
-          a.id_links {
-        text-decoration: none;
-        font:bold;
-        color:black;
-          }
-          a.id_links:hover {
-        color:#A8A8A8;
-          }
-          footer {
-          color: #888;
-          clear:both;
-          position: relative; 
-          bottom: 10px;
-          left: 0; width: 100%; 
-          text-align: center;
-          font-size:9px;
-          
-          background: rgba(255, 255, 255, 0.6);
-         }
-                  .hovering{
-        color:black;
-        text-decoration: none;    
-          }
-          .hovering:hover{
-        color:#AAA;
-        text-decoration: none;
-          }         
-      </style>
-       <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-      <script src="../js/bootstrap.min.js"></script>
-      <script src="../js/docs.min.js"></script>
-      <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-      <script src="../js/ie10-viewport-bug-workaround.js"></script>
-    
-    </body>
-  </html>
-	};
-	print $html $footer;
-
-}
-
-################################################################################################################
-=head2 subjectsHeader
-
-	Title: subjectsHeader
-	Usage:
-	Function:
-	Returns:
-	Args:
-
-=cut
-sub subjectsHeader{
-
-	my ( $html, $s_exp, $s_ID, $rh_qc_verdict ) = @_;
-
-	my $s_experiment = $s_exp;
-
-	my $header = qq{
-		<!DOCTYPE html>
-	<html lang="en">
-	  <head>
-	    <meta charset="utf-8">
-	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-	    <meta name="viewport" content="width=device-width, initial-scale=1">
-	    <meta name="description" content="">
-	    <meta name="author" content="">
-	    
-	    <title>Validation Report</title>
-
-	    <!-- Bootstrap core CSS -->
-	    <link href="../../css/bootstrap.min.css" rel="stylesheet">
-	    <script src="../../js/Chart.js"></script>
-	    <!-- Custom styles for this template -->
-	    <link href="../../css/dashboard.css" rel="stylesheet">
-
-	    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-	    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-	    <script src="../../js/ie-emulation-modes-warning.js"></script>
-
-	    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-	    <!--[if lt IE 9]>
-	      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-	      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-	    <![endif]-->
-	      <style type='text/css'>
-	  .my-legend .legend-scale ul {
-	    margin: 0;
-	    padding: 0;
-	    float: left;
-	    list-style: none;
-	    }
-	  .my-legend .legend-scale ul li {
-	    display: block;
-	    float: left;
-	    width: 50px;
-	    margin-bottom: 6px;
-	    text-align: center;
-	    font-size: 80%;
-	    list-style: none;
-	    }
-	  .my-legend ul.legend-labels li span {
-	    display: block;
-	    float: left;
-	    height: 15px;
-	    width: 50px;
-	    }
-	  .my-legend .legend-source {
-	    font-size: 70%;
-	    color: #999;
-	    clear: both;
-	    }
-	  .my-legend a {
-	    color: #777;
-	    }
-
-	    #expanding{
-	      display:none;
-	    }
-
-
-	    </style>
-	  </head>
-
-	  <body>
-
-	    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-	      <div class="container-fluid">
-	        <div class="navbar-header">
-	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-	            <span class="sr-only">Toggle navigation</span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	          </button>
-	          <a class="navbar-brand" href="../../experiment.html">Validation Report - $s_experiment </a>
-	        </div>
-	        <div id="navbar" class="navbar-collapse collapse">
-	          <ul class="nav navbar-nav navbar-right">
-	            <li><a href="../../experiment.html">Experiments</a></li>
-	            <li><a href="../../log.html">Log</a></li>
-	            <li><a href="../../help.html">Help</a></li>
-	          </ul>
-	        </div>
-	      </div>
-	    </nav>
-
-	    <div class="container-fluid">
-	      <div class="row">
-	        <div class="col-sm-3 col-md-2 sidebar">
-	          <ul class="nav nav-sidebar">
-	            <li><a href="../index.html">Overview</a></li>
-	            <li class="active"><a href="../results.html">Results<span class="sr-only">(current)</span></a></li>
-	            <li><a href="../fails.html">Failed</a></li>
-	            <li><a href="../errors.html">Dropout</a></li>
-              <li><a href="../drbx.html">DRBX</a></li>
-	    };
-	    print $html $header;
-	    print $html "<li><a href=\"../qc.html\">QC</a></li>\n" if defined $$rh_qc_verdict{$s_exp};
-
-	    my $header2 = qq{
-	          </ul>
-	        </div>
-	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-	          <h1 class="page-header">$s_ID Validation Results</h1>
-				<div class="table-responsive">
-	            <table class="table table-striped">
-	              <thead>
-	                <tr>
-	                  <th>Locus</th>
-	                  <th>Locus Verdict</th>
-	                  <th>Expected</th>
-	                  <th>Allele Call 1</th>
-	                  <th>Allele Call 1</th>
-	                </tr>
-	              </thead>
-	           	<tbody>	
-
-          };
-          print $html $header2;
 
 }
 
@@ -4528,16 +3477,11 @@ sub subjectsBody{
 		}
 
 		print $html "</tr>\n";
-		#print $html "</span></span>\n" if $#a_haps > 10;
-		#print $html "</td>\n<td>$num_haplos</td>\n";
-		#my $f_sensitivity = sprintf("%.3f",1 / $num_haplos);
-		#print $html "</td>\n<td>$f_sensitivity</td>\n";
 		print $html  "</tr>\n";
 
 
 	}
 
-	#$h_sequence_data{$s_id}{$pervious_locus}{$s_seq}++;
 
 	my $sequence_start = qq{
 	          	<div style="margin-top:10px;" class="table-responsive">
@@ -4605,84 +3549,6 @@ sub subjectsBody{
     </div>
 	};
 	print $html $end_body,"\n";
-
-}
-
-################################################################################################################
-=head2 subjectsFooter
-
-	Title: subjectsFooter
-	Usage:
-	Function:
-	Returns:
-	Args:
-
-=cut
-sub subjectsFooter{
-
-	my ( $html ) = @_;
-
-	my $footer = qq{
-		<script>
-	     // If the user clicks in the window, set the background color of <body> to yellow
-	      function expand(obj) {
-	        if(obj.getElementsByTagName("span")[0].style.display == "table"){
-	          obj.getElementsByTagName("span")[0].style.display = "none";
-	        }else{
-	           obj.getElementsByTagName("span")[0].style.display = "table";
-	        }
-	      }
-	    </script>
-	    			<footer>
-				<div class="footer">
-					<img src="../../img/bethematch.jpeg" alt="img02">
-					<p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
-				</div>
-			</footer>	
-	    <style type="text/css">
-	        .bargraph {
-	          list-style: none;
-	          padding-top: 20px;
-	          width:560px;
-	        }
-	        a.id_links {
-				text-decoration: none;
-				font:bold;
-				color:black;
-	        }
-	        a.id_links:hover {
-				color:#A8A8A8;
-	        }	    
-    	footer {
-			color: #888;
-			clear:both;
-			position: relative; 
-			bottom: 10px;
-			left: 0; width: 100%; 
-			text-align: center;
-			font-size:9px;
-			
-			background: rgba(255, 255, 255, 0.6);
-		}
-         .hovering{
-        color:black;
-        text-decoration: none;    
-          }
-          .hovering:hover{
-        color:#AAA;
-        text-decoration: none;
-          }     
-	    </style>
-	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-	    <script src="../../js/bootstrap.min.js"></script>
-	    <script src="../../js/docs.min.js"></script>
-	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-	    <script src="../../js/ie10-viewport-bug-workaround.js"></script>
-	  
-	  </body>
-	</html>
-	};
-	print $html $footer;
 
 }
 

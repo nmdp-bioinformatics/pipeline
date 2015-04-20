@@ -44,12 +44,14 @@ use strict;
 use warnings;
 use Test::More;
 use Data::Dumper;
-use HTML::TreeBuilder;
-use vars qw($machine $user $working);
+use vars qw($machine $user $working $b_npm $b_treeBuilder);
 BEGIN{
+    $b_treeBuilder = 0;
     $working    = `pwd`;chomp($working);
     $user       = `whoami`;chomp($user);
     $machine    = `uname`;chomp($machine);
+    my $npm     = `which npm`;chomp($npm);
+    $b_npm      = defined $b_npm ? 1 : 0;
     if($working !~ /\/t/){
         my $lib = $working."/lib";
         push(@INC,$lib);
@@ -58,6 +60,19 @@ BEGIN{
         my $lib = $working."/lib";
         push(@INC,$lib);
     }
+    foreach(@INC){
+        my @inc_files = glob "$_/*";
+        foreach my $inc_file (@inc_files){
+            $b_treeBuilder++ if $inc_file =~ /HTML/;
+        }
+    }
+}
+
+if($b_treeBuilder > 0){
+    use HTML::TreeBuilder;
+}else{
+    print STDERR "The perl package HTML::TreeBuilder is not installed!!\n";
+    print STDERR "No tests of the HTML content will be done!\n";
 }
 
 my $number_of_tests_run = 0;
@@ -115,8 +130,7 @@ open(my $test_qc,"<",$s_test_qc_cfg) or die "CANT OPEN FILE $! $0";
 while(<$test_qc>){
     chomp;
     my($row,$exp,$s_id,$qc,$locus_verdict,$allele_verdict,$qc_hap,$s_e) = split(/,/,$_);
-    
-    #1|Test2|ERROR|ERROR|ERROR|A*01:01+A*02:01|A*02:01
+
     $h_tests_qc{$exp}{$row}{$s_id}{QC}     = $qc;
     $h_tests_qc{$exp}{$row}{$s_id}{LOC}    = $locus_verdict;   
     $h_tests_qc{$exp}{$row}{$s_id}{ALLELE} = $allele_verdict;   
@@ -127,8 +141,10 @@ while(<$test_qc>){
 close $test_qc;
 
 
+
 # Add the subject page back in ,report/ex0/subjects/subject3.html
-print `./ngs-validation-report -d t/txt -f 1 -t 1`;&testDOM();
+print `./ngs-validation-report -d t/txt -f 1 -t 1`;
+&testDOM() if($b_treeBuilder);&testJs() if $b_npm;
 
 # Test to make sure all the directories exist
 foreach my $s_dir (@a_directories){
@@ -175,7 +191,8 @@ foreach my $s_file (@a_files){
 }
 
 # Running blast test with txt input file
-print `./ngs-validation-report -d t/txt -n t/blastn -f 1 -t 1`;&testDOM();
+print `./ngs-validation-report -d t/txt -n t/blastn -f 1 -t 1`;
+&testDOM() if($b_treeBuilder);&testJs() if $b_npm;
 foreach my $s_dir (@a_directories){
     if(-d $s_dir){
         is(1,1);$number_of_tests_run++;
@@ -217,7 +234,7 @@ if( -e $s_blast_file){
 }else{
     is(1,0,"$s_blast_file BLAST file not created!\n");$number_of_tests_run++;
 }
-print `rm -R report`;
+#print `rm -R report`;
 
 
 done_testing( $number_of_tests_run );
@@ -477,7 +494,18 @@ sub testDOM{
 }
 
 
+sub testJs{
 
+    print STDERR `npm test &> npm.stderr`;
+    my $js_test = `cat npm.stderr`;chomp($js_test);
+    print STDERR `echo;tail -3 npm.stderr | head -1;rm npm.stderr`;
+    if($js_test =~ /PASS/){
+         is(1,1);$number_of_tests_run++;
+    }else{
+         is(1,0,"Javascript tests failed!! See npm-debug.log for details!");$number_of_tests_run++;
+    }
+
+}
 
 
 
