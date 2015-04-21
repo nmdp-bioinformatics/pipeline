@@ -852,25 +852,33 @@ sub loadFiles{
 			}elsif($loc_cnt != 5 && $n_drbx > 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}++;
 			}else{
-				if($loc_cnt == $num_typs){
+				#if($loc_cnt == $num_typs){
 					$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}++;
-				}
+				#}
 
 			}
 
 		}
 
 		#TODO: Add warnings for these cases
-		foreach my $s_l (keys %{$h_counts{$s_exp}{LOCUS}}){
+		my @a_loci = split(/,/,"A,C,B,DRB1,DQB1");
+		foreach my $s_l (@a_loci){
+
 			$h_counts{$s_exp}{LOCUS}{$s_l}{PASS}     = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{PASS});
 			$h_counts{$s_exp}{LOCUS}{$s_l}{FAIL}     = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{FAIL});
-			$h_counts{$s_exp}{LOCUS}{$s_l}{ERROR}    = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{ERROR});		
+			$h_counts{$s_exp}{LOCUS}{$s_l}{ERROR}    = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{ERROR});
+			$h_counts{$s_exp}{LOCUS}{$s_l}{DRBX}     = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{DRBX});
+
 			$h_counts{$s_exp}{ALLELE}{$s_l}{PASS}    = 0 if(!defined $h_counts{$s_exp}{ALLELE}{$s_l}{PASS});
 			$h_counts{$s_exp}{ALLELE}{$s_l}{FAIL}    = 0 if(!defined $h_counts{$s_exp}{ALLELE}{$s_l}{FAIL});
 			$h_counts{$s_exp}{ALLELE}{$s_l}{ERROR}   = 0 if(!defined $h_counts{$s_exp}{ALLELE}{$s_l}{ERROR});	
+			$h_counts{$s_exp}{ALLELE}{$s_l}{DRBX}    = 0 if(!defined $h_counts{$s_exp}{ALLELE}{$s_l}{DRBX});
+
 			$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}  = 0 if(!defined $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS});
 			$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} = 0 if(!defined $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR});
-			$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}  = 0 if(!defined $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL});	
+			$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}  = 0 if(!defined $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL});
+			$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}  = 0 if(!defined $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX});
+
 		}
 
 		if($b_verbose){

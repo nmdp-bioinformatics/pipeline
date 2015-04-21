@@ -2285,31 +2285,7 @@ sub indexBody{
         ]
       }
 
-      var barChartData4 = {
-        labels : ["A","B","C","DRB1","DQB1"],
-        datasets : [
-          {
-            fillColor : "#46BFBD",
-            strokeColor : "#46BFBD",
-            highlightFill :  "#5AD3D1",
-            highlightStroke :  "#5AD3D1",
-            data : [$$ra_sensitivity{ALLELE}{"A"},$$ra_sensitivity{ALLELE}{"B"},$$ra_sensitivity{ALLELE}{"C"},$$ra_sensitivity{ALLELE}{"DRB1"},$$ra_sensitivity{ALLELE}{"DQB1"}]
-          }
-        ]
-      }
 
-      var barChartData5 = {
-        labels : ["A","B","C","DRB1","DQB1"],
-        datasets : [
-          {
-            fillColor : "#46BFBD",
-            strokeColor : "#46BFBD",
-            highlightFill :  "#5AD3D1",
-            highlightStroke :  "#5AD3D1",
-            data : [$$ra_sensitivity{HAPLO}{"A"},$$ra_sensitivity{HAPLO}{"B"},$$ra_sensitivity{HAPLO}{"C"},$$ra_sensitivity{HAPLO}{"DRB1"},$$ra_sensitivity{HAPLO}{"DQB1"}]
-          }
-        ]
-      }
 
 
 	};
