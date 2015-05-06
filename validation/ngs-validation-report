@@ -90,10 +90,9 @@
 	   - Added a Makefile.PL and a t/report.t
 	   - Moved the README contents to the pipepline README
 
-	1.1       Version merged with github.com/nmdp-bioinformatics/ngs  2015-02-16 
+	1.1        2015-02-16 
 	   - Updated the formatting 
 	   - Put all main subroutines in html.pm and process.pm
-	   - 
 
 =head1 TODO
 	
@@ -101,12 +100,12 @@
     - Add option to email zip or tar
     - Add option for providing a race config file
     - Add more detailed comments
-    - Put all of the HTML subroutines in a separate package
-    - Add a test for each individual subroutine
-    - Add to hml tests t/report.t
+    - Put all of the HTML subroutines in a separate package (process.pm)
+    - Add a test for each individual subroutine (subs.t)
     - Change all of the bootstrap.css to be from http links
-    - Change all of the tablesorter links to be from 
-    - Change NGS Validation Report -> Validation report in log file
+    - Change all of the tablesorter links to be from the web
+    - Allow multiple different directories to be passed
+    - Allow the email option the ability to just email the status
 
 =head1 SUBROUTINES
 	
@@ -139,6 +138,8 @@ BEGIN{
 			-l/--validated        Output file from ngs-validate-interp
 			-e/--expected         Expected file
 			-o/--observed         Observed file
+			-i/--title            Title of the report (default = report)
+			-u/--population       Population configuration file
 			-d/--directory        Directory of input files
 			-m/--email            A list of email addresses that the compressed report will be sent to
 			-p/--output           Output directory
@@ -170,31 +171,32 @@ my %h_subject_pages;     # Hash of the subject pages
 my %h_sequence_data;     # Hash of the sequence data
 my %h_fails;		     # Hash of the fails
 my %h_errors;            # Hash of the errors
-my %h_sensitivity;       #
-my %h_expected_seqs;     #
-my %h_experiments;       #
-my %h_qc_verified;       #
-my %h_qc_expected;       #
-my %h_qc_zygosity;       #
-my %h_qc_verdict;        #
-my %h_expected_zygosity; #
-my %h_sequence_ids;      #
-my %h_consensus_counts;  #
-my %h_observed_max;      #
-my %h_error_max;         #
-my %h_drbx_max;          #
-my %h_qc_max;            #
-my %h_failed_max;        #
-my %h_qc_counts;         #
-my $s_subject_page = 1;  #
+my %h_sensitivity;       # Hash of the Sensitivity values
+my %h_expected_seqs;     # Hash of the expected sequences
+my %h_experiments;       # Hahs of the different experiment numbers
+my %h_qc_verified;       # Hash of the qc validated results
+my %h_qc_expected;       # Hash of the qc expected results
+my %h_qc_zygosity;       # Hash of the qc zygosity results
+my %h_qc_verdict;        # Hash of the qc verdict results
+my %h_expected_zygosity; # Hash of the expected zygosity results
+my %h_sequence_ids;      # Hash of the sequence id results -> blast hmtl pages
+my %h_consensus_counts;  # Hash of the consensus sequence counts
+my %h_observed_max;      # Hash of the max number of observed sequences 
+my %h_error_max;         # Hash of the max number of observed seqs in the failed pages
+my %h_drbx_max;          # Hash of the max number of observed seqs in the drbx pages
+my %h_qc_max;            # Hash of the max number of observed seqs in the qc pages
+my %h_failed_max;        # Hash of the max number of observed seqs in the failed pages 
+my %h_qc_counts;         # Hash of the consensus sequence sounts in the qc data
+my $s_subject_page = 1;  # Starting number for the subject pages
 
 our ( $s_blast_dir, $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_test, $b_forced, $b_verbose) = 
 	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0);
 
-&GetOptions( "experiment|x=s" => \$s_experiment, 
+&GetOptions("experiment|x=s" => \$s_experiment, 
 			"validated|l=s"  => \$s_validated, 
 			"expected|e=s"   => \$s_expected,
 			"observed|o=s"   => \$s_observed,
+			"title|i=s"      => \$s_title,
 			"blastn|n=s"     => \$s_blast_dir,
 			"output|p=s"     => \$s_output, 
 			"directory|d=s"  => \$s_directory,
@@ -210,8 +212,9 @@ if(defined $help){ # If help flag provided then provide the perl doc and exit
 	die;
 }
 
-$s_directory = $working if(!defined $s_directory || $s_directory !~ /\S/); # If input directory isn't provided it equals pwd
-$s_output    = $working if(!defined $s_output    || $s_output    !~ /\S/);
+$s_title     = "report" if(!defined $s_title     || $s_title !~ /\S/);     # If no report title is defined it defaults to report
+$s_directory = $working if(!defined $s_directory || $s_directory !~ /\S/); # If input directory isn't provided it equals the working directory
+$s_output    = $working if(!defined $s_output    || $s_output    !~ /\S/); # If output directory isn't provided it equals the working directory
 
 # Getting all of the files
 if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
@@ -221,8 +224,8 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
 		my @a_expected  = grep { $_ =~ /expected/ } @a_ex_files;
 		my @a_validated  = grep { $_ =~ /validated/ } @a_ex_files;
-		$s_observed  = ($#a_observed  == 0 && defined $a_observed[0]) ? $a_observed[0] : undef;
-		$s_expected  = ($#a_expected  == 0 && defined $a_expected[0]) ? $a_expected[0] : undef;
+		$s_observed  = ($#a_observed  == 0 && defined $a_observed[0]) ? $a_observed[0]   : undef;
+		$s_expected  = ($#a_expected  == 0 && defined $a_expected[0]) ? $a_expected[0]   : undef;
 		$s_validated = ($#a_validated == 0 && defined $a_validated[0]) ? $a_validated[0] : undef;
 		$h_experiments{$s_experiment}{VAL} = $s_validated;
 		$h_experiments{$s_experiment}{OBS} = $s_observed;
@@ -253,7 +256,6 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 			}else{
 				$h_experiments{$s_exp}{VAL} = $s_validated;
 			}
-
 			if(defined $a_expected[1]){ # Getting the QC expected files if present
 				my $s_qc_expected = $a_expected[0] =~ /sbt/ ? $a_expected[0] : 
 					($a_expected[1] =~ /sbt/ ? $a_expected[1] : undef);
@@ -266,9 +268,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 			}
 			$s_experiment = $a_experiments[0];
 			$h_experiments{$s_exp}{OBS} = $s_observed;
-
  		}
-	 	
 	}
 }else{
 	# If experiment name isn't provided take it from the files
@@ -293,7 +293,8 @@ die($USAGE,'Email option is NOT AVAILABLE on a mac!')
 	if($b_email && $machine =~ /Darwin/i); 
 
 &initalize(); # Initialize the report directories
-my $report_directory = $s_output."/report";
+#&loadPopulationData() if defined $s_pop_cfg;
+my $report_directory = $s_output."/".$s_title;
 my $help_index       = $report_directory."/help.html";
 my $log_index        = $report_directory."/log.html";
 my $experiment_index = $report_directory."/experiment.html";
@@ -397,12 +398,12 @@ foreach my $s_exp (keys %h_experiments){
 		close $qc_html;
 	}
 
-	my $subject_dir = $s_output."/report/".$s_exp."/subjects";
+	my $subject_dir = $s_output."/".$s_title."/".$s_exp."/subjects";
 	print `mkdir $subject_dir`;
 
 	# Creating all of the subjects html files
 	foreach my $s_ID (keys %{$h_subject_pages{$s_exp}}){
-		my $subject_page = $s_output."/report/".$s_exp."/subjects/subject".$h_subject_pages{$s_exp}{$s_ID}.".html";
+		my $subject_page = $s_output."/".$s_title."/".$s_exp."/subjects/subject".$h_subject_pages{$s_exp}{$s_ID}.".html";
 		open(my $subject_html,">",$subject_page) or die "CANT OPEN FILE $! $0";
 		html::subjectsHeader($subject_html, $s_exp,  $s_ID, \%h_qc_verdict);
 		html::subjectsBody($subject_html, $s_exp, $s_ID, $s_blast_dir, \%loc_verdict, \%qc_verdict, \%qc_expected, \%expected, \%observed, \%seq, \%seqids );
@@ -428,11 +429,11 @@ print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
 =cut
 sub loadFiles{
 
-	my %h_no_data;
+	my %h_no_data;my %h_expected_loci;
 	foreach my $s_exp (keys %h_experiments){
 
-		$s_observed = $h_experiments{$s_exp}{OBS};
-		$s_expected = $h_experiments{$s_exp}{EXP};
+		$s_observed  = $h_experiments{$s_exp}{OBS};
+		$s_expected  = $h_experiments{$s_exp}{EXP};
 		$s_validated = $h_experiments{$s_exp}{VAL};
 		my $s_qc_validated = defined $h_experiments{$s_exp}{QCV} ? $h_experiments{$s_exp}{QCV} : undef;
 		my $s_qc_expected  = defined $h_experiments{$s_exp}{QCE} ? $h_experiments{$s_exp}{QCE} : undef;
@@ -554,7 +555,7 @@ sub loadFiles{
 
 				$h_expected{$s_exp}{$ID}{$s_loc} = (isAC($s_typ1) || isAC($s_typ2)) ? (getGL($s_typ1,$s_typ2)) : expand(join("+",sort $s_typ2, $s_typ1));			
 				$h_expected_zygosity{$s_exp}{$ID}{$s_loc} = $s_typ1 eq $s_typ2 ? 1 : 2;
-
+				$h_expected_loci{$s_loc}++;
 			}
 			close $exp;
 
@@ -671,7 +672,6 @@ sub loadFiles{
 
 			}
 			close $qc_ver;
-
 		}
 
 		foreach my $s_ID (keys %{$h_qc_verified{$s_exp}}){
@@ -689,8 +689,8 @@ sub loadFiles{
 				}
 
 				if(!defined $h_observed_gls{$s_exp}{$s_ID}{$s_loc}[0]){
-					$h_qc_verdict{$s_exp}{$s_ID}{$s_loc} = "ERROR" if defined $h_qc_verified{$s_exp}{$s_ID}{$s_loc};
 					#Need to flag this as no calls
+					$h_qc_verdict{$s_exp}{$s_ID}{$s_loc} = "ERROR" if defined $h_qc_verified{$s_exp}{$s_ID}{$s_loc};	
 					$h_qc_counts{$s_exp}{LOCUS}{$s_loc}{ERROR}++; 
 					$h_qc_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}++;
 					next;
@@ -702,7 +702,6 @@ sub loadFiles{
 				$g2 = !defined $g2 || $g2 !~ /\S/ ? $g1 : $g2;	
 				$g1 =~ /^(\D+\d{0,1})\*/;my $s_locus1 = $1;		
 				$g2 =~ /^(\D+\d{0,1})\*/;my $s_locus2 = $1;	
-
 
 				my $num_typings = keys %{$h_qc_verified{$s_exp}{$s_ID}{$s_loc}};
 
@@ -725,7 +724,6 @@ sub loadFiles{
 					$h_qc_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}++;	
 				}
 
-
 			}
 
 			foreach my $s_loc (keys %{$h_qc_verified{$s_exp}{$s_ID}}){
@@ -745,7 +743,6 @@ sub loadFiles{
 					}
 				}
 			}
-
 		}
 
 		
@@ -800,7 +797,6 @@ sub loadFiles{
 					$loc_cnt++;
 
 				}elsif($s_loc eq "DRB1" && $n_drbx != 0){
-
 					$h_counts{$s_exp}{LOCUS}{$s_loc}{DRBX}++;
 					$h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}++;
 					$h_locus_verdict{$s_exp}{$s_ID}{$s_loc} = "DRBX";
@@ -843,7 +839,7 @@ sub loadFiles{
 				}
 			}
 
-			if($loc_cnt == 5 && $n_error == 0){
+			if($loc_cnt == $num_typs && $n_error == 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}++;
 			}elsif($loc_cnt != 5 && $n_error == 0 && $n_drbx == 0 && $n_fail != 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}++;
@@ -852,16 +848,12 @@ sub loadFiles{
 			}elsif($loc_cnt != 5 && $n_drbx > 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}++;
 			}else{
-				#if($loc_cnt == $num_typs){
-					$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}++;
-				#}
-
+				$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}++;				
 			}
 
 		}
 
-		#TODO: Add warnings for these cases
-		my @a_loci = split(/,/,"A,C,B,DRB1,DQB1");
+		my @a_loci = split(/,/,"A,B,C,DRB1,DQB1");
 		foreach my $s_l (@a_loci){
 
 			$h_counts{$s_exp}{LOCUS}{$s_l}{PASS}     = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{PASS});
@@ -888,9 +880,8 @@ sub loadFiles{
 			print $log_html "Observed File:  $s_observed<br>";
 			print STDERR "Expected File:  $s_expected\n";
 			print $log_html "Expected File:  $s_expected<br>";
-			print STDERR "Validated File: $s_validated\n\n";
+			print STDERR "Validated File: $s_validated\n";
 			print $log_html "Validated File: $s_validated<br><br>";
-
 		}
 
 		#Determining the max number of columns for each page
@@ -912,7 +903,7 @@ sub loadFiles{
 					$n_max_drbx = ($#{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}} + 1) > $n_max_drbx ?
 						 ($#{$h_observed_gls{$s_exp}{$s_ID}{$s_loc}} + 1) : $n_max_drbx;
 				}
-			}		
+			}
 		}
 		$h_drbx_max{$s_exp} = $n_max_drbx;
 
@@ -952,22 +943,11 @@ sub loadFiles{
 				}
 			}
 		}
-		print STDERR "Max number of observed consensus sequences: $s_exp\t$n_max\n"	if $b_verbose;	
+		print STDERR "Max number of observed consensus sequences: $s_exp\t$n_max\n\n"	if $b_verbose;	
 		$h_observed_max{$s_exp} = $n_max;
 
 	}
 
-
-	foreach my $s_exp (keys %h_expected){
-		foreach my $s_ID (keys %{$h_expected{$s_exp}}){
-			if(!defined $h_observed{$s_exp}{$s_ID}){
-				print STDERR "No data in observed FILE!!! $s_exp $s_ID\n";
-			}
-			if(!defined $h_observed{$s_exp}{$s_ID} && !defined $h_no_data{$s_exp}{$s_ID}){
-				print STDERR "WTF no data $s_exp $s_ID\n";
-			}
-		}
-	}
 
 	if($b_verbose){
 		print $log_html "** Missing observed data at all loci!<br>";
@@ -978,6 +958,18 @@ sub loadFiles{
 			}
 		}
 	}
+
+
+}
+################################################################################################################
+=head2 loadPopulationData
+
+        Title:    loadPopulationData
+        Usage:    loadPopulationData();
+        Function: This loads all of data that links an id to a population
+
+=cut
+sub loadPopulationData{
 
 
 }
@@ -1327,7 +1319,7 @@ sub javaParseHML{
 =cut
 sub initalize{
 
-	my $report_dir = $s_output."/report";
+	my $report_dir = $s_output."/".$s_title;
 	if( -d $report_dir && !$b_forced){
 		print STDERR "Exiting because report directory already exists\n";
 		exit;

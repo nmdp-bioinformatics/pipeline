@@ -80,7 +80,8 @@ sub subjectsHeader{
       <title>Validation Report</title>
 
       <!-- Bootstrap core CSS -->
-      <link href="../../css/bootstrap.min.css" rel="stylesheet">
+      <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
+      
       <script src="../../js/Chart.js"></script>
       <!-- Custom styles for this template -->
       <link href="../../css/dashboard.css" rel="stylesheet">
@@ -376,7 +377,7 @@ sub htmlHeader{
       <title>Validation Report</title>
 
       <!-- Bootstrap core CSS -->
-      <link href="../css/bootstrap.min.css" rel="stylesheet">
+      <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
       <script src="../js/Chart.js"></script>
       <!-- Custom styles for this template -->
       <link href="../css/dashboard.css" rel="stylesheet">
@@ -649,7 +650,7 @@ sub logHeader{
     <title>Validation Report</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
     <script src="js/Chart.js"></script>
     <!-- Custom styles for this template -->
     <link href="css/dashboard.css" rel="stylesheet">
@@ -1790,7 +1791,7 @@ sub indexHeader{
     <title>Validation Report</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
     <script src="../js/Chart.js"></script>
     <!-- Custom styles for this template -->
     <link href="../css/dashboard.css" rel="stylesheet">
@@ -2179,7 +2180,6 @@ sub indexBody{
 	};
 	print $html $pie_data;
 
-
 	my $bar_chart_data = qq{
 		      var barChartData = {
         labels : ["A","B","C","DRB1","DQB1"],
@@ -2416,7 +2416,6 @@ sub resultsBody{
 				print $html  "\t\t\t<td>$s_typing</td>\n";
 
 				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
-
           for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
             my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
             printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
@@ -2742,7 +2741,7 @@ sub qcHeader{
       <title>Validation Report</title>
 
       <!-- Bootstrap core CSS -->
-      <link href="../css/bootstrap.min.css" rel="stylesheet">
+      <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
       <script src="../js/Chart.js"></script>
       <!-- Custom styles for this template -->
       <link href="../css/dashboard.css" rel="stylesheet">
