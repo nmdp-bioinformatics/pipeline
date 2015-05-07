@@ -50,7 +50,11 @@
 =head1 LICENSE
 
     pipeline  Consensus assembly and allele interpretation pipeline.
+<<<<<<< HEAD
     Copyright (c) 2015 National Marrow Donor Program (NMDP)
+=======
+    Copyright (c) 2014-2015 National Marrow Donor Program (NMDP)
+>>>>>>> 61a307333f8b2a2061d6102e46c8eb7f6041f5ca
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published
