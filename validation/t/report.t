@@ -5,6 +5,7 @@
 
 =head1 SYNOPSIS
 
+    prove t/report.t
 
 =head1 AUTHOR     Mike Halagan <mhalagan@nmdp.org>
     
@@ -15,10 +16,23 @@
 
 =head1 DESCRIPTION
 
-    This script takes in the output of ngs-validate-interp and the observed file and generates
-    a static HTML website report.
+    This is a test script tests that the expected html files are produced
+    and the correct elements are within the html files. 
 
- =head1 LICENSE
+=head1 CAVEATS
+    
+    - In order for this to work you MUST have ngs-extract-expected 
+      installed on your machine.
+
+=head1 OUTPUT
+
+    bash-3.2$ make test
+    t/report.t .. ok      
+    All tests successful.
+    Files=1, Tests=1844, 10 wallclock secs ( 0.20 usr  0.02 sys + 14.50 cusr  1.35 csys = 16.07 CPU)
+    Result: PASS
+
+=head1 LICENSE
 
     pipeline  Consensus assembly and allele interpretation pipeline.
     Copyright (c) 2014 National Marrow Donor Program (NMDP)
@@ -156,7 +170,7 @@ foreach my $s_dir (@a_directories){
     }
 }
 
-my @a_files = split(/,/,"report/css/bootstrap.min.css,report/experiment.html,report/help.html,report/log.html,report/ex0/drbx.html,report/ex0/errors.html,report/ex0/fails.html,report/ex0/index.html,report/ex0/results.html");
+my @a_files = split(/,/,"report/experiment.html,report/help.html,report/log.html,report/ex0/drbx.html,report/ex0/errors.html,report/ex0/fails.html,report/ex0/index.html,report/ex0/results.html");
 
 foreach my $s_dir (@a_directories){
     if(-d $s_dir){

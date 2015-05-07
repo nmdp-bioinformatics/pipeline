@@ -83,18 +83,9 @@ sub subjectsHeader{
       <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
       
       <script src="../../js/Chart.js"></script>
-      <!-- Custom styles for this template -->
       <link href="../../css/dashboard.css" rel="stylesheet">
 
-      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-      <script src="../../js/ie-emulation-modes-warning.js"></script>
 
-      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-      <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-      <![endif]-->
         <style type='text/css'>
     .my-legend .legend-scale ul {
       margin: 0;
@@ -326,7 +317,7 @@ sub htmlFooter{
           background: rgba(255, 255, 255, 0.6);
       }         
 
-                        .hovering{
+        .hovering{
         color:black;
         text-decoration: none;    
           }
@@ -335,11 +326,8 @@ sub htmlFooter{
         text-decoration: none;
           }  
       </style>
-      <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-      <script src="../js/bootstrap.min.js"></script>
-      <script src="../js/docs.min.js"></script>
-      <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-      <script src="../js/ie10-viewport-bug-workaround.js"></script>
+      
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
     
     </body>
   </html>
@@ -368,7 +356,7 @@ sub htmlHeader{
     <!DOCTYPE html>
   <html lang="en">
     <head>
-         <meta charset="utf-8">
+      <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <meta name="description" content="">
@@ -378,38 +366,21 @@ sub htmlHeader{
 
       <!-- Bootstrap core CSS -->
       <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
-      <script src="../js/Chart.js"></script>
+
       <!-- Custom styles for this template -->
-      <link href="../css/dashboard.css" rel="stylesheet">
+      <link   href="../css/dashboard.css" rel="stylesheet">
+      <script type="text/javascript" src="../js/jquery-latest.min.js"></script>
+      <script type="text/javascript" src="../js/jquery-ui.min.js"></script>
+      <script type="text/javascript" src="../js/docs.min.js"></script>
+      <script type="text/javascript" src="../js/Chart.js"></script>
+ 
+      <!-- Tablesorter: theme -->
+      <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
 
-      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-
-      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-      <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-      <![endif]-->
-
-    <script type="text/javascript" src="../js/jquery.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.widgets.js"></script> 
-  
-  <script src="../js/jquery-latest.min.js"></script>
-  <script src="../js/jquery-ui.min.js"></script>
-  <script src="../js/bootstrap.min.js"></script>
-    <script src="../js/docs.js"></script>
-
-  <script src="../js/prettify.js"></script>
-  <script src="../js/jquery-latest.min.js"></script>
-
-  <!-- Tablesorter: theme -->
-  <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
-
-
-  <!-- Tablesorter script: required -->
-  <script src="../js/jquery.tablesorter.js"></script>
-  <script src="../js/jquery.tablesorter.widgets.js"></script>
+      <!-- Tablesorter script: required -->
+      <script src="http://mottie.github.io/tablesorter/js/jquery.tablesorter.js"></script>
+      <script src="http://mottie.github.io/tablesorter/js/jquery.tablesorter.widgets.js"></script>
+      <script src="http://mottie.github.io/tablesorter/addons/pager/jquery.tablesorter.pager.js"></script>
 
   <script id="js">\$(function(){
 
@@ -652,18 +623,9 @@ sub logHeader{
     <!-- Bootstrap core CSS -->
     <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
     <script src="js/Chart.js"></script>
-    <!-- Custom styles for this template -->
     <link href="css/dashboard.css" rel="stylesheet">
 
-    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-    <script src="js/ie-emulation-modes-warning.js"></script>
 
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
       <style type='text/css'>
   .my-legend .legend-scale ul {
     margin: 0;
@@ -771,20 +733,11 @@ sub experimentsHtml{
     <title>Validation Report</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
     <script src="js/Chart.js"></script>
-    <!-- Custom styles for this template -->
     <link href="css/dashboard.css" rel="stylesheet">
 
-    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-    <script src="js/ie-emulation-modes-warning.js"></script>
 
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
       <style type='text/css'>
   .my-legend .legend-scale ul {
     margin: 0;
@@ -1396,13 +1349,10 @@ my $table4 = qq{
 				background: rgba(255, 255, 255, 0.6);
 		}
 			</style>
-			<script type="text/javascript" src="js/jquery.js"></script> 
-			<script type="text/javascript" src="js/jquery.tablesorter.js"></script> 
-		   <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-		    <script src="js/bootstrap.min.js"></script>
+
+		    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
 		    <script src="js/docs.min.js"></script>
-		    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-		    <script src="js/ie10-viewport-bug-workaround.js"></script>
+
   		</body>	
 		};
 
@@ -1436,25 +1386,19 @@ sub helpHtml{
     <meta name="author" content="">
     
     <title>Validation Report</title>
- <script src="js/jquery-2.1.1.js"></script>
+
     <!-- Bootstrap core CSS -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
     <script src="js/Chart.js"></script>
-    <script src="js/jquery-latest.min.js"></script>
+
 
     <!-- Custom styles for this template -->
-    <link href="css/dashboard.css" rel="stylesheet">
-   <link rel="stylesheet" href="css/style.css"> <!-- Resource style -->
-    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-    <script src="js/ie-emulation-modes-warning.js"></script>
+   <link href="css/dashboard.css" rel="stylesheet">
+   <link rel="stylesheet" href="css/style.css">
 
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-      <style type='text/css'>
+
+    <style type='text/css'>
+
   .my-legend .legend-scale ul {
     margin: 0;
     padding: 0;
@@ -1750,7 +1694,7 @@ font-color:black;
 
       </style>
        <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-        <script src="js/bootstrap.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
         <script src="js/docs.min.js"></script>
 
         <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
@@ -1796,15 +1740,12 @@ sub indexHeader{
     <!-- Custom styles for this template -->
     <link href="../css/dashboard.css" rel="stylesheet">
 
-    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-    <script src="../js/ie-emulation-modes-warning.js"></script>
-
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+
+
       <style type='text/css'>
   .my-legend .legend-scale ul {
     margin: 0;
@@ -2009,11 +1950,9 @@ sub indexFooter{
 
 	</style>
 	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-	    <script src="../js/bootstrap.min.js"></script>
+	    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
 	    <script src="../js/docs.min.js"></script>
-	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-	    <script src="../js/ie10-viewport-bug-workaround.js"></script>
-  
+
   </body>		
 		};
 	print $html $footer;
@@ -2065,7 +2004,7 @@ sub logFooter{
 
 	</style>
 	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-	    <script src="js/bootstrap.min.js"></script>
+	    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
 	    <script src="js/docs.min.js"></script>
 	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
 	    <script src="js/ie10-viewport-bug-workaround.js"></script>
@@ -2739,41 +2678,23 @@ sub qcHeader{
       <meta name="author" content="">
       
       <title>Validation Report</title>
-
       <!-- Bootstrap core CSS -->
       <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
-      <script src="../js/Chart.js"></script>
-      <!-- Custom styles for this template -->
-      <link href="../css/dashboard.css" rel="stylesheet">
-
-      <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-      <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-
-      <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-      <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-      <![endif]-->
-
-    <script type="text/javascript" src="../js/jquery.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.js"></script> 
-  <script type="text/javascript" src="../js/jquery.tablesorter.widgets.js"></script> 
   
-  <script src="../js/jquery-latest.min.js"></script>
-  <script src="../js/jquery-ui.min.js"></script>
-  <script src="../js/bootstrap.min.js"></script>
-    <script src="../js/docs.js"></script>
+      <!-- Custom styles for this template -->
+      <link   href="../css/dashboard.css" rel="stylesheet">
+      <script type="text/javascript" src="../js/jquery-latest.min.js"></script>
+      <script type="text/javascript" src="../js/jquery-ui.min.js"></script>
+      <script type="text/javascript" src="../js/docs.min.js"></script>
+      <script type="text/javascript" src="../js/Chart.js"></script>
+ 
+      <!-- Tablesorter: theme -->
+      <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
 
-  <script src="../js/prettify.js"></script>
-  <script src="../js/jquery-latest.min.js"></script>
-
-  <!-- Tablesorter: theme -->
-  <link class="theme default" rel="stylesheet" href="../css/theme.bootstrap.css">
-
-
-  <!-- Tablesorter script: required -->
-  <script src="../js/jquery.tablesorter.js"></script>
-  <script src="../js/jquery.tablesorter.widgets.js"></script>
+      <!-- Tablesorter script: required -->
+      <script src="http://mottie.github.io/tablesorter/js/jquery.tablesorter.js"></script>
+      <script src="http://mottie.github.io/tablesorter/js/jquery.tablesorter.widgets.js"></script>
+      <script src="http://mottie.github.io/tablesorter/addons/pager/jquery.tablesorter.pager.js"></script>
 
   <script id=\"js\">\$(function(){
 
@@ -3169,7 +3090,7 @@ sub qcFooter{
 			}	        
 	    </style>
 	    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-	    <script src="../js/bootstrap.min.js"></script>
+	    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
 	    <script src="../js/docs.min.js"></script>
 	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
 	    <script src="../js/ie10-viewport-bug-workaround.js"></script>

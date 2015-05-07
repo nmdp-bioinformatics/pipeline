@@ -55,24 +55,16 @@ This tool takes in the output of the NGS pipeline and produces a html report of 
 
 Using ngs-validation-report
 ========
-1) Running with no parameters
+
+1) Run by passing it a directory that has all of your expected, validated and observed files.
+
 ```bash
-/path/to/tool/ngs-validation-report
+/path/to/tool/ngs-validation-report -d ex014
 ```
 
-2) Running with only an experiment name
-```bash
-/path/to/ngs-validation-report -x ex014
-```
-
-3) Running with only an experiment name and an input directory
+2) Run with an experiment name and an input directory so it only uses that experiment
 ```bash
 /path/to/ngs-validation-report -x ex014 -d /path/to/directory/of/data
-```
-
-4) Running with the experiment, validated, and observed files.
-```bash
-/path/to/ngs-validation-report -l ex00_validated.txt -e ex00_expected.hml -o ex00_observed.txt
 ```
 
 Output
@@ -92,17 +84,14 @@ report/
 │   └── ...
 ├── css/
 │   ├── dashboard.css
-│   ├── bootstrap.min.css
-│   └── default.css
+│   ├── jquery-ui.min.css
+│   └── theme.bootstrap.css
 ├── js/
 │   ├── Chart.js
-│   ├── docs.min.js
-│   ├── ie-emulation-modes-warning.js
-│   ├── ie10-viewport-bug-workaround.js
-│   ├── ie8-responsive-file-warning.js
-│   ├── init.js
 │   ├── jquery.js
-│   ├── raphael.js
+│   ├── docs.min.js
+│   ├── jquery-ui.min.js
+│   ├── jquery-latest.min.js
 │   └── bootstrap.min.js
 └── img/
     └── bethematch.jpeg

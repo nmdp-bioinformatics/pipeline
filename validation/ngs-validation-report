@@ -12,6 +12,7 @@
     -o/--observed         Observed file
     -n/--blastn           Blast results (observed2blastn.pl)
     -d/--directory        Directory of input files (default = pwd)
+    -i/--title            Title of the report (default = report)
     -p/--output           Output directory (default = pwd)
     -m/--email            A list of email addresses seperated by ;
     -t/--test             Run in test mode
@@ -45,8 +46,11 @@
 
 =head1 CAVEATS
 	
-    In order to do the allele code expansion you must
-    have LWP::UserAgent installed on your machine. 
+    - In order to do the allele code expansion you must
+      have LWP::UserAgent installed on your machine. 
+
+    - In order for the email option to work you must be on a linux 
+      machine.
 
 =head1 LICENSE
 
