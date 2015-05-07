@@ -288,7 +288,6 @@ sub htmlFooter{
             <footer>
         <div class="footer">
           <img src="../img/bethematch.jpeg" alt="img02">
-          <p><a href="http://bioinformatics.nmdp.org/Copyright_Information.aspx">Copyright ©</a> 2006 - 2014 National Marrow Donor Program. All Rights Reserved.</p>
         </div>
       </footer> 
       <style type="text/css">
@@ -1328,7 +1327,6 @@ my $table4 = qq{
 	<footer>
 		<div class="footer">
 			<img src="img/bethematch.jpeg" alt="img02">
-      <p><a href="https://github.com/nmdp-bioinformatics/pipeline/blob/master/LICENSE">Copyright ©</a> 2014 - 2015 National Marrow Donor Program. All Rights Reserved.</p>		</div>
 	</footer>	
 	<style type="text/css">
 	    .bargraph {
@@ -1529,7 +1527,6 @@ sub helpHtml{
   <footer>
     <div class="footer">
       <img src="img/bethematch.jpeg" alt="img02">
-      <p><a href="https://github.com/nmdp-bioinformatics/pipeline/blob/master/LICENSE">Copyright ©</a> 2014 - 2015 National Marrow Donor Program. All Rights Reserved.</p>    </div>
     </div>
   </footer> 
   <script src="js/main.js"></script> <!-- Resource jQuery -->
@@ -1926,7 +1923,6 @@ sub indexFooter{
 			<footer>
 				<div class="footer">
 					<img src="../img/bethematch.jpeg" alt="img02">
-          <p><a href="https://github.com/nmdp-bioinformatics/pipeline/blob/master/LICENSE">Copyright ©</a> 2014 - 2015 National Marrow Donor Program. All Rights Reserved.</p>    </div>
 				</div>
 			</footer>	
 	<style type="text/css">
@@ -1980,7 +1976,6 @@ sub logFooter{
 			<footer>
 				<div class="footer">
 					<img src="img/bethematch.jpeg" alt="img02">
-          <p><a href="https://github.com/nmdp-bioinformatics/pipeline/blob/master/LICENSE">Copyright ©</a> 2014 - 2015 National Marrow Donor Program. All Rights Reserved.</p>    </div>
 				</div>
 			</footer>	
 	<style type="text/css">
@@ -3059,7 +3054,6 @@ sub qcFooter{
 	    			<footer>
 				<div class="footer">
 					<img src="../img/bethematch.jpeg" alt="img02">
-          <p><a href="https://github.com/nmdp-bioinformatics/pipeline/blob/master/LICENSE">Copyright ©</a> 2014 - 2015 National Marrow Donor Program. All Rights Reserved.</p>    </div>
 				</div>
 			</footer>	
 	    <style type="text/css">

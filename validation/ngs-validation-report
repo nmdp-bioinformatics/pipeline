@@ -84,7 +84,7 @@
        - Couldn't deal with allele codes 
 
     0.2       Inital release to mhalagan-nmdp github page            2015-01-30
-       - Added the ability to parse HML and deal with allele codes 
+       - This version could parse HML and dealt with allele codes 
 
     0.3       Updated mhalagan-nmdp github page                      2015-02-11
        - This version is capable of taking in multiple experiments
