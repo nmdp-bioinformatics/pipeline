@@ -5,6 +5,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile (
        NAME         => 'ngs-validation-report',
-       VERSION      => "0.3",
+       VERSION      => "1.1",
+       DISTNAME     => "backup",
        EXE_FILES    => [ qw(ngs-validation-report ) ]
 );
