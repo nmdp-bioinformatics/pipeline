@@ -5,10 +5,10 @@
 
 =head1 SYNOPSIS
 
-  use html.pm;
-  html::indexHeader($index_html, $s_exp);
-  html::indexBody($index_html, \%counts, \%sensitivity);
-  html::indexFooter($index_html);
+	use html.pm;
+	html::indexHeader($index_html, $s_exp);
+	html::indexBody($index_html, \%counts, \%sensitivity);
+	html::indexFooter($index_html);
 
 =head1 AUTHOR     Mike Halagan <mhalagan@nmdp.org>
     
@@ -595,19 +595,19 @@ my $header2 = qq{
 ################################################################################################################
 =head2 logHeader
 
-  Title:     logHeader
-  Usage:
-  Function:  Prints the header to the log.html file
-  Returns:
-  Args:
+	Title:     logHeader
+	Usage:
+	Function:  Prints the header to the log.html file
+	Returns:
+	Args:
 
 =cut
 sub logHeader{
 
-  my $html = shift;
+	my $html = shift;
 
-  my $header = 
-    qq{
+	my $header = 
+		qq{
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -686,40 +686,40 @@ sub logHeader{
       </div>
     </nav>
 
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-sm-3 col-md-2 sidebar">
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-3 col-md-2 sidebar">
 
-      </div>
+			</div>
         </div>
-    <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          <h1 class="page-header">Log</h1>
+		<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+      		<h1 class="page-header">Log</h1>
 
         
 
-    };
-  print $html $header;
+		};
+	print $html $header;
 
 }
 ################################################################################################################
 =head2 experimentsHtml
 
-  Title:     experimentsHtml
-  Usage:
-  Function:  Prints the header to the log.html file
-  Returns:
-  Args:
+	Title:     experimentsHtml
+	Usage:
+	Function:  Prints the header to the log.html file
+	Returns:
+	Args:
 
 =cut
 sub experimentsHtml{
 
-  my ($html, $rh_counts, $rh_experiments, $b_verbose) = @_;
+	my ($html, $rh_counts, $rh_experiments, $b_verbose) = @_;
 
-  my %h_counts = %$rh_counts;
-  my %h_experiments = %$rh_experiments;
+	my %h_counts = %$rh_counts;
+	my %h_experiments = %$rh_experiments;
 
-  my $header = 
-    qq{
+	my $header = 
+		qq{
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -820,13 +820,13 @@ my $header2 = qq{
     };
     print $html $sidebar;
     foreach my $s_exp (sort keys %h_experiments){
-      print $html "<li><a href=\"".$s_exp."/index.html\">".$s_exp."</a></li>\n";
+    	print $html "<li><a href=\"".$s_exp."/index.html\">".$s_exp."</a></li>\n";
     }
     print $html "</ul>\n</div>\n</div>\n";
-  
+	
 
       my $table = qq{
-          <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+	        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
               <div class='my-legend' style="float:right;">
                 <div class='legend-scale'>
                   <ul class='legend-labels'>
@@ -837,18 +837,18 @@ my $header2 = qq{
                   </ul>
                 </div>
               </div>
-            <h1 class="page-header">Experiments</h1>  
-   };
+	          <h1 class="page-header">Experiments</h1>  
+	 };
    print $html $table;
 
 
-     my $end_table = qq{
-                      
-                  </tbody>
-                  </table>
-                </div>
+		 my $end_table = qq{
+		 		              
+		              </tbody>
+		              </table>
+		            </div>
 
-     };
+		 };
 
 
 ########## TABLE 1 ##########
@@ -1055,90 +1055,90 @@ my $table4 = qq{
   print $html $end_table;
     
   
-  my $charts = qq{
+	my $charts = qq{
 
-            <div class="row placeholders">  
-                <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
-                <div id="canvas-holder">
-                  <canvas id="canvas" width="300" height="300"/>
-                </div>
-                 <h4>Subjects</h4>
-                 <span class="text-muted">Number of subjects pass and fails for each experiemnt</span>
-              </div>
-              <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
-                <div id="canvas-holder">
-                  <canvas id="canvas2" width="300" height="300" />
-                </div>
-                 <h4>Locus</h4>
-                 <span class="text-muted">Number of locus pass and fails for each experiemnt</span>
-              </div>    
-              <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
-                <div id="canvas-holder">
-                  <canvas id="canvas3" width="300" height="300"/>
-                </div>
-                 <h4>Allele</h4>
-                 <span class="text-muted">Number of allele pass and fails for each experiemnt</span>
-              </div>        
+	          <div class="row placeholders">  
+	              <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
+	              <div id="canvas-holder">
+	                <canvas id="canvas" width="300" height="300"/>
+	              </div>
+	               <h4>Subjects</h4>
+	               <span class="text-muted">Number of subjects pass and fails for each experiemnt</span>
+	            </div>
+	            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
+	              <div id="canvas-holder">
+	                <canvas id="canvas2" width="300" height="300" />
+	              </div>
+	               <h4>Locus</h4>
+	               <span class="text-muted">Number of locus pass and fails for each experiemnt</span>
+	            </div>    
+	            <div class="col-xs-6 col-sm-3 placeholder" style="margin-left: 20px;margin-top:20px;">
+	              <div id="canvas-holder">
+	                <canvas id="canvas3" width="300" height="300"/>
+	              </div>
+	               <h4>Allele</h4>
+	               <span class="text-muted">Number of allele pass and fails for each experiemnt</span>
+	            </div>        
 
-            </div>
-           </div>
+	          </div>
+	         </div>
 
-       };
+	     };
 
 
-    print $html $charts;
+		print $html $charts;
 
-    print $html "<SCRIPT>\n";
+		print $html "<SCRIPT>\n";
 
-      ######## 
-      # Subjects JS
-      ########
-    print $html "var barChartData = {\n";
-    print $html "\t\tlabels : [";
-    my $label;
-    foreach my $s_exp (sort keys %h_experiments){
-      $label .= "\"$s_exp\",";
-    }
-    $label =~ s/,$//;
-    print $html $label."],\n";
-      print $html "\t\tdatasets : [\n";
-     
+	    ######## 
+	    # Subjects JS
+	    ########
+		print $html "var barChartData = {\n";
+		print $html "\t\tlabels : [";
+		my $label;
+		foreach my $s_exp (sort keys %h_experiments){
+			$label .= "\"$s_exp\",";
+		}
+		$label =~ s/,$//;
+		print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
 
-      #Pass columns
-      print $html "\t\t\t{\n";
-    my $chart_pass = qq{
-              fillColor : "#46BFBD",
-              strokeColor : "#46BFBD",
-              highlightFill :  "#5AD3D1",
-              highlightStroke :  "#5AD3D1",
-          };
-      print $html $chart_pass;
-      print $html "\t\t\tdata : [";
-      my $subject_chart;
-      foreach my $s_exp (sort keys %h_experiments){
-        $subject_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}.",";
-      }
-      $subject_chart =~ s/,$//;
-      print $html $subject_chart."],\n";
-      print $html "\t\t\t},\n";
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+		my $chart_pass = qq{
+	            fillColor : "#46BFBD",
+	            strokeColor : "#46BFBD",
+	            highlightFill :  "#5AD3D1",
+	            highlightStroke :  "#5AD3D1",
+	        };
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $subject_chart;
+	    foreach my $s_exp (sort keys %h_experiments){
+	    	$subject_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}.",";
+	    }
+	    $subject_chart =~ s/,$//;
+	    print $html $subject_chart."],\n";
+	    print $html "\t\t\t},\n";
 
-      #Fail columns
-      print $html "\t\t\t{\n";
-      my $chart_fail = qq{
-              fillColor : "#F7464A",
-              strokeColor : "#F7464A",
-              highlightFill: "#FF5A5E",
-              highlightStroke: "#FF5A5E",
-          };
-      print $html $chart_fail;    
-      print $html "\t\t\tdata : [";
-      my $fail_chart;
-      foreach my $s_exp (sort keys %h_experiments){
-        $fail_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}.",";
-      }
-      $fail_chart =~ s/,$//;
-      print $html $fail_chart."],\n";
-      print $html "\t\t\t},\n";
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    my $chart_fail = qq{
+	            fillColor : "#F7464A",
+	            strokeColor : "#F7464A",
+	            highlightFill: "#FF5A5E",
+	            highlightStroke: "#FF5A5E",
+	        };
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_chart;
+	    foreach my $s_exp (sort keys %h_experiments){
+	    	$fail_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_chart =~ s/,$//;
+	    print $html $fail_chart."],\n";
+	    print $html "\t\t\t},\n";
 
       #DRBX columns
       print $html "\t\t\t{\n";
@@ -1158,58 +1158,58 @@ my $table4 = qq{
       print $html $drbx_chart."],\n";
       print $html "\t\t\t},\n";
 
-      #Error charts
-      print $html "\t\t\t{\n";   
-      my $chart_error = qq{   
-            fillColor : "#D3D5D6",
-            strokeColor : "#D3D5D6",
-            highlightFill :  "#DCDDDE",
-            highlightStroke :  "#DCDDDE",
-        };
-    print $html $chart_error;        
-      print $html "\t\t\tdata : [";
-      my $error_chart;
-      foreach my $s_exp (sort keys %h_experiments){
-        $error_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}.",";
-      }
-      $error_chart =~ s/,$//;
-      print $html $error_chart."],\n";
-      print $html "\t\t\t}\n";
-      print $html "\t\t]\n";
-      print $html "\t}\n";
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+	    my $chart_error = qq{   
+		        fillColor : "#D3D5D6",
+		        strokeColor : "#D3D5D6",
+		        highlightFill :  "#DCDDDE",
+		        highlightStroke :  "#DCDDDE",
+		    };
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_chart;
+	    foreach my $s_exp (sort keys %h_experiments){
+	    	$error_chart .= $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}.",";
+	    }
+	    $error_chart =~ s/,$//;
+	    print $html $error_chart."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
 
 
-      ######## 
-      # Locus JS
-      ########
-      print $html "var barChartData2 = {\n";
-      print $html "\t\tlabels : [";
-      print $html $label."],\n";
-      print $html "\t\tdatasets : [\n";
-     
-      #Pass columns
-      print $html "\t\t\t{\n";
-      print $html $chart_pass;
-      print $html "\t\t\tdata : [";
-      my $locus_chart;
-      foreach my $s_exp (sort keys %h_experiments){
-        $locus_chart .= $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}.",";
-      }
-      $locus_chart =~ s/,$//;
-      print $html $locus_chart."],\n";
-      print $html "\t\t\t},\n";
+	    ######## 
+	    # Locus JS
+	    ########
+	   	print $html "var barChartData2 = {\n";
+		  print $html "\t\tlabels : [";
+		  print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $locus_chart;
+	    foreach my $s_exp (sort keys %h_experiments){
+	    	$locus_chart .= $h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}.",";
+	    }
+	    $locus_chart =~ s/,$//;
+	    print $html $locus_chart."],\n";
+	    print $html "\t\t\t},\n";
 
-      #Fail columns
-      print $html "\t\t\t{\n";
-      print $html $chart_fail;    
-      print $html "\t\t\tdata : [";
-      my $fail_locus;
-      foreach my $s_exp (sort keys %h_experiments){
-        $fail_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}.",";
-      }
-      $fail_locus =~ s/,$//;
-      print $html $fail_locus."],\n";
-      print $html "\t\t\t},\n";
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_locus;
+	    foreach my $s_exp (sort keys %h_experiments){
+	    	$fail_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_locus =~ s/,$//;
+	    print $html $fail_locus."],\n";
+	    print $html "\t\t\t},\n";
 
 
       #DRBX columns
@@ -1224,51 +1224,51 @@ my $table4 = qq{
       print $html $drbx_locus."],\n";
       print $html "\t\t\t},\n";
 
-      #Error charts
-      print $html "\t\t\t{\n";   
-    print $html $chart_error;        
-      print $html "\t\t\tdata : [";
-      my $error_locus;
-      foreach my $s_exp (sort keys %h_experiments){
-        $error_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}.",";
-      }
-      $error_locus =~ s/,$//;
-      print $html $error_locus."],\n";
-      print $html "\t\t\t}\n";
-      print $html "\t\t]\n";
-      print $html "\t}\n";
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_locus;
+	    foreach my $s_exp (sort keys %h_experiments){
+	    	$error_locus .= $h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}.",";
+	    }
+	    $error_locus =~ s/,$//;
+	    print $html $error_locus."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
 
-      ######## 
-      # Allele JS
-      ########
-      print $html "var barChartData3 = {\n";
-      print $html "\t\tlabels : [";
-      print $html $label."],\n";
-      print $html "\t\tdatasets : [\n";
-     
-      #Pass columns
-      print $html "\t\t\t{\n";
-      print $html $chart_pass;
-      print $html "\t\t\tdata : [";
-      my $allele_chart;
-      foreach my $s_exp (sort keys %h_experiments){
-        $allele_chart .= $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}.",";
-      }
-      $allele_chart =~ s/,$//;
-      print $html $allele_chart."],\n";
-      print $html "\t\t\t},\n";
+	    ######## 
+	    # Allele JS
+	    ########
+	   	print $html "var barChartData3 = {\n";
+		  print $html "\t\tlabels : [";
+		  print $html $label."],\n";
+	    print $html "\t\tdatasets : [\n";
+	   
+	    #Pass columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_pass;
+	    print $html "\t\t\tdata : [";
+	    my $allele_chart;
+	    foreach my $s_exp (sort keys %h_experiments){
+	    	$allele_chart .= $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}.",";
+	    }
+	    $allele_chart =~ s/,$//;
+	    print $html $allele_chart."],\n";
+	    print $html "\t\t\t},\n";
 
-      #Fail columns
-      print $html "\t\t\t{\n";
-      print $html $chart_fail;    
-      print $html "\t\t\tdata : [";
-      my $fail_allele;
-      foreach my $s_exp (sort keys %h_experiments){
-        $fail_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}.",";
-      }
-      $fail_allele =~ s/,$//;
-      print $html $fail_allele."],\n";
-      print $html "\t\t\t},\n";
+	    #Fail columns
+	    print $html "\t\t\t{\n";
+	    print $html $chart_fail;    
+	    print $html "\t\t\tdata : [";
+	    my $fail_allele;
+	    foreach my $s_exp (sort keys %h_experiments){
+	    	$fail_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}.",";
+	    }
+	    $fail_allele =~ s/,$//;
+	    print $html $fail_allele."],\n";
+	    print $html "\t\t\t},\n";
 
       #DRBX columns
       print $html "\t\t\t{\n";
@@ -1282,96 +1282,96 @@ my $table4 = qq{
       print $html $drbx_allele."],\n";
       print $html "\t\t\t},\n";
 
-      #Error charts
-      print $html "\t\t\t{\n";   
-    print $html $chart_error;        
-      print $html "\t\t\tdata : [";
-      my $error_allele;
-      foreach my $s_exp (sort keys %h_experiments){
-        $error_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}.",";
-      }
-      $error_allele =~ s/,$//;
-      print $html $error_allele."],\n";
-      print $html "\t\t\t}\n";
-      print $html "\t\t]\n";
-      print $html "\t}\n";
+	    #Error charts
+	    print $html "\t\t\t{\n";   
+		print $html $chart_error;        
+	    print $html "\t\t\tdata : [";
+	    my $error_allele;
+	    foreach my $s_exp (sort keys %h_experiments){
+	    	$error_allele .= $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}.",";
+	    }
+	    $error_allele =~ s/,$//;
+	    print $html $error_allele."],\n";
+	    print $html "\t\t\t}\n";
+	    print $html "\t\t]\n";
+	    print $html "\t}\n";
 
 
-    my $js = qq{
-      window.onload = function(){
+		my $js = qq{
+			window.onload = function(){
 
-          var ctx3 = document.getElementById("canvas").getContext("2d");
-          window.myBar = new Chart(ctx3).Bar(barChartData, {
-            responsive : true
-          });
+	        var ctx3 = document.getElementById("canvas").getContext("2d");
+	        window.myBar = new Chart(ctx3).Bar(barChartData, {
+	          responsive : true
+	        });
 
-          var ctx5 = document.getElementById("canvas2").getContext("2d");
-          window.myBar = new Chart(ctx5).Bar(barChartData2, {
-            responsive : true
-          });
+	        var ctx5 = document.getElementById("canvas2").getContext("2d");
+	        window.myBar = new Chart(ctx5).Bar(barChartData2, {
+	          responsive : true
+	        });
 
-          var ctx6 = document.getElementById("canvas3").getContext("2d");
-          window.myBar = new Chart(ctx6).Bar(barChartData3, {
-            responsive : true
-          });
+	        var ctx6 = document.getElementById("canvas3").getContext("2d");
+	        window.myBar = new Chart(ctx6).Bar(barChartData3, {
+	          responsive : true
+	        });
 
 
-        };
-         </script>
-    };
-    print $html $js;
-    
-  
+	      };
+	       </script>
+		};
+		print $html $js;
+		
+	
 
-  my $footer = qq{
-  <footer>
-    <div class="footer">
-      <img src="img/bethematch.jpeg" alt="img02">
-  </footer> 
-  <style type="text/css">
-      .bargraph {
-        list-style: none;
-        padding-top: 20px;
-        width:560px;
-      }
-      footer {
-        color: #888;
-        clear:both;
-        position: relative; 
-        bottom: 10px;
-        left: 0; width: 100%; 
-        text-align: center;
-        font-size:9px;
-        margin-top: 300px;
-        background: rgba(255, 255, 255, 0.6);
-    }
-      </style>
+	my $footer = qq{
+	<footer>
+		<div class="footer">
+			<img src="img/bethematch.jpeg" alt="img02">
+	</footer>	
+	<style type="text/css">
+	    .bargraph {
+	      list-style: none;
+	      padding-top: 20px;
+	      width:560px;
+	    }
+	    footer {
+				color: #888;
+				clear:both;
+				position: relative; 
+				bottom: 10px;
+				left: 0; width: 100%; 
+				text-align: center;
+				font-size:9px;
+				margin-top: 300px;
+				background: rgba(255, 255, 255, 0.6);
+		}
+			</style>
 
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
-        <script src="js/docs.min.js"></script>
+		    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+		    <script src="js/docs.min.js"></script>
 
-      </body> 
-    };
+  		</body>	
+		};
 
-  print $html $footer;
+	print $html $footer;
 
 }
 ################################################################################################################
 =head2 helpHtml
 
-  Title:     helpHtml
-  Usage:
-  Function:  Prints the header to the log.html file
-  Returns:
-  Args:
+	Title:     helpHtml
+	Usage:
+	Function:  Prints the header to the log.html file
+	Returns:
+	Args:
 
 =cut
 sub helpHtml{
 
-  my $html = shift;
+	my $html = shift;
 
-  my $header = 
-    qq{
+	my $header = 
+		qq{
 
 <!DOCTYPE html>
 <html lang="en">
@@ -1387,7 +1387,7 @@ sub helpHtml{
     <!-- Bootstrap core CSS -->
     <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
     <script src="js/Chart.js"></script>
-    <script src="js/jquery-latest.min.js"></script>
+
 
     <!-- Custom styles for this template -->
    <link href="css/dashboard.css" rel="stylesheet">
@@ -1526,7 +1526,7 @@ sub helpHtml{
   
   <footer>
     <div class="footer">
-
+      <img src="img/bethematch.jpeg" alt="img02">
     </div>
   </footer> 
   <script src="js/main.js"></script> <!-- Resource jQuery -->
@@ -1697,28 +1697,28 @@ font-color:black;
         <script src="js/ie10-viewport-bug-workaround.js"></script>
       </body> 
     
-    };
+		};
 
-  print $html $header;
+	print $html $header;
 
 }
 ################################################################################################################
 =head2 indexHeader
 
-  Title:     indexHeader
-  Usage:
-  Function:  Prints the header to the index.html file
-  Returns:
-  Args:
+	Title:     indexHeader
+	Usage:
+	Function:  Prints the header to the index.html file
+	Returns:
+	Args:
 
 =cut
 sub indexHeader{
 
-  my ($html, $s_exp, $rh_qc_verdict, $b_drbx, $b_error, $b_failed) = @_;
+	my ($html, $s_exp, $rh_qc_verdict, $b_drbx, $b_error, $b_failed) = @_;
 
-  my $s_experiment = $s_exp;
-  my $header = 
-    qq{
+	my $s_experiment = $s_exp;
+	my $header = 
+		qq{
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -1895,137 +1895,137 @@ sub indexHeader{
             </div>        
 
           </div>
-      
+			
 
       </div>
     </div>
 
-    };
-  print $html $header2;
+		};
+	print $html $header2;
 
 }
 ################################################################################################################
 =head2 indexFooter
 
-  Title:     indexFooter
-  Usage:
-  Function:  Prints the footer to the index.html file
-  Returns:
-  Args:
+	Title:     indexFooter
+	Usage:
+	Function:  Prints the footer to the index.html file
+	Returns:
+	Args:
 
 =cut
 sub indexFooter{
 
-  my $html = shift;
+	my $html = shift;
 
-  my $footer = 
-    qq{
-      <footer>
-        <div class="footer">
-          <img src="../img/bethematch.jpeg" alt="img02">
-        </div>
-      </footer> 
-  <style type="text/css">
+	my $footer = 
+		qq{
+			<footer>
+				<div class="footer">
+					<img src="../img/bethematch.jpeg" alt="img02">
+				</div>
+			</footer>	
+	<style type="text/css">
     .bargraph {
       list-style: none;
       padding-top: 20px;
       width:560px;
     }
     footer {
-      color: #888;
-      clear:both;
-      position: relative; 
-      bottom: 10px;
-      left: 0; width: 100%; 
-      text-align: center;
-      font-size:9px;
-      
-      background: rgba(255, 255, 255, 0.6);
-  }
+			color: #888;
+			clear:both;
+			position: relative; 
+			bottom: 10px;
+			left: 0; width: 100%; 
+			text-align: center;
+			font-size:9px;
+			
+			background: rgba(255, 255, 255, 0.6);
+	}
 
-  </style>
-      <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
-      <script src="../js/docs.min.js"></script>
+	</style>
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+	    <script src="../js/docs.min.js"></script>
 
-  </body>   
-    };
-  print $html $footer;
-  close $html;
+  </body>		
+		};
+	print $html $footer;
+	close $html;
 
 }
 ################################################################################################################
 =head2 logFooter
 
-  Title:     logFooter
-  Usage:
-  Function:  Prints the footer to the log.html file
-  Returns:
-  Args:
+	Title:     logFooter
+	Usage:
+	Function:  Prints the footer to the log.html file
+	Returns:
+	Args:
 
 =cut
 sub logFooter{
 
-  my $html = shift;
+	my $html = shift;
 
 
-  my $footer = 
-    qq{
-      </div>
-      </div>
-      <footer>
-        <div class="footer">
-          <img src="img/bethematch.jpeg" alt="img02">
-        </div>
-      </footer> 
-  <style type="text/css">
+	my $footer = 
+		qq{
+			</div>
+			</div>
+			<footer>
+				<div class="footer">
+					<img src="img/bethematch.jpeg" alt="img02">
+				</div>
+			</footer>	
+	<style type="text/css">
     .bargraph {
       list-style: none;
       padding-top: 20px;
       width:560px;
     }
     footer {
-      color: #888;
-      clear:both;
-      position: relative; 
-      bottom: 10px;
-      left: 0; width: 100%; 
-      text-align: center;
-      font-size:9px;
-      margin-top: 300px;
-      background: rgba(255, 255, 255, 0.6);
-  }
+			color: #888;
+			clear:both;
+			position: relative; 
+			bottom: 10px;
+			left: 0; width: 100%; 
+			text-align: center;
+			font-size:9px;
+			margin-top: 300px;
+			background: rgba(255, 255, 255, 0.6);
+	}
 
-  </style>
-      <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
-      <script src="js/docs.min.js"></script>
-      <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-      <script src="js/ie10-viewport-bug-workaround.js"></script>
+	</style>
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+	    <script src="js/docs.min.js"></script>
+	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	    <script src="js/ie10-viewport-bug-workaround.js"></script>
   
-  </body>   
-    };
-  print $html $footer;
-  close $html;
+  </body>		
+		};
+	print $html $footer;
+	close $html;
 
 }
 ################################################################################################################
 =head2 indexBody
 
-  Title:     indexBody
-  Usage:
-  Function:  Prints the body to the index.html file
-  Returns:
-  Args:
+	Title:     indexBody
+	Usage:
+	Function:  Prints the body to the index.html file
+	Returns:
+	Args:
 
 =cut
 sub indexBody{
 
-  my($html, $ra_counts, $ra_sensitivity) = @_;
+	my($html, $ra_counts, $ra_sensitivity) = @_;
 
-  my $pie_data = qq{
-  <script>
-    var pieData = [
+	my $pie_data = qq{
+	<script>
+		var pieData = [
         {
           value: $$ra_counts{LOCUS}{TOTAL}{PASS},
           color: "#46BFBD",
@@ -2053,7 +2053,7 @@ sub indexBody{
 
 
       ];
-    var pieData2 = [
+		var pieData2 = [
        
         {
           value: $$ra_counts{ALLELE}{TOTAL}{PASS},
@@ -2082,7 +2082,7 @@ sub indexBody{
 
       ];
 
-    var pieData3 = [
+		var pieData3 = [
         {
           value: $$ra_counts{SUBJECT}{TOTAL}{PASS},
           color: "#46BFBD",
@@ -2110,11 +2110,11 @@ sub indexBody{
 
       ];
 
-  };
-  print $html $pie_data;
+	};
+	print $html $pie_data;
 
-  my $bar_chart_data = qq{
-          var barChartData = {
+	my $bar_chart_data = qq{
+		      var barChartData = {
         labels : ["A","B","C","DRB1","DQB1"],
         datasets : [
           {
@@ -2221,11 +2221,11 @@ sub indexBody{
 
 
 
-  };
-  print $html $bar_chart_data;
+	};
+	print $html $bar_chart_data;
 
-  my $js = qq{
-    window.onload = function(){
+	my $js = qq{
+		window.onload = function(){
         var ctx = document.getElementById("chart-area").getContext("2d");
         window.myPie = new Chart(ctx).Pie(pieData, {
           responsive : true
@@ -2268,42 +2268,42 @@ sub indexBody{
 
       };
        </script>
-  };
-  print $html $js;
+	};
+	print $html $js;
 
 
 }
 ################################################################################################################
 =head2 resultsBody
 
-  Title:     resultsBody
-  Usage:
-  Function:  Prints the body to the results.html file
-  Returns:
-  Args:
+	Title:     resultsBody
+	Usage:
+	Function:  Prints the body to the results.html file
+	Returns:
+	Args:
 
 =cut
 sub resultsBody{
 
-  my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages, $rh_subject_errors, $rh_consensus ) = @_;
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages, $rh_subject_errors, $rh_consensus ) = @_;
 
-  my $s_experiment = $s_exp;
+	my $s_experiment = $s_exp;
 
-  my %h_subject_errors;
-  foreach my $s_ID (keys %$rh_verified){
-    foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
+	my %h_subject_errors;
+	foreach my $s_ID (keys %$rh_verified){
+		foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
 
-      foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
+			foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
 
-        print $html "\t\t<tr>\n";
+				print $html "\t\t<tr>\n";
 
-        my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
-        
-        if(!defined $$ra_subject_pages{$s_ID}){
-          print STDERR "Subject has no valid loci defined!! $s_ID\n" if !defined $rh_subject_errors || !defined $h_subject_errors{$s_ID};
-          $h_subject_errors{$s_ID}++;
-          next;
-        }
+				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
+				
+				if(!defined $$ra_subject_pages{$s_ID}){
+					print STDERR "Subject has no valid loci defined!! $s_ID\n" if !defined $rh_subject_errors || !defined $h_subject_errors{$s_ID};
+					$h_subject_errors{$s_ID}++;
+					next;
+				}
                               
         my $s_checkbox = qq{
                   <td >
@@ -2315,65 +2315,65 @@ sub resultsBody{
                   };
         print $html $s_checkbox;
 
-        my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
-        print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">$s_ID</a></td>\n";
-        
-        print $html "\t\t\t<td>$s_loc</td>\n";
-        if($$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
-        }elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
-        }elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "DRBX"){
+				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
+				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">$s_ID</a></td>\n";
+				
+				print $html "\t\t\t<td>$s_loc</td>\n";
+				if($$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
+				}elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "DRBX"){
           print $html "\t\t\t<td style=\"color:#F7464A\"><b>DRBX</b></td>\n";
         }else{
-          print $html  "\t\t\t<td>PASS</td>\n";
-        }
+					print $html  "\t\t\t<td>PASS</td>\n";
+				}
 
-        
-        if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
-        }elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
-        }elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "DRBX"){
+				
+				if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
+				}elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "DRBX"){
           print $html "\t\t\t<td style=\"color:#F7464A\"><b>DRBX</b></td>\n";
         }else{
-          print $html "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
-        }
+					print $html "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
+				}
 
         if(defined $$rh_consensus{$s_ID}{$s_loc}){
-          print $html "\t\t\t<td>$$rh_consensus{$s_ID}{$s_loc}</td>\n";
+				  print $html "\t\t\t<td>$$rh_consensus{$s_ID}{$s_loc}</td>\n";
         }else{
           print $html "\t\t\t<td></td>\n";
         }
 
-        print $html  "\t\t\t<td>$s_typing</td>\n";
+				print $html  "\t\t\t<td>$s_typing</td>\n";
 
-        if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
           for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
             my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
             printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
           }
 
-        }else{
-          print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-          print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-        }
+				}else{
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+				}
 
-        print $html "</tr>\n";
+				print $html "</tr>\n";
 
 
-      }
-    }
-  }
+			}
+		}
+	}
 
-    my $end_body = qq{</tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    };
-    print $html $end_body,"\n";
+		my $end_body = qq{</tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+		};
+		print $html $end_body,"\n";
 
 
 }
@@ -2457,30 +2457,30 @@ sub printObservedAlleles{
 ################################################################################################################
 =head2 failedBody
 
-  Title:     failedBody
-  Usage:
-  Function:  Prints the body to the failed.html file
-  Returns:
-  Args:
+	Title:     failedBody
+	Usage:
+	Function:  Prints the body to the failed.html file
+	Returns:
+	Args:
 
 =cut
 sub failedBody{
 
-  my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_fails, $rh_consensus ) = @_;
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_fails, $rh_consensus ) = @_;
 
 
-  my $s_experiment = $s_exp;
+	my $s_experiment = $s_exp;
 
-  foreach my $s_ID (keys %$rh_verified){
-    foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
-      next unless defined $$ra_fails{$s_ID}{$s_loc};
+	foreach my $s_ID (keys %$rh_verified){
+		foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
+			next unless defined $$ra_fails{$s_ID}{$s_loc};
 
-      foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
+			foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
 
-        print $html "\t\t<tr>\n";
+				print $html "\t\t<tr>\n";
 
-        my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
-        
+				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
+				
         my $s_checkbox = qq{
                   <td >
                     <div style="margin-left:4px;margin-top:10px;"><input type = "checkbox"
@@ -2491,23 +2491,23 @@ sub failedBody{
                   };
         print $html $s_checkbox;
 
-        my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
-        print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">$s_ID</a></td>\n";
+				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
+				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">$s_ID</a></td>\n";
 
-        print $html "\t\t\t<td>$s_loc</td>\n";
-        if(defined $$rh_locus_verdict{$s_ID}{$s_loc} && $$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
-        }elsif(!defined $$rh_locus_verdict{$s_ID}{$s_loc} || $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
-        }else{
-          print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
-        }
+				print $html "\t\t\t<td>$s_loc</td>\n";
+				if(defined $$rh_locus_verdict{$s_ID}{$s_loc} && $$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif(!defined $$rh_locus_verdict{$s_ID}{$s_loc} || $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
+				}
 
-        if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
-        }else{
-          print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
-        }
+				if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
+				}
 
         if(defined $$rh_consensus{$s_ID}{$s_loc}){
           print $html "\t\t\t<td>$$rh_consensus{$s_ID}{$s_loc}</td>\n";
@@ -2515,36 +2515,36 @@ sub failedBody{
           print $html "\t\t\t<td></td>\n";
         }
 
-        print $html  "\t\t\t<td>$s_typing</td>\n";
-        
-        
-        if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
-  
+				print $html  "\t\t\t<td>$s_typing</td>\n";
+				
+				
+				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+	
           for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
             my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
             printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
           }
 
-        }else{
-          print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-          print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-        }
+				}else{
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+				}
 
-        print $html "</tr>\n";
+				print $html "</tr>\n";
 
 
-      }
-    }
-  }
+			}
+		}
+	}
 
-    my $end_body = qq{</tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    };
-    print $html $end_body,"\n";
+		my $end_body = qq{</tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+		};
+		print $html $end_body,"\n";
 
 
 }
@@ -2649,11 +2649,11 @@ sub drbxBody{
 ################################################################################################################
 =head2 failedHeader
 
-  Title:     failedHeader
-  Usage:
-  Function:  Prints the header to the failed.html file
-  Returns:
-  Args:
+	Title:     failedHeader
+	Usage:
+	Function:  Prints the header to the failed.html file
+	Returns:
+	Args:
 
 =cut
 sub qcHeader{
@@ -2883,28 +2883,28 @@ my $header2 = qq{
 ################################################################################################################
 =head2 failedBody
 
-  Title:     failedBody
-  Usage:
-  Function:  Prints the body to the failed.html file
-  Returns:
-  Args:
+	Title:     failedBody
+	Usage:
+	Function:  Prints the body to the failed.html file
+	Returns:
+	Args:
 
 =cut
 sub qcBody{
 
-  my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_fails ) = @_;
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected,  $rh_verified, $rh_observed, $ra_subject_pages, $ra_fails ) = @_;
 
 
-  my $s_experiment = $s_exp;
+	my $s_experiment = $s_exp;
 
-  foreach my $s_ID (keys %$rh_verified){
-    foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
+	foreach my $s_ID (keys %$rh_verified){
+		foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
 
-      foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
+			foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
 
         next if !defined $$rh_qc_expected{$s_ID}{$s_loc} || $$rh_qc_expected{$s_ID}{$s_loc} !~ /\S/;
 
-        print $html "\t\t<tr>\n";
+				print $html "\t\t<tr>\n";
 
                               
         my $s_checkbox = qq{
@@ -2917,38 +2917,38 @@ sub qcBody{
                   };
         print $html $s_checkbox;
 
-        my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
-        
-        my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
-        print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">$s_ID</a></td>\n";
+				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
+				
+				my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
+				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">$s_ID</a></td>\n";
 
-        if(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "FAIL"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
-        }elsif(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "ERROR"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
-        }elsif(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "PASS"){
-          print $html  "\t\t\t<td>PASS</td>\n";
-        }else{
-          print $html  "\t\t\t<td></td>\n";
-        }
+				if(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}elsif(defined $$rh_qc_verdict{$s_ID}{$s_loc} && $$rh_qc_verdict{$s_ID}{$s_loc} eq "PASS"){
+					print $html  "\t\t\t<td>PASS</td>\n";
+				}else{
+					print $html  "\t\t\t<td></td>\n";
+				}
 
-        if(defined $$rh_locus_verdict{$s_ID}{$s_loc} && $$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
-        }elsif(!defined $$rh_locus_verdict{$s_ID}{$s_loc} || $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
-        }else{
-          print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
-        }
+				if(defined $$rh_locus_verdict{$s_ID}{$s_loc} && $$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif(!defined $$rh_locus_verdict{$s_ID}{$s_loc} || $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
+				}
 
-        if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} ne "ERROR"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
-        }elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
-        }else{
-          print $html  "\t\t\t<td>PASS</td>\n";
-        }
+				if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} ne "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>PASS</td>\n";
+				}
 
-        if(defined $$rh_qc_expected{$s_ID}{$s_loc}){
+				if(defined $$rh_qc_expected{$s_ID}{$s_loc}){
 
           if($$rh_qc_expected{$s_ID}{$s_loc} !~ /\|/){
               my ($h1,$h2) = split(/\+/,$$rh_qc_expected{$s_ID}{$s_loc});
@@ -2984,146 +2984,146 @@ sub qcBody{
             print $html "</td>";
           }
 
-        }else{
-          print $html "\t\t\t<td></td>";
-        }
+				}else{
+					print $html "\t\t\t<td></td>";
+				}
 
-        print $html  "\t\t\t<td>$s_typing</td>\n";
+				print $html  "\t\t\t<td>$s_typing</td>\n";
 
-    
-        if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+		
+				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
           for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
             my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
             printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
           }
-        }else{
-          print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-          print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-        }
+				}else{
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+				}
 
-        print $html "</tr>\n";
+				print $html "</tr>\n";
 
 
-      }
-    }
-  }
+			}
+		}
+	}
 
-    my $end_body = qq{</tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    };
-    print $html $end_body,"\n";
+		my $end_body = qq{</tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+		};
+		print $html $end_body,"\n";
 
 
 }
 ################################################################################################################
 =head2 qcFooter
 
-  Title:     qcFooter
-  Usage:
-  Function:
-  Returns:
-  Args:
+	Title:     qcFooter
+	Usage:
+	Function:
+	Returns:
+	Args:
 
 =cut
 sub qcFooter{
 
-  my ( $html ) = @_;
+	my ( $html ) = @_;
 
-  print $html "<script>\n";
-  print $html "\$(document).ready(function(){ \n";
-  print $html "\$(\"#myTable\").tablesorter(); \n";
-  print $html "}\n";
-  print $html ");\n";
-  print $html "</script>\n";
+	print $html "<script>\n";
+	print $html "\$(document).ready(function(){ \n";
+	print $html "\$(\"#myTable\").tablesorter(); \n";
+	print $html "}\n";
+	print $html ");\n";
+	print $html "</script>\n";
 
-  my $footer = qq{
-            <script>
-       // If the user clicks in the window, set the background color of <body> to yellow
-        function expand(obj) {
-          if(obj.getElementsByTagName("span")[0].style.display == "table"){
-            obj.getElementsByTagName("span")[0].style.display = "none";
-          }else{
-             obj.getElementsByTagName("span")[0].style.display = "table";
-          }
-        }
-      </script>
-            <footer>
-        <div class="footer">
-          <img src="../img/bethematch.jpeg" alt="img02">
-        </div>
-      </footer> 
-      <style type="text/css">
-          .bargraph {
-            list-style: none;
-            padding-top: 20px;
-            width:560px;
-          }
-          a.id_links {
-        text-decoration: none;
-        font:bold;
-        color:black;
-          }
-          a.id_links:hover {
-        color:#A8A8A8;
-          }
-          footer {
-          color: #888;
-          clear:both;
-          position: relative; 
-          bottom: 10px;
-          left: 0; width: 100%; 
-          text-align: center;
-          font-size:9px;
-          
-          background: rgba(255, 255, 255, 0.6);
-      }         
-      </style>
-      <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
-      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
-      <script src="../js/docs.min.js"></script>
-      <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-      <script src="../js/ie10-viewport-bug-workaround.js"></script>
-    
-    </body>
-  </html>
-  };
-  print $html $footer;
+	my $footer = qq{
+			      <script>
+	     // If the user clicks in the window, set the background color of <body> to yellow
+	      function expand(obj) {
+	        if(obj.getElementsByTagName("span")[0].style.display == "table"){
+	          obj.getElementsByTagName("span")[0].style.display = "none";
+	        }else{
+	           obj.getElementsByTagName("span")[0].style.display = "table";
+	        }
+	      }
+	    </script>
+	    			<footer>
+				<div class="footer">
+					<img src="../img/bethematch.jpeg" alt="img02">
+				</div>
+			</footer>	
+	    <style type="text/css">
+	        .bargraph {
+	          list-style: none;
+	          padding-top: 20px;
+	          width:560px;
+	        }
+	        a.id_links {
+				text-decoration: none;
+				font:bold;
+				color:black;
+	        }
+	        a.id_links:hover {
+				color:#A8A8A8;
+	        }
+	        footer {
+					color: #888;
+					clear:both;
+					position: relative; 
+					bottom: 10px;
+					left: 0; width: 100%; 
+					text-align: center;
+					font-size:9px;
+					
+					background: rgba(255, 255, 255, 0.6);
+			}	        
+	    </style>
+	    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+	    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+	    <script src="../js/docs.min.js"></script>
+	    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+	    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+	  
+	  </body>
+	</html>
+	};
+	print $html $footer;
 
 }
 
 ################################################################################################################
 =head2 failedBody
 
-  Title:     failedBody
-  Usage:
-  Function:  Prints the body to the failed.html file
-  Returns:
-  Args:
+	Title:     failedBody
+	Usage:
+	Function:  Prints the body to the failed.html file
+	Returns:
+	Args:
 
 =cut
 sub errorsBody{
 
-  my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages, $ra_errors, $rh_consensus ) = @_;
+	my ($html, $s_exp, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_verified, $rh_observed, $ra_subject_pages, $ra_errors, $rh_consensus ) = @_;
 
-  my $s_experiment = $s_exp;
+	my $s_experiment = $s_exp;
 
-  foreach my $s_ID (keys %$rh_verified){
-    foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
-      next unless defined $$ra_errors{$s_ID}{$s_loc};
+	foreach my $s_ID (keys %$rh_verified){
+		foreach my $s_loc (keys %{$$rh_verified{$s_ID}}){
+			next unless defined $$ra_errors{$s_ID}{$s_loc};
 
-      foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
+			foreach my $s_typing (keys %{$$rh_verified{$s_ID}{$s_loc}}){
 
-        print $html "\t\t<tr>\n";
+				print $html "\t\t<tr>\n";
 
-        my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
-        
-        next if(!defined $$ra_subject_pages{$s_ID});
+				my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (5,16) : (4,13);
+				
+				next if(!defined $$ra_subject_pages{$s_ID});
 
-        my $s_checkbox = qq{
+				my $s_checkbox = qq{
                   <td >
                     <div style="margin-left:4px;margin-top:10px;"><input type = "checkbox"
                        id = "myCheck"
@@ -3135,58 +3135,58 @@ sub errorsBody{
 
 
         my $id_link = "subjects/subject".$$ra_subject_pages{$s_ID}.".html";
-        print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">$s_ID</a></td>\n";
+				print $html  "\t\t\t<td><a href=\"$id_link\" class=\"id_links\">$s_ID</a></td>\n";
 
-        print $html "\t\t\t<td>$s_loc</td>";
-        if($$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
-        }elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
-        }else{
-          print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
-        }
+				print $html "\t\t\t<td>$s_loc</td>";
+				if($$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+				}elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_locus_verdict{$s_ID}{$s_loc}</td>\n";
+				}
 
-        if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
-          print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
-        }elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL"){
-          print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
-        }else{
-          print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
-        }
+				if($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL" && $$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+					print $html "\t\t\t<td style=\"color:#F7464A\"><b>DROPOUT</b></td>\n";
+				}elsif($$rh_verified{$s_ID}{$s_loc}{$s_typing} eq "FAIL"){
+					print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
+				}else{
+					print $html  "\t\t\t<td>$$rh_verified{$s_ID}{$s_loc}{$s_typing}</td>\n";
+				}
 
         if(defined $$rh_consensus{$s_ID}{$s_loc}){
           print $html "\t\t\t<td>$$rh_consensus{$s_ID}{$s_loc}</td>\n";
         }else{
           print $html "\t\t\t<td></td>\n";
         }
-        
-        print $html  "\t\t\t<td>$s_typing</td>\n";
-        
-        if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+				
+				print $html  "\t\t\t<td>$s_typing</td>\n";
+				
+				if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
           for(0..$#{$$rh_observed{$s_ID}{$s_loc}}){
             my $observed_gl = @{$$rh_observed{$s_ID}{$s_loc}}[$_];
             printObservedAlleles($html,$observed_gl,$s_typing,$n_cutoff2,$n_cutoff1);
           }
-        }else{
-          print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-          print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-        }
+				}else{
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+					print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+				}
 
-        print $html "</tr>\n";
+				print $html "</tr>\n";
 
 
-      }
-    }
-  }
+			}
+		}
+	}
 
-    my $end_body = qq{</tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    };
-    print $html $end_body,"\n";
+		my $end_body = qq{</tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+		};
+		print $html $end_body,"\n";
 
 
 }
@@ -3194,219 +3194,219 @@ sub errorsBody{
 ################################################################################################################
 =head2 subjectsBody
 
-  Title: subjectsBody
-  Usage:
-  Function:
-  Returns:
-  Args:
+	Title: subjectsBody
+	Usage:
+	Function:
+	Returns:
+	Args:
 
 =cut
 sub subjectsBody{
 
-  my ( $html, $s_exp, $s_ID, $s_blast_dir, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_expected, $rh_observed, $rh_sequence_data, $rh_seq_ids  ) = @_;
+	my ( $html, $s_exp, $s_ID, $s_blast_dir, $rh_locus_verdict, $rh_qc_verdict, $rh_qc_expected, $rh_expected, $rh_observed, $rh_sequence_data, $rh_seq_ids  ) = @_;
 
-  my $s_experiment = $s_exp;
-  foreach my $s_loc (sort keys %{$$rh_locus_verdict{$s_ID}}){
-    print $html "\t\t<tr>\n";
-    print $html "\t\t\t<th>$s_loc</th>\n";
+	my $s_experiment = $s_exp;
+	foreach my $s_loc (sort keys %{$$rh_locus_verdict{$s_ID}}){
+		print $html "\t\t<tr>\n";
+		print $html "\t\t\t<th>$s_loc</th>\n";
 
-    if($$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
-      print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
-    }elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
-      print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
-    }elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "DRBX"){
+		if($$rh_locus_verdict{$s_ID}{$s_loc} eq "ERROR"){
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
+		}elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "FAIL"){
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>FAIL</b></td>\n";
+		}elsif($$rh_locus_verdict{$s_ID}{$s_loc} eq "DRBX"){
       print $html "\t\t\t<td style=\"color:#F7464A\"><b>DRBX</b></td>\n";
     }else{
-      print $html "\t\t\t<td>PASS</td>\n";
-    }
+			print $html "\t\t\t<td>PASS</td>\n";
+		}
 
-    print $html "\t\t\t<td>$$rh_expected{$s_ID}{$s_loc}</td>\n";
-    my @a_expected_haps = split(/\|/,$$rh_expected{$s_ID}{$s_loc});
+		print $html "\t\t\t<td>$$rh_expected{$s_ID}{$s_loc}</td>\n";
+		my @a_expected_haps = split(/\|/,$$rh_expected{$s_ID}{$s_loc});
 
-    my %h_expected_alleles;
-    foreach(@a_expected_haps){
-      my($x,$y) = split(/\+/,$_);
-      $x = g2p($x);
-      $y = g2p($y);
-      $h_expected_alleles{$x}++;$h_expected_alleles{$y}++;
-    }
+		my %h_expected_alleles;
+		foreach(@a_expected_haps){
+			my($x,$y) = split(/\+/,$_);
+			$x = g2p($x);
+			$y = g2p($y);
+			$h_expected_alleles{$x}++;$h_expected_alleles{$y}++;
+		}
 
 
-    if(!defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+		if(!defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+			print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
       print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
-      print $html "\t\t\t<td style=\"color:#F7464A\"><b>ERROR</b></td>\n";
-      next;
-    }
+			next;
+		}
 
 
-    my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (4,13) : (3,10);
+		my ($n_cutoff1,$n_cutoff2) = $s_loc =~ /^[A|B|C]/ ? (4,13) : (3,10);
 
-    my $printed = 0;my $printed2 = 0;
-    if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
+		my $printed = 0;my $printed2 = 0;
+		if(defined @{$$rh_observed{$s_ID}{$s_loc}}[0]){
 
-      my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
-      my $num_alleles = keys %h_alleles;
+			my %h_alleles = map{ $_ => 1 } split(/\//,@{$$rh_observed{$s_ID}{$s_loc}}[0]);
+			my $num_alleles = keys %h_alleles;
 
-      if($num_alleles > 9){
+			if($num_alleles > 9){
 
-        my @a_alleles = keys %h_alleles;
-        for(my $i=1;$i<=$#a_alleles+1;$i++){
-          print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-          my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
+				my @a_alleles = keys %h_alleles;
+				for(my $i=1;$i<=$#a_alleles+1;$i++){
+					print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+					my $s_end = $i == $#a_alleles+1 ? "" : "/";	
 
-          if($i == $n_cutoff2){
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-            }else{
-              print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-            }
-          }elsif($i % $n_cutoff1 == 0) {
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
-            }else{
-              print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-            }
-          }else{
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-            }else{
-              print $html "$a_alleles[$i-1]".$s_end;
-            }
-          }
+					if($i == $n_cutoff2){
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+						}
+					}elsif($i % $n_cutoff1 == 0) {
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+						}
+					}else{
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end;
+						}
+					}
 
-        }
+				}
 
-        print $html "</span></span></td>\n";
-      }else{
-        my @a_alleles = keys %h_alleles;
-        print $html "<td>";
-        for(my $i=1;$i<=$#a_alleles+1;$i++){
-          my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
+				print $html "</span></span></td>\n";
+			}else{
+				my @a_alleles = keys %h_alleles;
+				print $html "<td>";
+				for(my $i=1;$i<=$#a_alleles+1;$i++){
+					my $s_end = $i == $#a_alleles+1 ? "" : "/";	
 
-          if($i % $n_cutoff1 == 0) {
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-            }else{
-              print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-            }
-          }else{
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-            }else{
-              print $html "$a_alleles[$i-1]".$s_end;
-            }
-          }
+					if($i % $n_cutoff1 == 0) {
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+						}
+					}else{
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end;
+						}
+					}
 
-        }
-        print $html "</td>\n";
+				}
+				print $html "</td>\n";
 
-      }
+			}
 
-      
-      my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
+			
+			my $gl2 = !defined @{$$rh_observed{$s_ID}{$s_loc}}[1] ? @{$$rh_observed{$s_ID}{$s_loc}}[0] : @{$$rh_observed{$s_ID}{$s_loc}}[1];
 
-      my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
-      my $num_alleles2 = keys %h_alleles2;
+			my %h_alleles2 = map{ $_ => 1 } split(/\//,$gl2);
+			my $num_alleles2 = keys %h_alleles2;
 
-      if($num_alleles2 > 9){
-        
-        my @a_alleles = keys %h_alleles2;
-        for(my $i=1;$i<=$#a_alleles+1;$i++){
-          print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
-          my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
+			if($num_alleles2 > 9){
+				
+				my @a_alleles = keys %h_alleles2;
+				for(my $i=1;$i<=$#a_alleles+1;$i++){
+					print $html "<td><span  onclick=\"expand(this)\">\n" if $i == 1;
+					my $s_end = $i == $#a_alleles+1 ? "" : "/";	
 
-          if($i == $n_cutoff2){
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
-            }else{
-              print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
-            }
-          }elsif($i % $n_cutoff1 == 0) {
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-            }else{
-              print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-            }
-          }else{
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-            }else{
-              print $html "$a_alleles[$i-1]".$s_end;
-            }
-          }
+					if($i == $n_cutoff2){
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "...<br><span id=\"expanding\"><b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "...<br><span id=\"expanding\">$a_alleles[$i-1]".$s_end;
+						}
+					}elsif($i % $n_cutoff1 == 0) {
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+						}
+					}else{
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end;
+						}
+					}
 
-        }
+				}
 
-        print $html "</span></span></td>\n";
-      }else{
+				print $html "</span></span></td>\n";
+			}else{
 
-        my @a_alleles = keys %h_alleles2;
-        print $html "<td>";
-        for(my $i=1;$i<=$#a_alleles+1;$i++){
-          my $s_end = $i == $#a_alleles+1 ? "" : "/"; 
+				my @a_alleles = keys %h_alleles2;
+				print $html "<td>";
+				for(my $i=1;$i<=$#a_alleles+1;$i++){
+					my $s_end = $i == $#a_alleles+1 ? "" : "/";	
 
-          if($i % $n_cutoff1 == 0) {
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
-            }else{
-              print $html "$a_alleles[$i-1]".$s_end."<br>\n";
-            }
-          }else{
-            if(defined $h_expected_alleles{$a_alleles[$i-1]}){
-              print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
-            }else{
-              print $html "$a_alleles[$i-1]".$s_end;
-            }
-          }
+					if($i % $n_cutoff1 == 0) {
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b><br>\n";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end."<br>\n";
+						}
+					}else{
+						if(defined $h_expected_alleles{$a_alleles[$i-1]}){
+							print $html "<b>$a_alleles[$i-1]".$s_end."</b>";
+						}else{
+							print $html "$a_alleles[$i-1]".$s_end;
+						}
+					}
 
-        }
-        print $html "</td>\n";
+				}
+				print $html "</td>\n";
 
-      }
-
-
-    }else{
-      print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-      print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
-    }
-
-    print $html "</tr>\n";
-    print $html  "</tr>\n";
+			}
 
 
-  }
+		}else{
+			print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+			print $html "<td><b style=\"color:#F7464A\">NA</b></td>\n";
+		}
+
+		print $html "</tr>\n";
+		print $html  "</tr>\n";
 
 
-  my $sequence_start = qq{
-              <div style="margin-top:10px;" class="table-responsive">
+	}
 
-                <table class="table table-striped">
-                <h2>Consensus Sequences</h1>
-                  <thead>
-                    <tr>
-                      <th>Locus</th>
-                      <th>Zygousity</th>
-                      <th>Sequence 1</th>
-                      <th>Sequence 1</th>
-                    </tr>
-                  </thead>
-                <tbody>
-  };
 
-  print $html $sequence_start;
-  
-  foreach my $s_loc (sort keys %{$$rh_sequence_data{$s_ID}}){
-    print $html "<tr>\n";
-    print $html "<th>$s_loc</th>\n";
-    my $num_seqs = keys %{$$rh_sequence_data{$s_ID}{$s_loc}};
+	my $sequence_start = qq{
+	          	<div style="margin-top:10px;" class="table-responsive">
 
-    print $html "<td>$num_seqs</td>\n";
+		            <table class="table table-striped">
+		            <h2>Consensus Sequences</h1>
+		              <thead>
+		                <tr>
+		                  <th>Locus</th>
+		                  <th>Zygousity</th>
+		                  <th>Sequence 1</th>
+		                  <th>Sequence 1</th>
+		                </tr>
+		              </thead>
+		           	<tbody>
+	};
 
-    my @a_seqs = keys %{$$rh_sequence_data{$s_ID}{$s_loc}};
+	print $html $sequence_start;
+	
+	foreach my $s_loc (sort keys %{$$rh_sequence_data{$s_ID}}){
+		print $html "<tr>\n";
+		print $html "<th>$s_loc</th>\n";
+		my $num_seqs = keys %{$$rh_sequence_data{$s_ID}{$s_loc}};
 
-    for(my $i=0;$i<=$#a_seqs;$i++){
-      my @a_nucls = split(//,$a_seqs[$i]);
-         print $html "<td>";
+		print $html "<td>$num_seqs</td>\n";
+
+		my @a_seqs = keys %{$$rh_sequence_data{$s_ID}{$s_loc}};
+
+		for(my $i=0;$i<=$#a_seqs;$i++){
+			my @a_nucls = split(//,$a_seqs[$i]);
+			   print $html "<td>";
           my $pwd = `pwd`;chomp($pwd);
           my $full_blast_dir = $pwd."/report/blast/".$s_exp."/".$$rh_seq_ids{$s_ID}{$s_loc}{$a_seqs[$i]}.".html";
           if(defined $$rh_seq_ids{$s_ID}{$s_loc}{$a_seqs[$i]} && defined $s_blast_dir ){
@@ -3416,52 +3416,52 @@ sub subjectsBody{
             }
           }
 
-      for(my $j=1;$j<=$#a_nucls+1;$j++){
+			for(my $j=1;$j<=$#a_nucls+1;$j++){
 
-        if($j % 50 == 0) {
-          print $html "$a_nucls[$j-1]<br>\n";
-        }else{
-          print $html "$a_nucls[$j-1]";
-        }
-      }
+				if($j % 50 == 0) {
+					print $html "$a_nucls[$j-1]<br>\n";
+				}else{
+					print $html "$a_nucls[$j-1]";
+				}
+			}
       print $html "</a>" if(-e $full_blast_dir);
-      print $html "</td>\n"
-    }
+			print $html "</td>\n"
+		}
 
-    print $html "</tr>\n";
+		print $html "</tr>\n";
 
-  }
+	}
 
 
-  my $end_body = qq{
-              </tbody>
-            </table>
+	my $end_body = qq{
+          		</tbody>
+          	</table>
           </div>
           </div>
         </div>
       </div>
     </div>
-  };
-  print $html $end_body,"\n";
+	};
+	print $html $end_body,"\n";
 
 }
 
 ################################################################################################################
 =head2 g2p
 
-  Title:     g2p
-  Usage:     my $s_allele = g2p($s_genomic_allele)
-  Function:  This turns genomic level alleles into protein level alleles 
-         This will r
-  Returns:   protein level alleles
-  Args:      genomic level allele
+	Title:     g2p
+	Usage:     my $s_allele = g2p($s_genomic_allele)
+	Function:  This turns genomic level alleles into protein level alleles 
+			   This will r
+	Returns:   protein level alleles
+	Args:      genomic level allele
 
 =cut
 sub g2p{
-  my $allele    = shift;
-  return $allele if $allele !~ /:/;
-  my @a_alleles = split(/:/,$allele);
-  return join(":",$a_alleles[0],$a_alleles[1]);
+	my $allele    = shift;
+	return $allele if $allele !~ /:/;
+	my @a_alleles = split(/:/,$allele);
+	return join(":",$a_alleles[0],$a_alleles[1]);
 }
 
 
