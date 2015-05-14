@@ -188,6 +188,7 @@ foreach my $s_file (@a_files){
     }
 }
 
+
 print `./ngs-validation-report -d t/hml -f 1 -t 1`;
 &testDOM() if($b_treeBuilder);&testJs() if $b_npm;
 foreach my $s_dir (@a_directories){
@@ -204,6 +205,7 @@ foreach my $s_file (@a_files){
         is(1,0,"$s_file not created!\n");$number_of_tests_run++;
     }
 }
+
 
 # Running blast test with txt input file
 print `./ngs-validation-report -d t/txt -n t/blastn -f 1 -t 1`;
@@ -489,10 +491,11 @@ sub testDOM{
                 }else{
                     is(0,1,"Doesnt match up! ALLELE $row! ");$number_of_tests_run++;
                 }
+               
                 if(defined $h_tests_qc{$s_exp}{$row}{$s_id}{QCHAP} && $h_tests_qc{$s_exp}{$row}{$s_id}{QCHAP} eq $qc_hap){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! QCHAP $row! $h_tests_qc{$s_exp}{$row}{$s_id}{QCHAP}");$number_of_tests_run++;
+                    is(0,1,"Doesnt match up! QCHAP $row! $qc_hap ne $h_tests_qc{$s_exp}{$row}{$s_id}{QCHAP}");$number_of_tests_run++;
                 } 
                 if(defined $h_tests_qc{$s_exp}{$row}{$s_id}{EXP} && $h_tests_qc{$s_exp}{$row}{$s_id}{EXP} eq $s_e){
                     is(1,1);$number_of_tests_run++;
