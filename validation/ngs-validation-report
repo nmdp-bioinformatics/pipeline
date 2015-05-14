@@ -104,6 +104,10 @@
        - Separated the DRBX issues out
        - Added the option to specify the macs url
 
+    1.1.1       Minor changes to work with current ngs-tools code  2015-05-12
+       - Changed ngs-extract-expected to ngs-extract-expected-haploids
+       - Changed the way output from ngs-extract-expected-haploids is parsed
+
 =head1 TODO
 	
        - Add match grades
@@ -168,7 +172,7 @@ if($lwp){ # Only LWP if is installed
 	print STDERR "LWP::UserAgent Not Installed! Proceeding without using allele code conversion API.\n";
 }
 
-our $VERSION = 1.1;
+our $VERSION = 1.1.1;
 
 my %h_observed_gls;      # Hash that contains the observed haplotypes
 my %h_observed;          # Hash that contains the observed Alleles
@@ -994,6 +998,7 @@ sub loadFiles{
 =cut
 sub loadPopulationData{
 
+	#TODO: Allow population configuration files to be loaded
 
 }
 ################################################################################################################
@@ -1298,24 +1303,16 @@ sub javaParseHML{
 
 	my ($hml_file, $s_exp, $b_qc) = @_;
 
-	foreach(`ngs-extract-expected -i $hml_file -g`){
+	foreach(`ngs-extract-expected-haploids -i $hml_file`){
 		chomp($_);
-		my($s_file,$s_loc,$s_ars,$s_het,$s_typ1,$s_typ2) = split(/\t/,$_);
+		my($ID,$s_genotype) = split(/\t/,$_);
+		my($s_typ1,$s_typ2) = split(/\+/,$s_genotype);
 
+		#TODO: Note both loci ?
+		$s_typ1 =~ s/HLA-//g;$s_typ2 =~ s/HLA-//g;
+		$s_typ1 =~ /(\D+\d{0,1})\*/;my $s_loc = $1;
 		next if !defined $s_typ1 && !defined $s_typ2;
-		my $ID;
-		if($s_file =~ /\//){
-			my @a_file  = split(/\//,$s_file);
-			my @a_ID = split(/\./,$a_file[$#a_file]);
-			$ID = $a_ID[0];	
-		}else{
-			my @a_ID = split(/\./,$s_file);
-			$ID = $a_ID[0];	
-		}
-		
-		$s_loc =~ s/HLA-//g;$s_typ1 =~ s/HLA-//g;$s_typ2 =~ s/HLA-//g;
 		next if !defined $s_loc || $s_loc !~ /\S/;
-		next if $s_loc eq "DPB1"; # For now skip DP
 		
 		$s_typ1 = !defined $s_typ1 || $s_typ1 !~ /\S/ ? $s_typ2 : $s_typ1;
 		$s_typ2 = !defined $s_typ2 || $s_typ2 !~ /\S/ ? $s_typ1 : $s_typ2;
