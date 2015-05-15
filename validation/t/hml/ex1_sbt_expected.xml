@@ -453,7 +453,7 @@
     <typing gene-family="HLA" date="2014-10-14">
       <allele-assignment date="2014-10-14" allele-db="IMGT/HLA" allele-version="3.14.0">
           <glstring>
-            HLA-DRB1*15:02+HLA-DRB1*15:02
+            HLA-DRB1*13:02+HLA-DRB1*15:02
           </glstring>
         <haploid locus="HLA-DRB1" method="DNA" type="13:02"/>
         <haploid locus="HLA-DRB1" method="DNA" type="15:02"/>          
