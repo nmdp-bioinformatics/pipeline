@@ -26,8 +26,40 @@ use warnings;
 use ExtUtils::MakeMaker;
 
 WriteMakefile (
-       NAME         => 'ngs-validation-report',
-       VERSION      => "1.1",
-       DISTNAME     => "backup",
-       EXE_FILES    => [ qw(ngs-validation-report ) ]
+
+      NAME         => 'Validation',
+      VERSION_FROM => 'ngs-validation-report',
+      AUTHOR       => 'Mike Halagan mhalagan\@nmdp.org',
+
+      DISTNAME     => 'validation-report',
+
+      EXE_FILES    => [ qw(ngs-validation-report) ],
+      PMLIBDIRS    => [ qw(template lib) ],
+
+
+      PREREQ_PM => {
+        "LWP::UserAgent" => 0,
+        "strict" => 0,
+        "warnings" => 0,
+        "Data::Dumper" => 0
+      },
+
+      TEST_REQUIRES => {
+        "Test::More" => "0.96",
+        "HTML::TreeBuilder" => 0,
+        "strict" => 0,
+        "warnings" => 0,
+        "Data::Dumper" => 0
+      },
+
+      test => { TESTS => 't/*.t' },
+
+      META_MERGE => {
+          resources => {
+            repository  => 'https://github.com/nmdp-bioinformatics/pipeline',
+            bugtracker  => 'https://github.com/nmdp-bioinformatics/pipeline/issues',
+          }
+      }
+
 );
+

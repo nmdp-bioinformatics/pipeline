@@ -21,7 +21,7 @@
 
 =head1 CAVEATS
     
-    - In order for this to work you MUST have ngs-extract-expected 
+    - In order for this to work you MUST have ngs-extract-expected-haploids
       installed on your machine.
 
 =head1 OUTPUT

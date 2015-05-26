@@ -108,6 +108,13 @@
        - Changed ngs-extract-expected to ngs-extract-expected-haploids
        - Changed the way output from ngs-extract-expected-haploids is parsed
 
+    1.2.0
+    	- Changed "which ngs-extract-expected" to "which ngs-extract-expected-haploids"
+    	- Added the (-r) flag to output the (experiment)_(type)_failed.txt files
+    	- Changed the Makefile.PL to install template files with html.pm
+    	- Changed ngs-validation-report so it now looks for the installed template files
+
+
 =head1 TODO
 	
        - Add match grades
@@ -115,10 +122,11 @@
        - Add option for providing a race config file
        - Add more detailed comments to the loading section
        - Put all of the loading subroutines in a separate package (process.pm)
-       - Add a test for each individual subroutine (subs.t)
+       - Break up the report.t into multiple different test scripts
        - Allow multiple different directories to be passed
-       - Allow Matt P's linkage data to be consumed
-       - Allow the email option the ability to just email the status
+       - Allow the output from Matt P's linkage program to be consumed
+       - Allow the email option the ability to just email the status or overview
+       - Better describe all the subroutines
 
 =head1 SUBROUTINES
 	
@@ -127,6 +135,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use Getopt::Long;
+use LWP::UserAgent;
 use vars qw($USAGE $machine $lwp $start_time $web_template $user $working);
 BEGIN{
 
@@ -136,14 +145,12 @@ BEGIN{
 	$machine    = `uname`;chomp($machine);
 	$web_template = $working."/template";
 
-	$lwp = 0; # Check to see if the LWP module is installed
+	my $lib_location = `perldoc -l html.pm`;chomp($lib_location);
+	$lib_location    =~ s/html\.pm// if(defined $lib_location && $lib_location =~ /\S/);
+	$lib_location    = $lib_location."/template" if(defined $lib_location && $lib_location =~ /\S/);
+	$web_template    = (defined $lib_location && $lib_location =~ /\S/) ? $lib_location : $web_template;
+
 	push(@INC,$working."/lib");
-	foreach(@INC){
-		my @inc_files = glob "$_/*";
-		foreach my $inc_file (@inc_files){
-			$lwp = 1 if $inc_file =~ /LWP/;
-		}
-	}
 
 	$USAGE = 
 		qq{./ngs-validation-report [--experiment] [--validated] [--expected] [--observed] [--directory] [--verbose] [--help]
@@ -152,7 +159,7 @@ BEGIN{
 			-e/--expected         Expected file
 			-o/--observed         Observed file
 			-i/--title            Title of the report (default = report)
-			-u/--population       Population configuration file
+			-a/--population       Population configuration file
 			-d/--directory        Directory of input files
 			-m/--email            A list of email addresses that the compressed report will be sent to
 			-u/--url              The url for the multiple allele code service
@@ -165,14 +172,7 @@ BEGIN{
 }
 use html;
 
-if($lwp){ # Only LWP if is installed
-	# This allows the script to still run if it isn't installed
-	use LWP::UserAgent;
-}else{ 
-	print STDERR "LWP::UserAgent Not Installed! Proceeding without using allele code conversion API.\n";
-}
-
-our $VERSION = 1.1.1;
+our $VERSION = 1.2.0;
 
 my %h_observed_gls;      # Hash that contains the observed haplotypes
 my %h_observed;          # Hash that contains the observed Alleles
@@ -201,23 +201,25 @@ my %h_drbx_max;          # Hash of the max number of observed seqs in the drbx p
 my %h_qc_max;            # Hash of the max number of observed seqs in the qc pages
 my %h_failed_max;        # Hash of the max number of observed seqs in the failed pages 
 my %h_qc_counts;         # Hash of the consensus sequence sounts in the qc data
+my %h_failed_subjects;   # Hash of all the subjects that didn't pass at all loci
 my $s_subject_page = 1;  # Starting number for the subject pages
 
-our ( $s_macs_url, $s_blast_dir, $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_test, $b_forced, $b_verbose) = 
-	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0);
-
+our ( $s_macs_url, $s_blast_dir, $s_pop_cfg, $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_test, $b_failed, $b_forced, $b_verbose) = 
+	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0, 0);
 
 &GetOptions("experiment|x=s" => \$s_experiment, 
 			"validated|l=s"  => \$s_validated, 
 			"expected|e=s"   => \$s_expected,
 			"observed|o=s"   => \$s_observed,
 			"title|i=s"      => \$s_title,
+			"population|a=s" => \$s_pop_cfg,
 			"blastn|n=s"     => \$s_blast_dir,
 			"url|u=s"        => \$s_macs_url,
 			"output|p=s"     => \$s_output, 
 			"directory|d=s"  => \$s_directory,
 			"email|m=s"      => \$s_emails,
 			"forced|f=n"     => \$b_forced,
+			"failed|r"       => \$b_failed,
 			"test|t=n"       => \$b_test,
 			"verbose|v=n"    => \$b_verbose,
 			"help|h"         => \$help
@@ -233,8 +235,10 @@ $s_title     = "report" if(!defined $s_title     || $s_title     !~ /\S/); # If 
 $s_directory = $working if(!defined $s_directory || $s_directory !~ /\S/); # If input directory isn't provided it equals the working directory
 $s_output    = $working if(!defined $s_output    || $s_output    !~ /\S/); # If output directory isn't provided it equals the working directory
 
-
 # Getting all of the files
+# TODO: Make this part of the process.pm so it can be externally tested
+# TODO: Allow multiple different directories to be provided
+# TODO: Allow different file name patterns than just ex(###)_
 if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 	if(defined $s_experiment){ 
 		my $experiment_files = $s_directory."/".$s_experiment."*";
@@ -311,7 +315,8 @@ die($USAGE,'Email option is NOT AVAILABLE on a mac!')
 	if($b_email && $machine =~ /Darwin/i); 
 
 &initalize(); # Initialize the report directories
-#&loadPopulationData() if defined $s_pop_cfg;
+&loadPopulationData() if defined $s_pop_cfg;
+
 my $report_directory = $s_output."/".$s_title;
 my $help_index       = $report_directory."/help.html";
 my $log_index        = $report_directory."/log.html";
@@ -338,13 +343,13 @@ foreach my $s_exp (keys %h_experiments){
 	print `mkdir $experiment_dir`;
 
 	my %counts         = %{$h_counts{$s_exp}};           # Counts for the $s_exp experiment
-	my %sensitivity    = %{$h_sensitivity{$s_exp}};      # Counts for the $s_exp experiment
-	my %loc_verdict    = %{$h_locus_verdict{$s_exp}};    # Counts for the $s_exp experiment
-	my %verified       = %{$h_verified{$s_exp}};         # Counts for the $s_exp experiment
-	my %observed       = %{$h_observed_gls{$s_exp}};     # Counts for the $s_exp experiment
-	my %expected       = %{$h_expected{$s_exp}};         # Counts for the $s_exp experiment
-	my %subject        = %{$h_subject_pages{$s_exp}};    # Counts for the $s_exp experiment
-	my %seq            = %{$h_sequence_data{$s_exp}};    # Counts for the $s_exp experiment
+	my %sensitivity    = %{$h_sensitivity{$s_exp}};      # Sensitivity for the $s_exp experiment
+	my %loc_verdict    = %{$h_locus_verdict{$s_exp}};    # loc_verdict for the $s_exp experiment
+	my %verified       = %{$h_verified{$s_exp}};         # verified results for the $s_exp experiment
+	my %observed       = %{$h_observed_gls{$s_exp}};     # observed results for the $s_exp experiment
+	my %expected       = %{$h_expected{$s_exp}};         # expected results for the $s_exp experiment
+	my %subject        = %{$h_subject_pages{$s_exp}};    # subject for the $s_exp experiment
+	my %seq            = %{$h_sequence_data{$s_exp}};    # seq for the $s_exp experiment
 	my %seqids         = %{$h_sequence_ids{$s_exp}};     # Counts for the $s_exp experiment
 	my %consensus      = %{$h_consensus_counts{$s_exp}}; # Counts for the $s_exp experiment
 	my $max_results    = $h_observed_max{$s_exp};        # Counts for the $s_exp experiment
@@ -434,8 +439,8 @@ foreach my $s_exp (keys %h_experiments){
 
 html::logFooter($log_html); # Print out the log HTML file footer
 &emailReport($s_emails) if $b_email; # Email out the report if emails are provided
+&failedSubjects()       if defined $b_failed;
 print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
-
 
 ################################################################################################################
 =head2 loadFiles
@@ -443,9 +448,9 @@ print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
         Title:    loadFiles
         Usage:    loadFiles($s_experiment, $s_validated, $s_expected, $s_observed);
         Function: This loads all of the data files into the utlized hashes 
-
+	
 =cut
-sub loadFiles{
+sub loadFiles{ # TODO: Break up this subroutine into several different ones
 
 	my %h_no_data;       # Hash containing all the subjects with no data
 	my %h_expected_loci; # Hash containing all of the observed loci in the expected file
@@ -553,12 +558,12 @@ sub loadFiles{
 		# If the expected file is an hml document then parse it
 		# with some of the tools we already have.
 		if($s_expected =~ /[hml|xml]$/){
-			my $which_extract_expected = `which ngs-extract-expected`;chomp($which_extract_expected);
+			my $which_extract_expected = `which ngs-extract-expected-haploids`;chomp($which_extract_expected);
 			if(!defined $which_extract_expected || $which_extract_expected !~ /\S/){
 				print STDERR "Parsing HML with perl!\n" if $b_verbose;
 				perlParseHML($s_expected, $s_exp, 0);
 			}else{
-				print STDERR "Parsing HML with ngs-extract-expected\n" if $b_verbose;
+				print STDERR "Parsing HML with ngs-extract-expected-haploids\n" if $b_verbose;
 				javaParseHML($s_expected, $s_exp, 0);
 			}
 		}else{
@@ -612,12 +617,12 @@ sub loadFiles{
 
 		if(defined $s_qc_validated && defined $s_qc_expected){
 			if($s_qc_expected =~ /[hml|xml]$/){
-				my $which_extract_expected = `which ngs-extract-expected`;chomp($which_extract_expected);
+				my $which_extract_expected = `which ngs-extract-expected-haploids`;chomp($which_extract_expected);
 				if(!defined $which_extract_expected || $which_extract_expected !~ /\S/){
 					print STDERR "Parsing HML with perl!\n" if $b_verbose;
 					perlParseHML($s_qc_expected, $s_exp, 1);
 				}else{
-					print STDERR "Parsing HML with ngs-extract-expected\n" if $b_verbose;
+					print STDERR "Parsing HML with ngs-extract-expected-haploids\n" if $b_verbose;
 					javaParseHML($s_qc_expected, $s_exp, 1);
 				}
 			}else{
@@ -770,6 +775,7 @@ sub loadFiles{
 					}
 				}
 			}
+
 		}
 
 		
@@ -866,20 +872,26 @@ sub loadFiles{
 				}
 			}
 
+			# Counting up the subject pass, fail, drbx, and errors
 			if($loc_cnt == $num_typs && $n_error == 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}++;
 			}elsif($loc_cnt != 5 && $n_error == 0 && $n_drbx == 0 && $n_fail != 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}++;
+				$h_failed_subjects{$s_exp}{$s_ID}++;
 			}elsif($loc_cnt != 5 && $n_error != 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}++;
+				$h_failed_subjects{$s_exp}{$s_ID}++;
 			}elsif($loc_cnt != 5 && $n_drbx > 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}++;
+				$h_failed_subjects{$s_exp}{$s_ID}++;
 			}else{
-				$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}++;				
+				$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}++;
+				$h_failed_subjects{$s_exp}{$s_ID}++;		
 			}
 
 		}
 
+		# TODO: Make this dynamic
 		my @a_loci = split(/,/,"A,B,C,DRB1,DQB1");
 		foreach my $s_l (@a_loci){
 
@@ -911,7 +923,7 @@ sub loadFiles{
 			print $log_html "Validated File: $s_validated<br><br>";
 		}
 
-		#Determining the max number of columns for each page
+		#Determining the max number of columns for the DROPOUT page
 		my $n_max_error = 0;
 		if(defined $h_errors{$s_exp}){
 			foreach my $s_ID (keys %{$h_errors{$s_exp}}){
@@ -923,6 +935,7 @@ sub loadFiles{
 		}
 		$h_error_max{$s_exp} = $n_max_error;
 
+		#Determining the max number of columns for the DRBX page
 		my $n_max_drbx = 0;
 		if(defined $h_drbx{$s_exp}){
 			foreach my $s_ID (keys %{$h_drbx{$s_exp}}){
@@ -934,6 +947,7 @@ sub loadFiles{
 		}
 		$h_drbx_max{$s_exp} = $n_max_drbx;
 
+		#Determining the max number of columns for the FAILED page
 		my $n_max_failed = 0;
 		if(defined $h_fails{$s_exp}){
 			foreach my $s_ID (keys %{$h_fails{$s_exp}}){
@@ -945,6 +959,7 @@ sub loadFiles{
 		}
 		$h_failed_max{$s_exp} = $n_max_failed;
 
+		#Determining the max number of columns for the QC page
 		my $n_max_qc = 0;
 		if(defined $h_qc_verdict{$s_exp}){
 			foreach my $s_ID (keys %{$h_qc_verdict{$s_exp}}){
@@ -956,6 +971,7 @@ sub loadFiles{
 		}
 		$h_qc_max{$s_exp} = $n_max_qc;			
 			
+		#Determining the max number of columns for the results page
 		my $n_max = 0;
 		foreach my $s_ID (keys %{$h_observed_gls{$s_exp}}){
 			foreach my $s_loc (keys %{$h_observed_gls{$s_exp}{$s_ID}}){
@@ -997,7 +1013,6 @@ sub loadFiles{
 
 =cut
 sub loadPopulationData{
-
 	#TODO: Allow population configuration files to be loaded
 
 }
@@ -1023,6 +1038,29 @@ sub validEmail{
 	}
 
 	return $valid_emails;
+
+}
+################################################################################################################
+=head2 failedSubjects
+
+	Title:     failedSubjects
+	Usage:     failedSubjects()
+	Function:  
+	Returns:   
+	Args:      
+
+=cut
+sub failedSubjects{
+
+	foreach my $s_exp (keys %h_failed_subjects){
+		my $s_failed_subjects = $s_output."/".$s_exp."_ngsp_failed.txt";
+		open(my $fh_fail_subjs,">",$s_failed_subjects) or die "CANT OPEN FILE $! $0";
+		foreach my $s_id (keys %{$h_failed_subjects{$s_exp}}){
+			my ($ID,$x) = split(/_/,$s_id);
+			print $fh_fail_subjs $ID,"\n";
+		}
+		close $fh_fail_subjs;
+	}
 
 }
 ################################################################################################################
