@@ -205,7 +205,7 @@ my %h_failed_subjects;   # Hash of all the subjects that didn't pass at all loci
 my $s_subject_page = 1;  # Starting number for the subject pages
 
 our ( $s_macs_url, $s_blast_dir, $s_pop_cfg, $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_test, $b_failed, $b_forced, $b_verbose) = 
-	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0, 0);
+	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0);
 
 &GetOptions("experiment|x=s" => \$s_experiment, 
 			"validated|l=s"  => \$s_validated, 
@@ -467,30 +467,45 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 		open(my $obs,"<",$s_observed) or die "CANT OPEN FILE $! $0";
 		while(<$obs>){
 			chomp;
+			my (@a) = split(/\t/,$_);
 
-			if($_ !~ /HLA/){
-				my($s_id, $s_seq) = split(/\t/,$_);
+			if($#a == 1){
+				if($_ !~ /HLA/){
+					my($s_id, $s_seq) = split(/\t/,$_);
+					my @a_file  = split(/\//,$s_id); 
+					my @a_ID = split(/\./,$a_file[$#a_file]);
+					my $ID = $a_ID[0];
+					$h_sequence_data{$s_exp}{$ID}{$pervious_locus}{$s_seq}++;
+					$h_sequence_ids{$s_exp}{$ID}{$pervious_locus}{$s_seq}   = $ID.".".$pervious_locus.".".$n_cnt++;
+					next;
+				}
+
+				my($s_id,$s_observe) = split(/\t/,$_);
 				my @a_file  = split(/\//,$s_id); 
 				my @a_ID = split(/\./,$a_file[$#a_file]);
 				my $ID = $a_ID[0];
-				$h_sequence_data{$s_exp}{$ID}{$pervious_locus}{$s_seq}++;
-				$h_sequence_ids{$s_exp}{$ID}{$pervious_locus}{$s_seq}   = $ID.".".$pervious_locus.".".$n_cnt++;
-				next;
+				my $gl = join("/",map( g2p($_), split(/\//,$s_observe)));
+				$gl =~ /HLA-(\D+\d{0,1})\*/;
+				my ($s_loc,$b_drbx) = $1 =~ /DRB[3|4|5]/ ? ("DRB1",1) : ($1,0);
+
+				$pervious_locus = $s_loc;
+				$h_drbx{$s_exp}{$ID}{$s_loc}++ if $b_drbx;
+				
+				$gl =~ s/HLA-//g;
+				push(@{$h_observed_gls{$s_exp}{$ID}{$s_loc}},$gl);
+
+			}else{
+				# New Format
+				# 1043-5341-2	HLA-A	HLA	IMGT/HLA	3.17.0	HLA-A*11:01:01/HLA-A*24:05	ATCGATCGATCG
+				my($s_id,$s_locus,$genefamil,$db,$dbversion,$glstring,$sequence) = split(/\t/,$_);
+				my $gl = join("/",map( g2p($_), split(/\//,$glstring)));
+				$gl =~ /HLA-(\D+\d{0,1})\*/;
+				my ($s_loc,$b_drbx) = $1 =~ /DRB[3|4|5]/ ? ("DRB1",1) : ($1,0);
+				$h_drbx{$s_exp}{$s_id}{$s_loc}++ if $b_drbx;
+				$gl =~ s/HLA-//g;
+				push(@{$h_observed_gls{$s_exp}{$s_id}{$s_loc}},$gl);
 			}
 
-			my($s_id,$s_observe) = split(/\t/,$_);
-			my @a_file  = split(/\//,$s_id); 
-			my @a_ID = split(/\./,$a_file[$#a_file]);
-			my $ID = $a_ID[0];
-			my $gl = join("/",map( g2p($_), split(/\//,$s_observe)));
-			$gl =~ /HLA-(\D+\d{0,1})\*/;
-			my ($s_loc,$b_drbx) = $1 =~ /DRB[3|4|5]/ ? ("DRB1",1) : ($1,0);
-
-			$pervious_locus = $s_loc;
-			$h_drbx{$s_exp}{$ID}{$s_loc}++ if $b_drbx;
-			
-			$gl =~ s/HLA-//g;
-			push(@{$h_observed_gls{$s_exp}{$ID}{$s_loc}},$gl);
 
 		}
 		close $obs;
@@ -1343,7 +1358,9 @@ sub javaParseHML{
 
 	foreach(`ngs-extract-expected-haploids -i $hml_file`){
 		chomp($_);
-		my($ID,$s_genotype) = split(/\t/,$_);
+
+		# 1722-1444-7     HLA-DRB1        HLA     IMGT/HLA        3.17.0  HLA-DRB1*03:01:01+HLA-DRB1*03:01:01
+		my($ID,$locus,$genefamily,$db,$dbversion,$s_genotype) = split(/\t/,$_);
 		my($s_typ1,$s_typ2) = split(/\+/,$s_genotype);
 
 		#TODO: Note both loci ?
