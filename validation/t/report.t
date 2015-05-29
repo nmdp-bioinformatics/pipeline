@@ -58,9 +58,10 @@ use strict;
 use warnings;
 use Test::More;
 use Data::Dumper;
+use HTML::TreeBuilder;
 use vars qw($machine $user $working $b_npm $b_treeBuilder);
 BEGIN{
-    $b_treeBuilder = 0;
+
     $working    = `pwd`;chomp($working);
     $user       = `whoami`;chomp($user);
     $machine    = `uname`;chomp($machine);
@@ -74,22 +75,13 @@ BEGIN{
         my $lib = $working."/lib";
         push(@INC,$lib);
     }
-    foreach(@INC){
-        my @inc_files = glob "$_/*";
-        foreach my $inc_file (@inc_files){
-            $b_treeBuilder++ if $inc_file =~ /HTML/;
-        }
-    }
+
 }
 
-if($b_treeBuilder > 0){
-    use HTML::TreeBuilder;
-}else{
-    print STDERR "The perl package HTML::TreeBuilder is not installed!!\n";
-    print STDERR "No tests of the HTML content will be done!\n";
-}
+my $perl_v = $];             # Get the perl version
+my $number_of_tests_run = 0; # Number of tests run
 
-my $number_of_tests_run = 0;
+my $file_ending = $perl_v > 5.016002 ? "5.18" : "5.16";
 
 my $test_expected    = $working."/t/ex0_expected.txt";
 my $test_observed    = $working."/t/ex0_observed.txt";
@@ -100,7 +92,7 @@ my @a_directories    = split(/,/,"report,report/css,report/ex0,report/img,report
 
 # Load the expected results
 my %h_tests_report;
-my $s_test_cfg = $working."/t/cfg/dom_results.cfg";
+my $s_test_cfg = $working."/t/cfg/dom_results-".$file_ending.".cfg";
 open(my $test_results,"<",$s_test_cfg) or die "CANT OPEN FILE $! $0";
 while(<$test_results>){
     chomp;
@@ -139,7 +131,7 @@ close $test_experiment;
 
 # Load the expected experiment results
 my %h_tests_qc;
-my $s_test_qc_cfg = $working."/t/cfg/dom_qc.cfg";
+my $s_test_qc_cfg = $working."/t/cfg/dom_qc-".$file_ending.".cfg";
 open(my $test_qc,"<",$s_test_qc_cfg) or die "CANT OPEN FILE $! $0";
 while(<$test_qc>){
     chomp;
@@ -157,7 +149,7 @@ close $test_qc;
 
 # Add the subject page back in ,report/ex0/subjects/subject3.html
 print `./ngs-validation-report -d t/txt -f 1 -t 1`;
-&testDOM() if($b_treeBuilder);
+&testDOM();
 &testJs()  if($b_npm);
 
 # Test to make sure all the directories exist
@@ -190,7 +182,8 @@ foreach my $s_file (@a_files){
 
 
 print `./ngs-validation-report -d t/hml -f 1 -t 1`;
-&testDOM() if($b_treeBuilder);&testJs() if $b_npm;
+&testDOM();
+&testJs() if $b_npm;
 foreach my $s_dir (@a_directories){
     if(-d $s_dir){
         is(1,1);$number_of_tests_run++;
@@ -209,7 +202,8 @@ foreach my $s_file (@a_files){
 
 # Running blast test with txt input file
 print `./ngs-validation-report -d t/txt -n t/blastn -f 1 -t 1`;
-&testDOM() if($b_treeBuilder);&testJs() if $b_npm;
+&testDOM();
+&testJs() if $b_npm;
 foreach my $s_dir (@a_directories){
     if(-d $s_dir){
         is(1,1);$number_of_tests_run++;
@@ -232,7 +226,8 @@ if( -e $s_blast_file){
 
 # Running blast test with hml input file
 print `./ngs-validation-report -d t/hml -n t/blastn -f 1 -t 1`;
-&testDOM() if($b_treeBuilder);&testJs() if $b_npm;
+&testDOM();
+&testJs() if $b_npm;
 foreach my $s_dir (@a_directories){
     if(-d $s_dir){
         is(1,1);$number_of_tests_run++;
