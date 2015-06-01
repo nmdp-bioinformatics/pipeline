@@ -1,0 +1,272 @@
+#!/usr/bin/env perl
+=head1 NAME
+
+    ngs-imgt-db
+
+=head1 SYNOPSIS
+
+./ngs-imgt-db 
+
+=head1 AUTHOR     Mike Halagan <mhalagan@nmdp.org>
+    
+    Associate Bioinformatics Scientist
+    3001 Broadway Stree NE
+    Minneapolis, MN 55413
+    ext. 8225
+
+=head1 DESCRIPTION
+
+	This tool builds the blastn database from the IMGT/HLA sequence files. This
+	is used in the second validation workflow.
+
+=head1 EXAMPLES
+	
+	./ngs-imgt-db -o /output/dir -c
+
+	./ngs-imgt-db -l A,B,C,DRB1,DQB,DRB3,DRB4,DRB5 -i /path/to/imgt/files -o /output/dir -t nucl 
+
+=head1 CAVEATS
+	
+	- Must have makeblastdb installed
+
+=head1 LICENSE
+
+    pipeline  Consensus assembly and allele interpretation pipeline.
+    Copyright (c) 2015 National Marrow Donor Program (NMDP)
+
+    This library is free software; you can redistribute it and/or modify it
+    under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation; either version 3 of the License, or (at
+    your option) any later version.
+
+    This library is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; with out even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+    License for more details.
+ 
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not, write to the Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA.
+
+    > http://www.gnu.org/licenses/lgpl.html
+
+=head1 VERSIONS
+
+	1.0.0 Initial version of the tool
+
+=head1 TODO
+	
+
+=head1 SUBROUTINES
+
+=cut
+use strict;
+use warnings;
+use Data::Dumper;
+use Getopt::Long;
+use vars qw($USAGE $VERSION $machine $start_time $user $working);
+BEGIN{
+
+	$VERSION    = '1.0.0';
+	$start_time = time;
+	$working    = `pwd`;chomp($working);
+	$user       = `whoami`;chomp($user);
+	$machine    = `uname`;chomp($machine);
+
+	$USAGE = 
+		qq{./ngs-imgt-db [--dbversion] [--genefamily] [--directory] [--loci] [--type] [--clone] [--keep] [--verbose] [--help]
+			-s/--dbversion        Database version of the databse (default = ** ALL VERSIONS **)
+			-g/--genefamily       Gene family of the databse (default = HLA)
+			-l/--loci             List of loci to include in the database (default = A,B,C,DRB1,DQB,DRB3,DRB4,DRB5)
+			-i/--directory        Directory of the IMGT/HLA files (default = working directory)
+			-t/--type             Type of sequence database (default = nucl)
+			-k/--keep             Flag for keeping the IMGT/HLA fasta files
+			-c/--clone            Flag for cloning the IMGT/HLA database from github
+			-r/--remove           Flag for removing the IMGT/HLA files after the datbases have been built
+			-o/--output           Output directory
+			-f/--forced           Force overwrite without prompting (default = 0)
+			-v/--verbose          (default = 0)
+			-h/--help             Run perldocs
+		};
+
+}
+
+my %h_allele_list; # Hash of alleles that exist in each db release
+
+our ( $help,  $s_dbversion, $s_genefamily, $s_loci, $s_db_type, $s_output_dir, $s_directory, $b_clone_imgt, $b_keep_fasta, $b_forced, $b_remove_imgt, $b_verbose) = 
+	(undef, undef, "HLA", "A,B,C,DRB1,DQB,DRB3,DRB4,DRB5", "nucl", $working, $working, undef, undef, undef, undef, 0);
+
+&GetOptions("output|o=s"      => \$s_output_dir,
+			"dbversion|s=s"   => \$s_dbversion,
+			"loci|l=s"        => \$s_loci, 
+			"genefamily|g=s"  => \$s_genefamily,
+			"directory|i=s"   => \$s_directory,
+			"type|t=s"        => \$s_db_type,
+			"forced|f"        => \$b_forced,
+			"remove|r"        => \$b_remove_imgt,
+			"keep|k"          => \$b_keep_fasta,
+			"clone|c"         => \$b_clone_imgt,
+			"verbose|v=n"     => \$b_verbose,
+			"help|h"          => \$help
+			);
+
+if(defined $help){     # If help flag provided then provide the perl doc and exit
+	exec('perldoc',$0); 
+	die;
+}
+
+###################################################################################
+my $makeblastdb = `which makeblastdb`;chomp($makeblastdb);
+if(!defined $makeblastdb 
+	|| $makeblastdb !~/\S/){ # Die if makeblastdb is not installed on your computer
+	die($USAGE,'makeblastdb must be installed on your machine!');
+}
+
+$s_dbversion =~ s/\.//g if(defined $s_dbversion && $s_dbversion =~ /\./);
+if(defined $s_dbversion
+	&& !validImgtDb($s_dbversion)){ # Die if the provided imgt db is invalid
+	die($USAGE,'Please provide a valid imgt database.');
+}
+
+if(!-d $s_output_dir){ # Die if a no valid output directory is provided
+	die($USAGE,'Please provide a valid ouput directory.');
+}
+
+$s_directory = $s_directory !~ /IMGT/ ? $s_directory."/IMGTHLA" : $s_directory;
+print `git clone https://github.com/jrob119/IMGTHLA` if defined $b_clone_imgt;
+
+if(!-d $s_directory){ # Die if a no valid input directory is provided
+	die($USAGE,'Please provide a valid input directory.');
+}
+###################################################################################
+
+my %h_loci              = map{ $_ => 1 } split(/,/,$s_loci);
+my @a_allele_list_files = glob "$s_directory/Allelelist.*";     # Getting the allele lists for each db version
+my @a_fasta_gen         = glob "$s_directory/fasta/*_gen.fasta";# Getting the full gene sequences
+my @a_fasta_nuc         = glob "$s_directory/fasta/*_nuc.fasta";# Getting the coding region sequences
+
+&loadAlleleLists(\@a_allele_list_files); # Load the allele lists for each db version
+
+# Looping through each database
+foreach my $s_db (keys %h_allele_list){
+
+	# If a database version is provided then only make that database
+	next if (defined $s_dbversion && $s_dbversion =~ /\S/ && $s_db ne $s_dbversion);
+
+	my %h_fasta_seqs;
+	foreach my $s_fasta_file (@a_fasta_gen){
+
+		my @a_fasta_path = split(/\//,$s_fasta_file);
+		my($s_loc,@x) = split(/_/,$a_fasta_path[$#a_fasta_path]);
+		
+		next unless defined $h_loci{$s_loc};
+
+		my $allele;
+		my $skip = 1;
+		# Loading the sequence data from the fasta files
+		open(my $fh_loc_fasta,"<",$s_fasta_file) or die "CANT OPEN FILE $! $0";
+		while(<$fh_loc_fasta>){
+			chomp;
+			if($_ =~ /^>/){
+				my($s_id,$s_allele,$len,$bp) = split(/\s/,$_);
+				# Skip any allele that doesn't exist in the db version
+				$skip   = defined $h_allele_list{$s_db}{$s_allele} ? 1 : 0; 
+				$allele = $skip ? $s_allele : ""; 
+				next;
+			}elsif($skip == 1){
+				push(@{$h_fasta_seqs{$allele}},$_);
+			}
+		}
+		close $fh_loc_fasta;
+	}
+
+	my %h_no_genomic;
+	foreach my $s_allele (keys %{$h_allele_list{$s_db}}){
+		next unless !defined $h_fasta_seqs{$s_allele};
+		$h_no_genomic{$s_allele}++;
+	}
+
+	# Loop through the fasta files that don't have genomic level data
+	foreach my $s_fasta_file (@a_fasta_nuc){
+
+		my @a_fasta_path = split(/\//,$s_fasta_file);
+		my($s_loc,@x) = split(/_/,$a_fasta_path[$#a_fasta_path]);
+		
+		next unless defined $h_loci{$s_loc};
+
+		my $allele;
+		my $skip = 1;
+		# Loading the sequence data from the fasta files
+		open(my $fh_loc_fasta,"<",$s_fasta_file) or die "CANT OPEN FILE $! $0";
+		while(<$fh_loc_fasta>){
+			chomp;
+			if($_ =~ /^>/){
+				my($s_id,$s_allele,$len,$bp) = split(/\s/,$_);
+				# Skip any allele that doesn't exist in the db version
+				$skip   = defined $h_allele_list{$s_db}{$s_allele} && 
+					defined $h_no_genomic{$s_allele} ? 1 : 0; 
+				$allele = $skip ? $s_allele : ""; 
+				next;
+			}elsif($skip == 1){
+				push(@{$h_fasta_seqs{$allele}},$_);
+			}
+		}
+		close $fh_loc_fasta;
+	}
+
+
+	my $db_file         = $s_output_dir."/".$s_db.".nsq";# Database file that will be created
+	my $s_db_fasta_file = $s_output_dir."/".$s_db.".fa"; # Die if the files already exist and the forced flag wasn't given
+	die('Database files already exist!') if(-e $db_file && !defined $b_forced);# Die if the db file already exists
+
+	open(my $fa,">",$s_db_fasta_file) or die "CANT OPEN FILE $! $0";
+	foreach my $s_allele (sort {$a cmp $b} keys %h_fasta_seqs){
+		print $fa ">".$s_allele."\n";
+		print $fa join("\n",@{$h_fasta_seqs{$s_allele}}),"\n"; # Print out the fasta sequence
+	}
+	close $fa;
+
+	print `makeblastdb -in $s_db_fasta_file -out $s_db -dbtype nucl`; # Building the db
+	print `mv $s_db.* $s_output_dir`;                                 # Moving the db files
+	print `rm $s_db_fasta_file` if !defined $b_keep_fasta;            # Removing the db fasta file
+
+}
+
+print `rm -rf $s_directory` if  defined $b_remove_imgt;           # Removing the IMGT/HLA files if the flag is provided
+
+################################################################################################################
+=head3 loadAlleleLists
+
+	Title:     loadAlleleLists
+	Usage:     loadAlleleLists($s_emails)
+	Function:  Getting the allele list for each imgt db version
+	Returns:   na
+	Args:      array of the allele list files
+
+=cut
+sub loadAlleleLists{
+
+	my $ra_allele_list_files = shift;
+
+	foreach my $s_allele_list_file (@$ra_allele_list_files){
+
+		my @a_file_parts = split(/\//,$s_allele_list_file);
+		my $s_file_name  = $a_file_parts[$#a_file_parts];
+		my ($Allelelist,$db,$txt) = split(/\./,$s_file_name);
+		next if length($db) != 4;
+
+		open(my $fh_allele_list,"<",$s_allele_list_file) or die "CANT OPEN FILE $! $0";
+		while(<$fh_allele_list>){
+			chomp;
+			my($id,$allele) = split(/\s/,$_);
+			$h_allele_list{$db}{$allele}++;
+
+		}
+		close $fh_allele_list;
+
+	}
+
+}
+
+
+
