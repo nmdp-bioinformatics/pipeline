@@ -16,15 +16,18 @@
 
 =head1 DESCRIPTION
 
+	This tool builds the blastn database from the IMGT/HLA sequence files. This
+	is used in the second validation workflow.
 
 =head1 EXAMPLES
 	
-	./ngs-imgt-db -o /output/dir 
+	./ngs-imgt-db -o /output/dir -c
 
-	./ngs-imgt-db -l A,B,C,DRB1,DQB,DRB3,DRB4,DRB5 -i /path/to/imgt/files -o /output/dir -t nucl
+	./ngs-imgt-db -l A,B,C,DRB1,DQB,DRB3,DRB4,DRB5 -i /path/to/imgt/files -o /output/dir -t nucl 
 
 =head1 CAVEATS
 	
+	- Must have makeblastdb installed
 
 =head1 LICENSE
 
@@ -49,7 +52,7 @@
 
 =head1 VERSIONS
 
-
+	1.0.0 Initial version of the tool
 
 =head1 TODO
 	
@@ -71,15 +74,16 @@ BEGIN{
 	$machine    = `uname`;chomp($machine);
 
 	$USAGE = 
-		qq{./ngs-validation-report [--dbversion] [--genefamily] [--directory] [--type] [--keep] [--verbose] [--help]
-			-x/--dbversion        Experiment number (ex. ex014) 
-			-l/--genefamily       Output file from ngs-validate-interp
-			-l/--loci             Output file from ngs-validate-interp
-			-e/--directory        Expected file
-			-o/--type             Observed file
-			-d/--keep             Directory of input files
-			-c/--clone            A list of email addresses that the compressed report will be sent to
-			-p/--output           Output directory
+		qq{./ngs-imgt-db [--dbversion] [--genefamily] [--directory] [--loci] [--type] [--clone] [--keep] [--verbose] [--help]
+			-s/--dbversion        Database version of the databse (default = ** ALL VERSIONS **)
+			-g/--genefamily       Gene family of the databse (default = HLA)
+			-l/--loci             List of loci to include in the database (default = A,B,C,DRB1,DQB,DRB3,DRB4,DRB5)
+			-i/--directory        Directory of the IMGT/HLA files (default = working directory)
+			-t/--type             Type of sequence database (default = nucl)
+			-k/--keep             Flag for keeping the IMGT/HLA fasta files
+			-c/--clone            Flag for cloning the IMGT/HLA database from github
+			-r/--remove           Flag for removing the IMGT/HLA files after the datbases have been built
+			-o/--output           Output directory
 			-f/--forced           Force overwrite without prompting (default = 0)
 			-v/--verbose          (default = 0)
 			-h/--help             Run perldocs
@@ -89,8 +93,8 @@ BEGIN{
 
 my %h_allele_list; # Hash of alleles that exist in each db release
 
-our ( $help,  $s_dbversion, $s_genefamily, $s_loci, $s_db_type, $s_output_dir, $s_directory, $b_clone_imgt, $b_keep_fasta, $b_forced, $b_verbose) = 
-	(undef, undef, "HLA", "A,B,C,DRB1,DQB,DRB3,DRB4,DRB5", "nucl", $working, $working, 0, 0, 0, 0);
+our ( $help,  $s_dbversion, $s_genefamily, $s_loci, $s_db_type, $s_output_dir, $s_directory, $b_clone_imgt, $b_keep_fasta, $b_forced, $b_remove_imgt, $b_verbose) = 
+	(undef, undef, "HLA", "A,B,C,DRB1,DQB,DRB3,DRB4,DRB5", "nucl", $working, $working, undef, undef, undef, undef, 0);
 
 &GetOptions("output|o=s"      => \$s_output_dir,
 			"dbversion|s=s"   => \$s_dbversion,
@@ -98,14 +102,15 @@ our ( $help,  $s_dbversion, $s_genefamily, $s_loci, $s_db_type, $s_output_dir, $
 			"genefamily|g=s"  => \$s_genefamily,
 			"directory|i=s"   => \$s_directory,
 			"type|t=s"        => \$s_db_type,
-			"forced|f=n"      => \$b_forced,
+			"forced|f"        => \$b_forced,
+			"remove|r"        => \$b_remove_imgt,
+			"keep|k"          => \$b_keep_fasta,
+			"clone|c"         => \$b_clone_imgt,
 			"verbose|v=n"     => \$b_verbose,
-			"keep|k=s"        => \$b_keep_fasta,
-			"clone|c=s"       => \$b_clone_imgt,
 			"help|h"          => \$help
 			);
 
-if(defined $help){ # If help flag provided then provide the perl doc and exit
+if(defined $help){     # If help flag provided then provide the perl doc and exit
 	exec('perldoc',$0); 
 	die;
 }
@@ -128,7 +133,7 @@ if(!-d $s_output_dir){ # Die if a no valid output directory is provided
 }
 
 $s_directory = $s_directory !~ /IMGT/ ? $s_directory."/IMGTHLA" : $s_directory;
-print `git clone https://github.com/jrob119/IMGTHLA` if $b_clone_imgt;
+print `git clone https://github.com/jrob119/IMGTHLA` if defined $b_clone_imgt;
 
 if(!-d $s_directory){ # Die if a no valid input directory is provided
 	die($USAGE,'Please provide a valid input directory.');
@@ -136,9 +141,9 @@ if(!-d $s_directory){ # Die if a no valid input directory is provided
 ###################################################################################
 
 my %h_loci              = map{ $_ => 1 } split(/,/,$s_loci);
-my @a_allele_list_files = glob "$s_directory/Allelelist.*";
-my @a_fasta_gen         = glob "$s_directory/fasta/*_gen.fasta";
-my @a_fasta_nuc         = glob "$s_directory/fasta/*_nuc.fasta";
+my @a_allele_list_files = glob "$s_directory/Allelelist.*";     # Getting the allele lists for each db version
+my @a_fasta_gen         = glob "$s_directory/fasta/*_gen.fasta";# Getting the full gene sequences
+my @a_fasta_nuc         = glob "$s_directory/fasta/*_nuc.fasta";# Getting the coding region sequences
 
 &loadAlleleLists(\@a_allele_list_files); # Load the allele lists for each db version
 
@@ -210,9 +215,9 @@ foreach my $s_db (keys %h_allele_list){
 	}
 
 
-	my $db_file         = $s_output_dir."/".$s_db.".nsq";
+	my $db_file         = $s_output_dir."/".$s_db.".nsq";# Database file that will be created
 	my $s_db_fasta_file = $s_output_dir."/".$s_db.".fa"; # Die if the files already exist and the forced flag wasn't given
-	die('Database files already exist!') if(-e $db_file && !$b_forced);
+	die('Database files already exist!') if(-e $db_file && !defined $b_forced);# Die if the db file already exists
 
 	open(my $fa,">",$s_db_fasta_file) or die "CANT OPEN FILE $! $0";
 	foreach my $s_allele (sort {$a cmp $b} keys %h_fasta_seqs){
@@ -222,10 +227,12 @@ foreach my $s_db (keys %h_allele_list){
 	close $fa;
 
 	print `makeblastdb -in $s_db_fasta_file -out $s_db -dbtype nucl`; # Building the db
-	print `mv $s_db.* $s_output_dir`; # Moving the db files
-	print `rm $s_db_fasta_file` if !$b_keep_fasta; # removing the db fasta file
+	print `mv $s_db.* $s_output_dir`;                                 # Moving the db files
+	print `rm $s_db_fasta_file` if !defined $b_keep_fasta;            # Removing the db fasta file
 
 }
+
+print `rm -rf $s_directory` if  defined $b_remove_imgt;           # Removing the IMGT/HLA files if the flag is provided
 
 ################################################################################################################
 =head3 loadAlleleLists
@@ -260,47 +267,6 @@ sub loadAlleleLists{
 	}
 
 }
-################################################################################################################
-=head3 validDb
-
-	Title:     validDb
-	Usage:     validEmail($s_emails)
-	Function:  
-	Returns:   na
-	Args:      email list
-
-=cut
-sub validDb{
-
-	my ($v_db,$s_latest_db) = @_;
-	return 0 if length($v_db) != 4;
-	return 0 if 
-	my(@a_db_parts) = split(/\s/,$v_db);
-
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

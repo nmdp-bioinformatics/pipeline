@@ -136,10 +136,11 @@ use warnings;
 use Data::Dumper;
 use Getopt::Long;
 use LWP::UserAgent;
-use vars qw($USAGE $machine $lwp $start_time $web_template $user $working);
+use vars qw($VERSION $USAGE $machine $lwp $start_time $web_template $user $working);
 BEGIN{
 
 	$start_time = time;
+	$VERSION    = '1.2.0';
 	$working    = `pwd`;chomp($working);
 	$user       = `whoami`;chomp($user);
 	$machine    = `uname`;chomp($machine);
@@ -171,8 +172,6 @@ BEGIN{
 
 }
 use html;
-
-our $VERSION = 1.2.0;
 
 my %h_observed_gls;      # Hash that contains the observed haplotypes
 my %h_observed;          # Hash that contains the observed Alleles
