@@ -114,6 +114,9 @@
     	- Changed the Makefile.PL to install template files with html.pm
     	- Changed ngs-validation-report so it now looks for the installed template files
 
+    1.2.1
+    	- Updated the test files to work with multiple versions of perl
+    	- Made the version parsible by Makefile.PL
 
 =head1 TODO
 	
@@ -140,7 +143,7 @@ use vars qw($VERSION $USAGE $machine $lwp $start_time $web_template $user $worki
 BEGIN{
 
 	$start_time = time;
-	$VERSION    = '1.2.0';
+	$VERSION    = '1.2.2';
 	$working    = `pwd`;chomp($working);
 	$user       = `whoami`;chomp($user);
 	$machine    = `uname`;chomp($machine);
@@ -455,9 +458,9 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 	my %h_expected_loci; # Hash containing all of the observed loci in the expected file
 	foreach my $s_exp (keys %h_experiments){ # Loop through each experiment
 
-		$s_observed  = $h_experiments{$s_exp}{OBS};
-		$s_expected  = $h_experiments{$s_exp}{EXP};
-		$s_validated = $h_experiments{$s_exp}{VAL};
+		$s_observed        = $h_experiments{$s_exp}{OBS};
+		$s_expected        = $h_experiments{$s_exp}{EXP};
+		$s_validated       = $h_experiments{$s_exp}{VAL};
 		my $s_qc_validated = defined $h_experiments{$s_exp}{QCV} ? $h_experiments{$s_exp}{QCV} : undef;
 		my $s_qc_expected  = defined $h_experiments{$s_exp}{QCE} ? $h_experiments{$s_exp}{QCE} : undef;
 
@@ -494,6 +497,7 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 				push(@{$h_observed_gls{$s_exp}{$ID}{$s_loc}},$gl);
 
 			}else{
+				print STDERR 
 				# New Format
 				# 1043-5341-2	HLA-A	HLA	IMGT/HLA	3.17.0	HLA-A*11:01:01/HLA-A*24:05	ATCGATCGATCG
 				my($s_id,$s_locus,$genefamil,$db,$dbversion,$glstring,$sequence) = split(/\t/,$_);
@@ -501,6 +505,10 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 				$gl =~ /HLA-(\D+\d{0,1})\*/;
 				my ($s_loc,$b_drbx) = $1 =~ /DRB[3|4|5]/ ? ("DRB1",1) : ($1,0);
 				$h_drbx{$s_exp}{$s_id}{$s_loc}++ if $b_drbx;
+
+				$h_sequence_data{$s_exp}{$s_id}{$s_loc}{$sequence}++;
+				$h_sequence_ids{$s_exp}{$s_id}{$s_loc}{$sequence}   = $s_id.".".$s_loc.".".$n_cnt++;
+
 				$gl =~ s/HLA-//g;
 				push(@{$h_observed_gls{$s_exp}{$s_id}{$s_loc}},$gl);
 			}
