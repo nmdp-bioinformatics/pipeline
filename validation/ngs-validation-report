@@ -139,6 +139,7 @@ use warnings;
 use Data::Dumper;
 use Getopt::Long;
 use LWP::UserAgent;
+use IO::Uncompress::AnyUncompress qw(anyuncompress $AnyUncompressError);
 use vars qw($VERSION $USAGE $machine $lwp $start_time $web_template $user $working);
 BEGIN{
 
@@ -464,14 +465,23 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 		my $s_qc_validated = defined $h_experiments{$s_exp}{QCV} ? $h_experiments{$s_exp}{QCV} : undef;
 		my $s_qc_expected  = defined $h_experiments{$s_exp}{QCE} ? $h_experiments{$s_exp}{QCE} : undef;
 
-		my $n_cnt = 0;
+		my $b_gzip  = $s_observed =~ /\.gz/ ? 1 : 0;
+		my $n_cnt   = 0;
 		my $pervious_locus = "";
-		open(my $obs,"<",$s_observed) or die "CANT OPEN FILE $! $0";
-		while(<$obs>){
+
+		my $fh_obs;
+		if($b_gzip){ # Handle gzip observed files
+			$fh_obs = new IO::Uncompress::AnyUncompress $s_observed
+				or die "anyuncompress failed: $AnyUncompressError\n";
+		}else{
+			open($fh_obs,"<",$s_observed) or die "CANT OPEN FILE $! $0";
+		}
+		while(<$fh_obs>){
 			chomp;
 			my (@a) = split(/\t/,$_);
 
 			if($#a == 1){
+				# Old format
 				if($_ !~ /HLA/){
 					my($s_id, $s_seq) = split(/\t/,$_);
 					my @a_file  = split(/\//,$s_id); 
@@ -497,7 +507,6 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 				push(@{$h_observed_gls{$s_exp}{$ID}{$s_loc}},$gl);
 
 			}else{
-				print STDERR 
 				# New Format
 				# 1043-5341-2	HLA-A	HLA	IMGT/HLA	3.17.0	HLA-A*11:01:01/HLA-A*24:05	ATCGATCGATCG
 				my($s_id,$s_locus,$genefamil,$db,$dbversion,$glstring,$sequence) = split(/\t/,$_);
@@ -512,10 +521,13 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 				$gl =~ s/HLA-//g;
 				push(@{$h_observed_gls{$s_exp}{$s_id}{$s_loc}},$gl);
 			}
-
-
 		}
-		close $obs;
+		# Closing the observed file handle
+		if($b_gzip){
+			$fh_obs->close();
+		}else{
+			close $fh_obs;
+		}
 
 		my %h_observed_zygosity;
 		foreach my $s_ID (keys %{$h_observed_gls{$s_exp}}){

@@ -41,7 +41,8 @@ WriteMakefile (
         "LWP::UserAgent" => 0,
         "strict" => 0,
         "warnings" => 0,
-        "Data::Dumper" => 0
+        "Data::Dumper" => 0,
+        "IO::Uncompress::AnyUncompress" => 0
       },
 
       TEST_REQUIRES => {
