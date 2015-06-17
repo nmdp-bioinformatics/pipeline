@@ -34,7 +34,7 @@ WriteMakefile (
       DISTNAME     => 'validation-report',
 
       EXE_FILES    => [ qw(ngs-validation-report ngs-imgt-db) ],
-      PMLIBDIRS    => [ qw(template lib) ],
+      PMLIBDIRS    => [ qw(template-files lib) ],
 
 
       PREREQ_PM => {

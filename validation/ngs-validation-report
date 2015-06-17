@@ -118,6 +118,17 @@
     	- Updated the test files to work with multiple versions of perl
     	- Made the version parsible by Makefile.PL
 
+    1.2.2
+    	- Made the new observed and expected file foirmats parseable
+
+	1.3.0  Version that works with flow-validation
+		- Broke out the tests into multiple files
+		- Changed the template folder to template-files
+		- Add the capability to parse gz files
+		- Added gz test files
+		- Add ngs-imgt-db to the Makefile.PL
+
+
 =head1 TODO
 	
        - Add match grades
@@ -144,16 +155,16 @@ use vars qw($VERSION $USAGE $machine $lwp $start_time $web_template $user $worki
 BEGIN{
 
 	$start_time = time;
-	$VERSION    = '1.2.2';
+	$VERSION    = '1.3.0';
 	$working    = `pwd`;chomp($working);
 	$user       = `whoami`;chomp($user);
 	$machine    = `uname`;chomp($machine);
-	$web_template = $working."/template";
+	$web_template = $working."/template-files";
 
 	my $lib_location = `perldoc -l html.pm`;chomp($lib_location);
 	$lib_location    =~ s/html\.pm// if(defined $lib_location && $lib_location =~ /\S/);
-	$lib_location    = $lib_location."/template" if(defined $lib_location && $lib_location =~ /\S/);
-	$web_template    = (defined $lib_location && $lib_location =~ /\S/) ? $lib_location : $web_template;
+	$lib_location    = $lib_location."/template-files" if(defined $lib_location && $lib_location =~ /\S/ && $lib_location ne "lib/");
+	$web_template    = (defined $lib_location && $lib_location =~ /\S/ && $lib_location ne "lib/") ? $lib_location : $web_template;
 
 	push(@INC,$working."/lib");
 
@@ -221,7 +232,7 @@ our ( $s_macs_url, $s_blast_dir, $s_pop_cfg, $s_title, $s_experiment, $s_validat
 			"output|p=s"     => \$s_output, 
 			"directory|d=s"  => \$s_directory,
 			"email|m=s"      => \$s_emails,
-			"forced|f=n"     => \$b_forced,
+			"forced|f"       => \$b_forced,
 			"failed|r"       => \$b_failed,
 			"test|t=n"       => \$b_test,
 			"verbose|v=n"    => \$b_verbose,
@@ -464,22 +475,16 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 		$s_validated       = $h_experiments{$s_exp}{VAL};
 		my $s_qc_validated = defined $h_experiments{$s_exp}{QCV} ? $h_experiments{$s_exp}{QCV} : undef;
 		my $s_qc_expected  = defined $h_experiments{$s_exp}{QCE} ? $h_experiments{$s_exp}{QCE} : undef;
+		my $s_file_type    = `file $s_observed`;chomp($s_file_type); # Get observed file type
+		my $cat_type       = $s_file_type =~ /compressed/ ? "gzcat" : "cat";
 
-		my $b_gzip  = $s_observed =~ /\.gz/ ? 1 : 0;
-		my $n_cnt   = 0;
+		my $n_cnt = 1;
 		my $pervious_locus = "";
+		foreach(`$cat_type $s_observed`){
 
-		my $fh_obs;
-		if($b_gzip){ # Handle gzip observed files
-			$fh_obs = new IO::Uncompress::AnyUncompress $s_observed
-				or die "anyuncompress failed: $AnyUncompressError\n";
-		}else{
-			open($fh_obs,"<",$s_observed) or die "CANT OPEN FILE $! $0";
-		}
-		while(<$fh_obs>){
-			chomp;
+			chomp($_);
 			my (@a) = split(/\t/,$_);
-
+			
 			if($#a == 1){
 				# Old format
 				if($_ !~ /HLA/){
@@ -518,15 +523,11 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 				$h_sequence_data{$s_exp}{$s_id}{$s_loc}{$sequence}++;
 				$h_sequence_ids{$s_exp}{$s_id}{$s_loc}{$sequence}   = $s_id.".".$s_loc.".".$n_cnt++;
 
+				print STDERR "Observed: ",$s_exp,"\t",$s_id,"\t",$gl,"\n";
+
 				$gl =~ s/HLA-//g;
 				push(@{$h_observed_gls{$s_exp}{$s_id}{$s_loc}},$gl);
 			}
-		}
-		# Closing the observed file handle
-		if($b_gzip){
-			$fh_obs->close();
-		}else{
-			close $fh_obs;
 		}
 
 		my %h_observed_zygosity;
@@ -1087,13 +1088,10 @@ sub validEmail{
 sub failedSubjects{
 
 	foreach my $s_exp (keys %h_failed_subjects){
-		my $s_failed_subjects = $s_output."/".$s_exp."_ngsp_failed.txt";
-		open(my $fh_fail_subjs,">",$s_failed_subjects) or die "CANT OPEN FILE $! $0";
 		foreach my $s_id (keys %{$h_failed_subjects{$s_exp}}){
 			my ($ID,$x) = split(/_/,$s_id);
-			print $fh_fail_subjs $ID,"\n";
+			print $s_exp,",",$ID,"\n";
 		}
-		close $fh_fail_subjs;
 	}
 
 }
@@ -1382,7 +1380,6 @@ sub javaParseHML{
 		my($ID,$locus,$genefamily,$db,$dbversion,$s_genotype) = split(/\t/,$_);
 		my($s_typ1,$s_typ2) = split(/\+/,$s_genotype);
 
-		#TODO: Note both loci ?
 		$s_typ1 =~ s/HLA-//g;$s_typ2 =~ s/HLA-//g;
 		$s_typ1 =~ /(\D+\d{0,1})\*/;my $s_loc = $1;
 		next if !defined $s_typ1 && !defined $s_typ2;
@@ -1415,11 +1412,11 @@ sub javaParseHML{
 sub initalize{
 
 	my $report_dir = $s_output."/".$s_title;
-	if( -d $report_dir && !$b_forced){
+	if( -d $report_dir && !defined $b_forced){
 		print STDERR "Exiting because report directory already exists\n";
 		exit;
 	}else{
-		if($b_forced && -d $report_dir){
+		if(defined $b_forced && -d $report_dir){
 			print STDERR "Deleting old reporting directory!\n" if $b_verbose;
 			print `rm -R $report_dir`;
 		}
