@@ -97,9 +97,9 @@ open(my $test_results,"<",$s_test_cfg) or die "CANT OPEN FILE $! $0";
 while(<$test_results>){
     chomp;
     my($s_row,$s_report,$s_exp,$s_id,$s_locus,$loc_verdict,$allele_verdict,$s_expected) = split(/,/,$_);
-    $h_tests_report{$s_exp}{$s_row}{$s_id}{$s_locus}{LOCUS}    = $loc_verdict;
-    $h_tests_report{$s_exp}{$s_row}{$s_id}{$s_locus}{ALLELE}   = $allele_verdict;
-    $h_tests_report{$s_exp}{$s_row}{$s_id}{$s_locus}{EXPECTED} = $s_expected;
+    $h_tests_report{$s_exp}{$s_report}{$s_row}{$s_id}{$s_locus}{LOCUS}    = $loc_verdict;
+    $h_tests_report{$s_exp}{$s_report}{$s_row}{$s_id}{$s_locus}{ALLELE}   = $allele_verdict;
+    $h_tests_report{$s_exp}{$s_report}{$s_row}{$s_id}{$s_locus}{EXPECTED} = $s_expected;
 }
 close $test_results;
 
@@ -146,24 +146,9 @@ while(<$test_qc>){
 }
 close $test_qc;
 
-
-# Add the subject page back in ,report/ex0/subjects/subject3.html
-print `./ngs-validation-report -d t/txt -f 1 -t 1`;
-&testDOM();
-&testJs()  if($b_npm);
-
-# Test to make sure all the directories exist
-foreach my $s_dir (@a_directories){
-    if(-d $s_dir){
-        is(1,1);$number_of_tests_run++;
-    }else{
-        is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
-        die("Exiting do to critical failure!");
-    }
-}
-
 my @a_files = split(/,/,"report/experiment.html,report/help.html,report/log.html,report/ex0/drbx.html,report/ex0/errors.html,report/ex0/fails.html,report/ex0/index.html,report/ex0/results.html");
 
+print `./ngs-validation-report -d t/hml -f -t 1`;
 foreach my $s_dir (@a_directories){
     if(-d $s_dir){
         is(1,1);$number_of_tests_run++;
@@ -171,7 +156,6 @@ foreach my $s_dir (@a_directories){
         is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
     }
 }
-
 foreach my $s_file (@a_files){
     if(-e $s_file){
         is(1,1);$number_of_tests_run++;
@@ -179,79 +163,12 @@ foreach my $s_file (@a_files){
         is(1,0,"$s_file not created!\n");$number_of_tests_run++;
     }
 }
-
-
-print `./ngs-validation-report -d t/hml -f 1 -t 1`;
 &testDOM();
-&testJs() if $b_npm;
-foreach my $s_dir (@a_directories){
-    if(-d $s_dir){
-        is(1,1);$number_of_tests_run++;
-    }else{
-        is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
-    }
-}
-foreach my $s_file (@a_files){
-    if(-e $s_file){
-        is(1,1);$number_of_tests_run++;
-    }else{
-        is(1,0,"$s_file not created!\n");$number_of_tests_run++;
-    }
-}
 
-
-# Running blast test with txt input file
-print `./ngs-validation-report -d t/txt -n t/blastn -f 1 -t 1`;
-&testDOM();
-&testJs() if $b_npm;
-foreach my $s_dir (@a_directories){
-    if(-d $s_dir){
-        is(1,1);$number_of_tests_run++;
-    }else{
-        is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
-    }
-}
-foreach my $s_file (@a_files){
-    if(-e $s_file){
-        is(1,1);$number_of_tests_run++;
-    }else{
-        is(1,0,"$s_file not created!\n");$number_of_tests_run++;
-    }
-}
-if( -e $s_blast_file){
-    is(1,1);$number_of_tests_run++;
-}else{
-    is(1,0,"$s_blast_file BLAST file not created!\n");$number_of_tests_run++;
-}
-
-# Running blast test with hml input file
-print `./ngs-validation-report -d t/hml -n t/blastn -f 1 -t 1`;
-&testDOM();
-&testJs() if $b_npm;
-foreach my $s_dir (@a_directories){
-    if(-d $s_dir){
-        is(1,1);$number_of_tests_run++;
-    }else{
-        is(1,0,"$s_dir not created!\n");$number_of_tests_run++;
-    }
-}
-foreach my $s_file (@a_files){
-    if(-e $s_file){
-        is(1,1);$number_of_tests_run++;
-    }else{
-        is(1,0,"$s_file not created!\n");$number_of_tests_run++;
-    }
-}
-if( -e $s_blast_file){
-    is(1,1);$number_of_tests_run++;
-}else{
-    is(1,0,"$s_blast_file BLAST file not created!\n");$number_of_tests_run++;
-}
 print `rm -R report`;
 
 
 done_testing( $number_of_tests_run );
-
 
 
 sub testDOM{
@@ -284,47 +201,47 @@ sub testDOM{
             if(defined $h_tests_experiment{$row}{$exp}{TOTAL} && $h_tests_experiment{$row}{$exp}{TOTAL} eq $num){
                 is(1,1);$number_of_tests_run++;
             }else{
-                is(0,1,"Doesnt match up! TOTAL $row! $exp ");$number_of_tests_run++;
+                is(0,1,"experiment.html - Doesnt match up! TOTAL $row! $exp ");$number_of_tests_run++;
             }
             if(defined $h_tests_experiment{$row}{$exp}{PASS} && $h_tests_experiment{$row}{$exp}{PASS} eq $n_pass){
                 is(1,1);$number_of_tests_run++;
             }else{
-                is(0,1,"Doesnt match up! PASS $row! $exp $n_pass ");$number_of_tests_run++;
+                is(0,1,"experiment.html - Doesnt match up! PASS $row! $exp $n_pass ");$number_of_tests_run++;
             }
             if(defined $h_tests_experiment{$row}{$exp}{PERPAS} && $h_tests_experiment{$row}{$exp}{PERPAS} eq $per_pass){
                 is(1,1);$number_of_tests_run++;
             }else{
-                is(0,1,"Doesnt match up! PERPAS $row! $exp $per_pass");$number_of_tests_run++;
+                is(0,1,"experiment.html - Doesnt match up! PERPAS $row! $exp $per_pass");$number_of_tests_run++;
             }
             if(defined $h_tests_experiment{$row}{$exp}{FAIL} && $h_tests_experiment{$row}{$exp}{FAIL} eq $n_fail){
                 is(1,1);$number_of_tests_run++;
             }else{
-                is(0,1,"Doesnt match up! FAIL $row! $exp ");$number_of_tests_run++;
+                is(0,1,"experiment.html - Doesnt match up! FAIL $row! $exp ");$number_of_tests_run++;
             }
             if(defined $h_tests_experiment{$row}{$exp}{PERFAIL} && $h_tests_experiment{$row}{$exp}{PERFAIL} eq $per_fail){
                 is(1,1);$number_of_tests_run++;
             }else{
-                is(0,1,"Doesnt match up! PERFAIL $row! $exp ");$number_of_tests_run++;
+                is(0,1,"experiment.html - Doesnt match up! PERFAIL $row! $exp ");$number_of_tests_run++;
             }        
             if(defined $h_tests_experiment{$row}{$exp}{DROP} && $h_tests_experiment{$row}{$exp}{DROP} eq $n_drop){
                 is(1,1);$number_of_tests_run++;
             }else{
-                is(0,1,"Doesnt match up! DROP $row! $exp ");$number_of_tests_run++;
+                is(0,1,"experiment.html - Doesnt match up! DROP $row! $exp ");$number_of_tests_run++;
             }
             if(defined $h_tests_experiment{$row}{$exp}{PERDROP} && $h_tests_experiment{$row}{$exp}{PERDROP} eq $per_drop){
                 is(1,1);$number_of_tests_run++;
             }else{
-                is(0,1,"Doesnt match up! PERDROP $row! $exp ");$number_of_tests_run++;
+                is(0,1,"experiment.html - Doesnt match up! PERDROP $row! $exp ");$number_of_tests_run++;
             } 
             if(defined $h_tests_experiment{$row}{$exp}{DRBX} && $h_tests_experiment{$row}{$exp}{DRBX} eq $n_drbx){
                 is(1,1);$number_of_tests_run++;
             }else{
-                is(0,1,"Doesnt match up! DRBX $row! $exp $h_tests_experiment{$row}{$exp}{DRBX} ne $n_drbx");$number_of_tests_run++;
+                is(0,1,"experiment.html - Doesnt match up! DRBX $row! $exp $h_tests_experiment{$row}{$exp}{DRBX} ne $n_drbx");$number_of_tests_run++;
             }
             if(defined $h_tests_experiment{$row}{$exp}{PERDRBX} && $h_tests_experiment{$row}{$exp}{PERDRBX} eq $per_drbx){
                 is(1,1);$number_of_tests_run++;
             }else{
-                is(0,1,"Doesnt match up! PERDRBX $row! $exp ");$number_of_tests_run++;
+                is(0,1,"experiment.html - Doesnt match up! PERDRBX $row! $exp ");$number_of_tests_run++;
             }  
         }
 
@@ -349,22 +266,22 @@ sub testDOM{
             my($x,$s_id,$s_loc,$s_loc_verdict,$s_allele_verdict,$n_observed,$s_expected,$s_observed1,$s_observed2) = @data;
 
             if($row != 0){      
-                if(defined $h_tests_report{"results"}{$row}{$s_id}{$s_loc}{LOCUS} && $h_tests_report{"results"}{$row}{$s_id}{$s_loc}{LOCUS} eq $s_loc_verdict){
+                if(defined $h_tests_report{"results"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} && $h_tests_report{"results"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} eq $s_loc_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! LOCUS $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$html_results - Doesnt match up! $s_exp | results $row $s_id $s_loc LOCUS | $h_tests_report{\"results\"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} ne $s_loc_verdict");$number_of_tests_run++;
                 }
 
-                if(defined $h_tests_report{"results"}{$row}{$s_id}{$s_loc}{ALLELE} && $h_tests_report{"results"}{$row}{$s_id}{$s_loc}{ALLELE} eq $s_allele_verdict){
+                if(defined $h_tests_report{"results"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} && $h_tests_report{"results"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} eq $s_allele_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! ALLELE $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$html_results - Doesnt match up! $s_exp | results $row $s_id $s_loc ALLELE | $h_tests_report{\"results\"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} ne $s_allele_verdict");$number_of_tests_run++;
                 }
 
-                if(defined $h_tests_report{"results"}{$row}{$s_id}{$s_loc}{EXPECTED} && $h_tests_report{"results"}{$row}{$s_id}{$s_loc}{EXPECTED} eq $s_expected){
+                if(defined $h_tests_report{"results"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} && $h_tests_report{"results"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} eq $s_expected){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! EXPECTED $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$html_results - Doesnt match up! $s_exp | results $row $s_id $s_loc EXPECTED |$h_tests_report{\"results\"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} ne $s_expected");$number_of_tests_run++;
                 }
             }
             $row++;
@@ -379,22 +296,22 @@ sub testDOM{
             my($x,$s_id,$s_loc,$s_loc_verdict,$s_allele_verdict,$n_observed,$s_expected,$s_observed1,$s_observed2) = @data;
 
             if($row != 0){      
-                if(defined $h_tests_report{"fail"}{$row}{$s_id}{$s_loc}{LOCUS} && $h_tests_report{"fail"}{$row}{$s_id}{$s_loc}{LOCUS} eq $s_loc_verdict){
+                if(defined $h_tests_report{"fail"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} && $h_tests_report{"fail"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} eq $s_loc_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! LOCUS $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$failed_results - Doesnt match up! LOCUS $s_exp $s_id $row! $s_loc | $h_tests_report{\"fail\"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} ne $s_loc_verdict");$number_of_tests_run++;
                 }
 
-                if(defined $h_tests_report{"fail"}{$row}{$s_id}{$s_loc}{ALLELE} && $h_tests_report{"fail"}{$row}{$s_id}{$s_loc}{ALLELE} eq $s_allele_verdict){
+                if(defined $h_tests_report{"fail"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} && $h_tests_report{"fail"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} eq $s_allele_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! ALLELE $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$failed_results - Doesnt match up! ALLELE $s_exp $s_id $row! $s_loc | $h_tests_report{\"fail\"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} ne $s_allele_verdict");$number_of_tests_run++;
                 }
 
-                if(defined $h_tests_report{"fail"}{$row}{$s_id}{$s_loc}{EXPECTED} && $h_tests_report{"fail"}{$row}{$s_id}{$s_loc}{EXPECTED} eq $s_expected){
+                if(defined $h_tests_report{"fail"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} && $h_tests_report{"fail"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} eq $s_expected){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! EXPECTED $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$failed_results - Doesnt match up! EXPECTED $s_exp $s_id $row! $s_loc | $h_tests_report{\"fail\"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} ne $s_expected");$number_of_tests_run++;
                 }
             }
             $row++;
@@ -409,22 +326,22 @@ sub testDOM{
             my($x,$s_id,$s_loc,$s_loc_verdict,$s_allele_verdict,$n_observed,$s_expected,$s_observed1,$s_observed2) = @data;
 
             if($row != 0){      
-                if(defined $h_tests_report{"drbx"}{$row}{$s_id}{$s_loc}{LOCUS} && $h_tests_report{"drbx"}{$row}{$s_id}{$s_loc}{LOCUS} eq $s_loc_verdict){
+                if(defined $h_tests_report{"drbx"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} && $h_tests_report{"drbx"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} eq $s_loc_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! LOCUS $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$drbx_results - Doesnt match up! LOCUS $s_exp $s_id $row! $s_loc | $h_tests_report{\"drbx\"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} ne $s_loc_verdict");$number_of_tests_run++;
                 }
 
-                if(defined $h_tests_report{"drbx"}{$row}{$s_id}{$s_loc}{ALLELE} && $h_tests_report{"drbx"}{$row}{$s_id}{$s_loc}{ALLELE} eq $s_allele_verdict){
+                if(defined $h_tests_report{"drbx"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} && $h_tests_report{"drbx"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} eq $s_allele_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! ALLELE $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$drbx_results - Doesnt match up! ALLELE $s_exp $s_id $row! $s_loc | $h_tests_report{\"drbx\"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} ne $s_allele_verdict");$number_of_tests_run++;
                 }
 
-                if(defined $h_tests_report{"drbx"}{$row}{$s_id}{$s_loc}{EXPECTED} && $h_tests_report{"drbx"}{$row}{$s_id}{$s_loc}{EXPECTED} eq $s_expected){
+                if(defined $h_tests_report{"drbx"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} && $h_tests_report{"drbx"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} eq $s_expected){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! EXPECTED $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$drbx_results - Doesnt match up! EXPECTED $s_exp $s_id $row! $s_loc | $h_tests_report{\"drbx\"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} ne $s_expected");$number_of_tests_run++;
                 }
             }
             $row++;
@@ -439,22 +356,22 @@ sub testDOM{
             my($x,$s_id,$s_loc,$s_loc_verdict,$s_allele_verdict,$n_observed,$s_expected,$s_observed1,$s_observed2) = @data;
 
             if($row != 0){      
-                if(defined $h_tests_report{"error"}{$row}{$s_id}{$s_loc}{LOCUS} && $h_tests_report{"error"}{$row}{$s_id}{$s_loc}{LOCUS} eq $s_loc_verdict){
+                if(defined $h_tests_report{"error"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} && $h_tests_report{"error"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} eq $s_loc_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! LOCUS $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$dropout_results - Doesnt match up! LOCUS $s_exp $s_id $row! $s_loc | $h_tests_report{\"error\"}{$s_exp}{$row}{$s_id}{$s_loc}{LOCUS} ne $s_loc_verdict");$number_of_tests_run++;
                 }
 
-                if(defined $h_tests_report{"error"}{$row}{$s_id}{$s_loc}{ALLELE} && $h_tests_report{"error"}{$row}{$s_id}{$s_loc}{ALLELE} eq $s_allele_verdict){
+                if(defined $h_tests_report{"error"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} && $h_tests_report{"error"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} eq $s_allele_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! ALLELE $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$dropout_results - Doesnt match up! ALLELE $s_exp $s_id $row! $s_loc | $h_tests_report{\"error\"}{$s_exp}{$row}{$s_id}{$s_loc}{ALLELE} ne $s_allele_verdict");$number_of_tests_run++;
                 }
 
-                if(defined $h_tests_report{"error"}{$row}{$s_id}{$s_loc}{EXPECTED} && $h_tests_report{"error"}{$row}{$s_id}{$s_loc}{EXPECTED} eq $s_expected){
+                if(defined $h_tests_report{"error"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} && $h_tests_report{"error"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} eq $s_expected){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! EXPECTED $row! $s_loc");$number_of_tests_run++;
+                    is(0,1,"$dropout_results - Doesnt match up! EXPECTED $s_exp $s_id $row! $s_loc | $h_tests_report{\"error\"}{$s_exp}{$row}{$s_id}{$s_loc}{EXPECTED} ne $s_expected");$number_of_tests_run++;
                 }
             }
             $row++;
@@ -474,28 +391,28 @@ sub testDOM{
                 if(defined $h_tests_qc{$s_exp}{$row}{$s_id}{QC} && $h_tests_qc{$s_exp}{$row}{$s_id}{QC} eq $qc){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! QC $row! ");$number_of_tests_run++;
+                    is(0,1,"$qc_results - Doesnt match up! QC $s_exp $s_id $row! | $h_tests_qc{$s_exp}{$row}{$s_id}{QC} ne $qc ");$number_of_tests_run++;
                 }
                 if(defined $h_tests_qc{$s_exp}{$row}{$s_id}{LOC} && $h_tests_qc{$s_exp}{$row}{$s_id}{LOC} eq $locus_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! LOC $row! ");$number_of_tests_run++;
+                    is(0,1,"$qc_results - Doesnt match up! LOC $s_exp $s_id $row! | $h_tests_qc{$s_exp}{$row}{$s_id}{LOC} ne $locus_verdict");$number_of_tests_run++;
                 }
                 if(defined $h_tests_qc{$s_exp}{$row}{$s_id}{ALLELE} && $h_tests_qc{$s_exp}{$row}{$s_id}{ALLELE} eq $allele_verdict){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! ALLELE $row! ");$number_of_tests_run++;
+                    is(0,1,"$qc_results - Doesnt match up! ALLELE $s_exp $s_id $row! | $h_tests_qc{$s_exp}{$row}{$s_id}{ALLELE} ne $allele_verdict");$number_of_tests_run++;
                 }
                
                 if(defined $h_tests_qc{$s_exp}{$row}{$s_id}{QCHAP} && $h_tests_qc{$s_exp}{$row}{$s_id}{QCHAP} eq $qc_hap){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! QCHAP $row! $qc_hap ne $h_tests_qc{$s_exp}{$row}{$s_id}{QCHAP}");$number_of_tests_run++;
+                    is(0,1,"$qc_results - Doesnt match up! QCHAP $s_exp $s_id $row! | $h_tests_qc{$s_exp}{$row}{$s_id}{QCHAP} ne $qc_hap");$number_of_tests_run++;
                 } 
                 if(defined $h_tests_qc{$s_exp}{$row}{$s_id}{EXP} && $h_tests_qc{$s_exp}{$row}{$s_id}{EXP} eq $s_e){
                     is(1,1);$number_of_tests_run++;
                 }else{
-                    is(0,1,"Doesnt match up! EXP $row! ");$number_of_tests_run++;
+                    is(0,1,"$qc_results - Doesnt match up! EXP $s_exp $s_id $row! | $h_tests_qc{$s_exp}{$row}{$s_id}{EXP} ne $s_e");$number_of_tests_run++;
                 }                              
             }
             $row++;
@@ -506,24 +423,6 @@ sub testDOM{
     }
 
 }
-
-
-sub testJs{
-
-    print STDERR `npm test &> npm.stderr`;
-    my $js_test = `cat npm.stderr`;chomp($js_test);
-    print STDERR `echo;tail -3 npm.stderr | head -1;rm npm.stderr`;
-    if($js_test =~ /PASS/){
-         is(1,1);$number_of_tests_run++;
-    }else{
-         is(1,0,"Javascript tests failed!! See npm-debug.log for details!");$number_of_tests_run++;
-    }
-
-}
-
-
-
-
 
 
 

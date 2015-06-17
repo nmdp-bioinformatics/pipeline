@@ -34,14 +34,15 @@ WriteMakefile (
       DISTNAME     => 'validation-report',
 
       EXE_FILES    => [ qw(ngs-validation-report ngs-imgt-db) ],
-      PMLIBDIRS    => [ qw(template lib) ],
+      PMLIBDIRS    => [ qw(template-files lib) ],
 
 
       PREREQ_PM => {
         "LWP::UserAgent" => 0,
         "strict" => 0,
         "warnings" => 0,
-        "Data::Dumper" => 0
+        "Data::Dumper" => 0,
+        "IO::Uncompress::AnyUncompress" => 0
       },
 
       TEST_REQUIRES => {
