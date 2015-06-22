@@ -155,7 +155,7 @@ use vars qw($VERSION $USAGE $machine $lwp $start_time $web_template $user $worki
 BEGIN{
 
 	$start_time = time;
-	$VERSION    = '1.3.0';
+	$VERSION    = '1.3.2';
 	$working    = `pwd`;chomp($working);
 	$user       = `whoami`;chomp($user);
 	$machine    = `uname`;chomp($machine);
@@ -476,7 +476,8 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 		my $s_qc_validated = defined $h_experiments{$s_exp}{QCV} ? $h_experiments{$s_exp}{QCV} : undef;
 		my $s_qc_expected  = defined $h_experiments{$s_exp}{QCE} ? $h_experiments{$s_exp}{QCE} : undef;
 		my $s_file_type    = `file $s_observed`;chomp($s_file_type); # Get observed file type
-		my $cat_type       = $s_file_type =~ /compressed/ ? "gzcat" : "cat";
+		my $cat_type       = ($s_file_type =~ /compressed/ && $machine =~ /Darwin/) ? "gzcat" : 
+			(($s_file_type =~ /compressed/ && $machine !~ /Darwin/) ? "zcat" : "cat");
 
 		my $n_cnt = 1;
 		my $pervious_locus = "";
