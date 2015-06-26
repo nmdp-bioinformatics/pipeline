@@ -258,7 +258,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		my $experiment_files = $s_directory."/".$s_experiment."*";
 		my @a_ex_files  = glob "$experiment_files";
 		my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
-		my @a_expected  = grep { $_ =~ /expected|xml/ } @a_ex_files;
+		my @a_expected  = grep { $_ =~ /expected|xml|hml/ } @a_ex_files;
 		my @a_validated  = grep { $_ =~ /validated/ } @a_ex_files;
 		$s_observed  = ($#a_observed  == 0 && defined $a_observed[0]) ? $a_observed[0]   : undef;
 		$s_expected  = ($#a_expected  == 0 && defined $a_expected[0]) ? $a_expected[0]   : undef;
@@ -275,7 +275,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
  		foreach my $s_exp (keys %h_exps){
  			my @a_ex_files  = glob "$s_directory/$s_exp*";
 			my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
-			my @a_expected  = grep { $_ =~ /expected|xml/ } @a_ex_files;
+			my @a_expected  = grep { $_ =~ /expected|xml|hml/ } @a_ex_files;
 			my @a_validated = grep { $_ =~ /validated/ } @a_ex_files;
 			$s_observed   = (defined $a_observed[0]) ? $a_observed[0] : undef;
 			$s_expected   = (defined $a_expected[0]) ? $a_expected[0] : undef;
