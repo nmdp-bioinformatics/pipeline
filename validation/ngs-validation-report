@@ -155,7 +155,7 @@ use vars qw($VERSION $USAGE $machine $lwp $start_time $web_template $user $worki
 BEGIN{
 
 	$start_time = time;
-	$VERSION    = '1.3.2';
+	$VERSION    = '1.3.3';
 	$working    = `pwd`;chomp($working);
 	$user       = `whoami`;chomp($user);
 	$machine    = `uname`;chomp($machine);
@@ -258,7 +258,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		my $experiment_files = $s_directory."/".$s_experiment."*";
 		my @a_ex_files  = glob "$experiment_files";
 		my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
-		my @a_expected  = grep { $_ =~ /expected/ } @a_ex_files;
+		my @a_expected  = grep { $_ =~ /expected|xml/ } @a_ex_files;
 		my @a_validated  = grep { $_ =~ /validated/ } @a_ex_files;
 		$s_observed  = ($#a_observed  == 0 && defined $a_observed[0]) ? $a_observed[0]   : undef;
 		$s_expected  = ($#a_expected  == 0 && defined $a_expected[0]) ? $a_expected[0]   : undef;
@@ -268,14 +268,14 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		$h_experiments{$s_experiment}{EXP} = $s_expected;
 	}else{
 		my @a_files = glob "$s_directory/*";
-		my %h_exps = map{ $_ =~ /\/(ex\d+)/; $1 => 1 } grep { $_ =~ /\/(ex\d+)/ } @a_files;
-		my @a_experiments = map{ $_ =~ /\/(ex\d+)/; $1 => 1 } grep { $_ =~ /\/(ex\d+)/ } @a_files;
+		my %h_exps = map{ $_ =~ /\/(ex\d+|\w{8}-\S{4}-\S{4}-\S{12,17})/; $1 => 1 } grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
+		my @a_experiments = map{ $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/; $1 => 1 } grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
 		my $num_experiments = keys %h_experiments;
 
  		foreach my $s_exp (keys %h_exps){
- 			my @a_ex_files  =  glob "$s_directory/$s_exp*";
+ 			my @a_ex_files  = glob "$s_directory/$s_exp*";
 			my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
-			my @a_expected  = grep { $_ =~ /expected/ } @a_ex_files;
+			my @a_expected  = grep { $_ =~ /expected|xml/ } @a_ex_files;
 			my @a_validated = grep { $_ =~ /validated/ } @a_ex_files;
 			$s_observed   = (defined $a_observed[0]) ? $a_observed[0] : undef;
 			$s_expected   = (defined $a_expected[0]) ? $a_expected[0] : undef;
@@ -309,7 +309,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 }else{
 	# If experiment name isn't provided take it from the files
 	if(!defined $s_experiment){
-		$s_validated =~ /(ex\d+)/;
+		$s_validated =~ /(ex\d+|\S{8}-\S{4}-\S{4}-\S{12})/;
 		$s_experiment = $1;
 	}
 	$h_experiments{$s_experiment}{VAL} = $s_validated;
@@ -475,9 +475,8 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 		$s_validated       = $h_experiments{$s_exp}{VAL};
 		my $s_qc_validated = defined $h_experiments{$s_exp}{QCV} ? $h_experiments{$s_exp}{QCV} : undef;
 		my $s_qc_expected  = defined $h_experiments{$s_exp}{QCE} ? $h_experiments{$s_exp}{QCE} : undef;
-		my $s_file_type    = `file $s_observed`;chomp($s_file_type); # Get observed file type
-		my $cat_type       = ($s_file_type =~ /compressed/ && $machine =~ /Darwin/) ? "gzcat" : 
-			(($s_file_type =~ /compressed/ && $machine !~ /Darwin/) ? "zcat" : "cat");
+		my $cat_type       = ($s_observed =~ /gz/ && $machine =~ /Darwin/) ? "gzcat" : 
+			(($s_observed =~ /gz/ && $machine !~ /Darwin/) ? "zcat" : "cat");
 
 		my $n_cnt = 1;
 		my $pervious_locus = "";
@@ -524,8 +523,6 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 
 				$h_sequence_data{$s_exp}{$s_id}{$s_loc}{$sequence}++;
 				$h_sequence_ids{$s_exp}{$s_id}{$s_loc}{$sequence}   = $s_id.".".$s_loc.".".$n_cnt++;
-
-				print STDERR "Observed: ",$s_exp,"\t",$s_id,"\t",$gl,"\n";
 
 				$gl =~ s/HLA-//g;
 				push(@{$h_observed_gls{$s_exp}{$s_id}{$s_loc}},$gl);
