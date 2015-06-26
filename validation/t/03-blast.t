@@ -211,7 +211,7 @@ sub testDOM{
 
         if($row != 0 && $row != 3 && $row != 6){
             foreach(@data){
-                if($_ =~ /\d(.+)\(/){
+                if($_ =~ /\d{1,2}(.+)\(/){
                     $_ =~ s/$1//;
                 }
                 $_ =~ s/\&//g;$_ =~ s/\&nbsp;\&nbsp;//g;
