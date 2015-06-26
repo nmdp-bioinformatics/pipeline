@@ -22,7 +22,7 @@
 
 =head1 AUTHOR     Mike Halagan <mhalagan@nmdp.org>
     
-    Associate Bioinformatics Scientist
+    Bioinformatics Scientist
     3001 Broadway Stree NE
     Minneapolis, MN 55413
     ext. 8225
@@ -484,12 +484,13 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 		foreach(`$cat_type $s_observed`){
 
 			chomp($_);
-			my (@a) = split(/\t/,$_);
+			
+			my (@a) = split(/\s+/,$_);
 			
 			if($#a == 1){
 				# Old format
 				if($_ !~ /HLA/){
-					my($s_id, $s_seq) = split(/\t/,$_);
+					my($s_id, $s_seq) = split(/\s+/,$_);
 					my @a_file  = split(/\//,$s_id); 
 					my @a_ID = split(/\./,$a_file[$#a_file]);
 					my $ID = $a_ID[0];
@@ -498,7 +499,7 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 					next;
 				}
 
-				my($s_id,$s_observe) = split(/\t/,$_);
+				my($s_id,$s_observe) = split(/\s+/,$_);
 				my @a_file  = split(/\//,$s_id); 
 				my @a_ID = split(/\./,$a_file[$#a_file]);
 				my $ID = $a_ID[0];
