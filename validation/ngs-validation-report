@@ -128,6 +128,15 @@
 		- Added gz test files
 		- Add ngs-imgt-db to the Makefile.PL
 
+	1.3.2 
+		- Added zcat and cat option for parsing the *.observed.gz files
+
+	1.3.3
+		- Removed the file() function so it now looks at the file ending instead
+		   * This was causing issues with nextflow because it uses symlinks
+		- Added the ability to parse UUID files
+		- Added UUID test files
+
 
 =head1 TODO
 	
@@ -150,7 +159,6 @@ use warnings;
 use Data::Dumper;
 use Getopt::Long;
 use LWP::UserAgent;
-use IO::Uncompress::AnyUncompress qw(anyuncompress $AnyUncompressError);
 use vars qw($VERSION $USAGE $machine $lwp $start_time $web_template $user $working);
 BEGIN{
 
@@ -216,10 +224,16 @@ my %h_qc_max;            # Hash of the max number of observed seqs in the qc pag
 my %h_failed_max;        # Hash of the max number of observed seqs in the failed pages 
 my %h_qc_counts;         # Hash of the consensus sequence sounts in the qc data
 my %h_failed_subjects;   # Hash of all the subjects that didn't pass at all loci
+my %h_uuid_mapping;      # Hash that maps the uuids to a submission
 my $s_subject_page = 1;  # Starting number for the subject pages
 
-our ( $s_macs_url, $s_blast_dir, $s_pop_cfg, $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_test, $b_failed, $b_forced, $b_verbose) = 
-	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0);
+# All of the Getopt options
+our ( $s_macs_url, $s_blast_dir, $s_pop_cfg, $s_title, 
+	  $s_experiment, $s_validated, $s_output, $s_expected, 
+	  $s_observed, $s_directory, $s_emails, $help, $b_test, 
+	  $b_failed, $b_forced, $b_verbose) = 
+    ( undef, undef, undef, undef, undef, undef, undef, undef, 
+      undef, undef, undef, undef, undef, undef, 0, 0);
 
 &GetOptions("experiment|x=s" => \$s_experiment, 
 			"validated|l=s"  => \$s_validated, 
@@ -253,8 +267,10 @@ $s_output    = $working if(!defined $s_output    || $s_output    !~ /\S/); # If 
 # TODO: Make this part of the process.pm so it can be externally tested
 # TODO: Allow multiple different directories to be provided
 # TODO: Allow different file name patterns than just ex(###)_
+my $b_uuid = 0;
 if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 	if(defined $s_experiment){ 
+		$b_uuid = 1 if $s_experiment !~ /expected/;
 		my $experiment_files = $s_directory."/".$s_experiment."*";
 		my @a_ex_files  = glob "$experiment_files";
 		my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
@@ -271,8 +287,8 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		my %h_exps = map{ $_ =~ /\/(ex\d+|\w{8}-\S{4}-\S{4}-\S{12,17})/; $1 => 1 } grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
 		my @a_experiments = map{ $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/; $1 => 1 } grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
 		my $num_experiments = keys %h_experiments;
-
  		foreach my $s_exp (keys %h_exps){
+ 			$b_uuid = 1 if $s_exp !~ /expected/;
  			my @a_ex_files  = glob "$s_directory/$s_exp*";
 			my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
 			my @a_expected  = grep { $_ =~ /expected|xml|hml/ } @a_ex_files;
@@ -317,6 +333,16 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 	$h_experiments{$s_experiment}{EXP} = $s_expected;
 }
 
+# Creating a mapping for a the uuids to a submission
+print STDERR "UUID: ",$b_uuid,"\n";
+if($b_uuid){
+	my $n_exp = 1;
+	foreach my $s_exp (keys %h_experiments){
+		$h_uuid_mapping{$s_exp} = "Submission".$n_exp++;
+		print STDERR "UUID Mapping: $s_exp\t$h_uuid_mapping{$s_exp}\n";
+	}
+}
+
 # Use email option or not
 my $b_email = (defined $s_emails && validEmail($s_emails)) ? 1 : 0; 
 
@@ -343,7 +369,7 @@ html::logHeader($log_html);
 html::helpHtml($help_html);
 &printParams(); # Prints out what parameters were used
 &loadFiles();   # Load all of the filles
-html::experimentsHtml($exp_html,\%h_counts,\%h_experiments);
+html::experimentsHtml($exp_html,\%h_counts,\%h_experiments,\%h_uuid_mapping);
 
 foreach my $s_exp (keys %h_experiments){
 
@@ -485,7 +511,6 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 			chomp($_);
 			
 			my (@a) = split(/\s+/,$_);
-			
 			if($#a == 1){
 				# Old format
 				if($_ !~ /HLA/){

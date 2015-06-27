@@ -713,8 +713,9 @@ sub logHeader{
 =cut
 sub experimentsHtml{
 
-  my ($html, $rh_counts, $rh_experiments, $b_verbose) = @_;
+  my ($html, $rh_counts, $rh_experiments, $rh_uuid_map, $b_verbose) = @_;
 
+  $b_verbose = 0;
   my %h_counts = %$rh_counts;
   my %h_experiments = %$rh_experiments;
 
@@ -927,7 +928,7 @@ my $table2 = qq{
   print $html $end_table;
 
   
-  ########## TABLE 1 ##########
+  ########## TABLE 2 ##########
 my $table3 = qq{
     <div class="table-responsive">
               <table class="table table-striped tablesorter" id="myTable">
@@ -990,7 +991,7 @@ my $table3 = qq{
     
   
 
- ########## TABLE 1 ##########
+ ########## TABLE 3 ##########
 my $table4 = qq{
     <div class="table-responsive">
               <table class="table table-striped tablesorter" id="myTable">
@@ -1054,7 +1055,28 @@ my $table4 = qq{
 
   print $html $end_table;
     
-  
+
+ ########## TABLE 4 ##########
+my $table5 = qq{
+    <div class="table-responsive">
+              <table class="table table-striped tablesorter" id="myTable">
+                <thead>
+                  <tr>
+                    <th>UUID</th>
+                    <th>Submission #</th>
+                  </tr>
+                </thead>
+                <tbody>
+      
+   };
+   print $html $table5;
+   foreach my $s_exp (sort keys %$rh_uuid_map){
+    print $html "\t<tr>\n";
+    print $html "\t\t<td>$s_exp</td>\n";
+    print $html "\t\t<td>$$rh_uuid_map{$s_exp}</td>\n";
+  }
+  print $html $end_table;
+
   my $charts = qq{
 
             <div class="row placeholders">  
