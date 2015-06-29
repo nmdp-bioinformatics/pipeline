@@ -338,7 +338,7 @@ print STDERR "UUID: ",$b_uuid,"\n";
 if($b_uuid){
 	my $n_exp = 1;
 	foreach my $s_exp (keys %h_experiments){
-		$h_uuid_mapping{$s_exp} = "Submission".$n_exp++;
+		$h_uuid_mapping{$s_exp} = "Submission-".$n_exp++;
 		print STDERR "UUID Mapping: $s_exp\t$h_uuid_mapping{$s_exp}\n";
 	}
 }
@@ -369,7 +369,7 @@ html::logHeader($log_html);
 html::helpHtml($help_html);
 &printParams(); # Prints out what parameters were used
 &loadFiles();   # Load all of the filles
-html::experimentsHtml($exp_html,\%h_counts,\%h_experiments,\%h_uuid_mapping);
+html::experimentsHtml($exp_html,\%h_counts,\%h_experiments,\%h_uuid_mapping,$b_uuid,$b_verbose);
 
 foreach my $s_exp (keys %h_experiments){
 
