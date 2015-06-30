@@ -63,9 +63,9 @@ use strict;
 =cut
 sub subjectsHeader{
 
-  my ( $html, $s_exp, $s_ID, $rh_qc_verdict ) = @_;
+  my ( $html, $s_exp, $s_ID, $rh_qc_verdict, $rh_uuid_map, $b_uuid ) = @_;
 
-  my $s_experiment = $s_exp;
+  my $s_experiment = $b_uuid ? $$rh_uuid_map{$s_exp} : $s_exp;
 
   my $header = qq{
     <!DOCTYPE html>
@@ -346,10 +346,10 @@ sub htmlFooter{
 =cut
 sub htmlHeader{
 
-  my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed, $s_type, $b_drbx, $b_error, $b_failed  ) = @_;
+  my ( $html, $s_exp, $rh_qc_verdict, $rh_uuid_map, $n_max_observed, $s_type, $b_drbx, $b_error, $b_failed, $b_uuid  ) = @_;
 
 
-  my $s_experiment = $s_exp;
+  my $s_experiment = $b_uuid ? $$rh_uuid_map{$s_exp} : $s_exp;
 
   my $header = qq{
     <!DOCTYPE html>
@@ -494,7 +494,7 @@ my $header2 = qq{
           </div>
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
-              <li><a href="../experiment.html">Experiments</a></li>
+              <li><a href="../experiment.html">Submissions</a></li>
               <li><a href="../log.html">Log</a></li>
               <li><a href="../help.html">Help</a></li>
             </ul>
@@ -678,7 +678,7 @@ sub logHeader{
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="experiment.html">Experiments</a></li>
+            <li><a href="experiment.html">Submissions</a></li>
             <li><a href="log.html">Log</a></li>
             <li><a href="help.html">Help</a></li>
           </ul>
@@ -823,7 +823,7 @@ my $header2 = qq{
     print $html $sidebar;
     if($b_uuid){
       foreach my $s_exp (sort keys %h_experiments){
-        print $html "<li><a href=\"".$s_exp."/index.html\">".$$rh_uuid_map{$s_exp}."</a></li>\n";
+        print $html "<li><a href=\"".$$rh_uuid_map{$s_exp}."/index.html\">".$$rh_uuid_map{$s_exp}."</a></li>\n";
       }
       print $html "</ul>\n</div>\n</div>\n";
     }else{
@@ -908,7 +908,11 @@ my $table2 = qq{
    foreach my $s_exp (sort keys %h_experiments){
 
     print $html "\t<tr>\n";
-    print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+    if($b_uuid){
+        print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+    }else{
+        print $html "\t\t<td style=\"width:200px;\">$s_exp</td>\n";
+    }
     for my $s_type (qw(SUBJECT LOCUS ALLELE)){
       for my $s_report_cde (qw(DRBX ERROR FAIL PASS)){
           $h_counts{$s_exp}{$s_type}{TOTAL}{$s_report_cde} = !defined $h_counts{$s_exp}{$s_type}{TOTAL}{$s_report_cde} ? 
@@ -973,7 +977,12 @@ my $table3 = qq{
 
    foreach my $s_exp (sort keys %h_experiments){
     print $html "\t<tr>\n";
-    print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+    
+    if($b_uuid){
+        print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+    }else{
+        print $html "\t\t<td style=\"width:200px;\">$s_exp</td>\n";
+    }
     my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
       $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
@@ -1028,7 +1037,11 @@ my $table4 = qq{
 
    foreach my $s_exp (sort keys %h_experiments){
     print $html "\t<tr>\n";
-    print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+    if($b_uuid){
+        print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+    }else{
+        print $html "\t\t<td style=\"width:200px;\">$s_exp</td>\n";
+    }
 
     $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} = defined $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} ? 0 : $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS};
 
@@ -1467,7 +1480,7 @@ sub helpHtml{
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="experiment.html">Experiments</a></li>
+            <li><a href="experiment.html">Submissions</a></li>
             <li><a href="log.html">Log</a></li>
             <li><a href="help.html">Help</a></li>
           </ul>
@@ -1732,9 +1745,10 @@ font-color:black;
 =cut
 sub indexHeader{
 
-  my ($html, $s_exp, $rh_qc_verdict, $b_drbx, $b_error, $b_failed) = @_;
+  my ($html, $s_exp, $rh_qc_verdict, $rh_uuid_map, $b_drbx, $b_error, $b_failed, $b_uuid) = @_;
 
-  my $s_experiment = $s_exp;
+  my $s_experiment = $b_uuid ? $$rh_uuid_map{$s_exp} : $s_exp;
+
   my $header = 
     qq{
 <!DOCTYPE html>
@@ -1814,7 +1828,7 @@ sub indexHeader{
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="../experiment.html">Experiments</a></li>
+            <li><a href="../experiment.html">Submissions</a></li>
             <li><a href="../log.html">Log</a></li>
             <li><a href="../help.html">Help</a></li>
           </ul>
@@ -2822,7 +2836,7 @@ my $header2 = qq{
           </div>
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
-              <li><a href="../experiment.html">Experiments</a></li>
+              <li><a href="../experiment.html">Submissions</a></li>
               <li><a href="../log.html">Log</a></li>
               <li><a href="../help.html">Help</a></li>
             </ul>

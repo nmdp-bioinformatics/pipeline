@@ -84,7 +84,7 @@ my $number_of_tests_run = 0; # Number of tests run
 my $file_ending = $perl_v > 5.016002 ? "5.18" : "5.16";
 
 my $experiment_file  = $working."/report/experiment.html";
-my @a_directories    = split(/,/,"report,report/css,report/0cbdf011-79d7-4a36-897e-4fa4c17ec43c,report/img,report/js");
+my @a_directories    = split(/,/,"report,report/css,report/Submission-1,report/img,report/js");
 
 # Load the expected results
 my %h_tests_report;
@@ -100,35 +100,7 @@ while(<$test_results>){
 }
 close $test_results;
 
-# Load the expected experiment results
-my %h_tests_experiment;
-my $s_test_experiment_cfg = $working."/t/cfg/dom_experiment-uuid.cfg";
-open(my $test_experiment,"<",$s_test_experiment_cfg) or die "CANT OPEN FILE $! $0";
-while(<$test_experiment>){
-    chomp;
-    my($s_row,$experiment,$exp,$num,$n_pass,$per_pass,$n_fail,$per_fail,$n_drop,$per_drop,$n_drbx,$per_drbx) = split(/,/,$_);
-    
-    #8,experiment,ex1,20,1,80.0%,2,10.0%,2,10.0%
-    foreach($n_pass,$n_fail,$n_drop,$n_drbx){
-        $_ = !defined $_ || $_ !~ /\S/ ? 0 : $_;
-    }
-
-    $h_tests_experiment{$s_row}{$exp}{TOTAL}   = $num;
-    $h_tests_experiment{$s_row}{$exp}{PASS}    = $n_pass;
-    $h_tests_experiment{$s_row}{$exp}{PERPAS}  = $per_pass;
-    $h_tests_experiment{$s_row}{$exp}{FAIL}    = $n_fail;
-    $h_tests_experiment{$s_row}{$exp}{PERFAIL} = $per_fail;
-    $h_tests_experiment{$s_row}{$exp}{DROP}    = $n_drop; 
-    $h_tests_experiment{$s_row}{$exp}{PERDROP} = $per_drop; 
-    $h_tests_experiment{$s_row}{$exp}{DRBX}    = $n_drbx; 
-    $h_tests_experiment{$s_row}{$exp}{PERDRBX} = $per_drbx;         
-
-}
-close $test_experiment;
-
-
-
-my @a_files = split(/,/,"report/experiment.html,report/help.html,report/log.html,report/0cbdf011-79d7-4a36-897e-4fa4c17ec43c/drbx.html,report/0cbdf011-79d7-4a36-897e-4fa4c17ec43c/errors.html,report/0cbdf011-79d7-4a36-897e-4fa4c17ec43c/fails.html,report/0cbdf011-79d7-4a36-897e-4fa4c17ec43c/index.html,report/0cbdf011-79d7-4a36-897e-4fa4c17ec43c/results.html");
+my @a_files = split(/,/,"report/experiment.html,report/help.html,report/log.html,report/Submission-1/drbx.html,report/Submission-1/errors.html,report/Submission-1/fails.html,report/Submission-1/index.html,report/Submission-1/results.html");
 
 # Testing that it works with uuids
 print `./ngs-validation-report -d t/uuid -f -t 1`;
@@ -150,7 +122,7 @@ foreach my $s_file (@a_files){
 }
 
 &testDOM();
-#print `rm -R report`;
+print `rm -R report`;
 
 
 done_testing( $number_of_tests_run );
@@ -158,81 +130,7 @@ done_testing( $number_of_tests_run );
 sub testDOM{
 
     my $row=0;
-    my $tree_experiment = HTML::TreeBuilder->new;
-    $tree_experiment->parse_file($experiment_file);
-    foreach my $tr ($tree_experiment->find('tr')) {
-        my @td   = $tr->find('td');
-        my @data = map($_->as_text, @td);
-
-        if($row != 0 && $row != 3 && $row != 6){
-            foreach(@data){
-                if($_ =~ /\d{1,2}(.+)\(/){
-                    $_ =~ s/$1//;
-                }
-                $_ =~ s/\&//g;$_ =~ s/\&nbsp;\&nbsp;//g;
-                $_ =~ s/\s//g;$_ =~ s/ //g;
-            }
-            my($exp,$num,$passed,$failed,$dropout,$drbx) = @data;
-            my($n_pass,$per_pass) = split(/\(/,$passed);$per_pass =~ s/\)//;
-            my($n_fail,$per_fail) = split(/\(/,$failed);$per_fail =~ s/\)//;
-            my($n_drop,$per_drop) = split(/\(/,$dropout);$per_drop =~ s/\)//;
-            my($n_drbx,$per_drbx) = split(/\(/,$drbx);$per_drbx =~ s/\)//;
-            
-            foreach($n_pass,$n_fail,$n_drop,$n_drbx){
-                $_ = !defined $_ || $_ !~ /\S/ ? 0 : $_;
-            }
-
-            if(defined $h_tests_experiment{$row}{$exp}{TOTAL} && $h_tests_experiment{$row}{$exp}{TOTAL} eq $num){
-                is(1,1);$number_of_tests_run++;
-            }else{
-                is(0,1,"experiment.html - Doesnt match up! TOTAL $row! $exp | $h_tests_experiment{$row}{$exp}{TOTAL} eq $num ");$number_of_tests_run++;
-            }
-            if(defined $h_tests_experiment{$row}{$exp}{PASS} && $h_tests_experiment{$row}{$exp}{PASS} eq $n_pass){
-                is(1,1);$number_of_tests_run++;
-            }else{
-                is(0,1,"experiment.html - Doesnt match up! PASS $row! $exp $n_pass | $h_tests_experiment{$row}{$exp}{PASS} eq $n_pass");$number_of_tests_run++;
-            }
-            if(defined $h_tests_experiment{$row}{$exp}{PERPAS} && $h_tests_experiment{$row}{$exp}{PERPAS} eq $per_pass){
-                is(1,1);$number_of_tests_run++;
-            }else{
-                is(0,1,"experiment.html - Doesnt match up! PERPAS $row! $exp $per_pass | $h_tests_experiment{$row}{$exp}{PERPAS} eq $per_pass");$number_of_tests_run++;
-            }
-            if(defined $h_tests_experiment{$row}{$exp}{FAIL} && $h_tests_experiment{$row}{$exp}{FAIL} eq $n_fail){
-                is(1,1);$number_of_tests_run++;
-            }else{
-                is(0,1,"experiment.html - Doesnt match up! FAIL $row! $exp | $h_tests_experiment{$row}{$exp}{FAIL} eq $n_fail");$number_of_tests_run++;
-            }
-            if(defined $h_tests_experiment{$row}{$exp}{PERFAIL} && $h_tests_experiment{$row}{$exp}{PERFAIL} eq $per_fail){
-                is(1,1);$number_of_tests_run++;
-            }else{
-                is(0,1,"experiment.html - Doesnt match up! PERFAIL $row! $exp | $h_tests_experiment{$row}{$exp}{PERFAIL} eq $per_fail");$number_of_tests_run++;
-            }        
-            if(defined $h_tests_experiment{$row}{$exp}{DROP} && $h_tests_experiment{$row}{$exp}{DROP} eq $n_drop){
-                is(1,1);$number_of_tests_run++;
-            }else{
-                is(0,1,"experiment.html - Doesnt match up! DROP $row! $exp | $h_tests_experiment{$row}{$exp}{DROP} eq $n_drop");$number_of_tests_run++;
-            }
-            if(defined $h_tests_experiment{$row}{$exp}{PERDROP} && $h_tests_experiment{$row}{$exp}{PERDROP} eq $per_drop){
-                is(1,1);$number_of_tests_run++;
-            }else{
-                is(0,1,"experiment.html - Doesnt match up! PERDROP $row! $exp | $h_tests_experiment{$row}{$exp}{PERDROP} eq $per_drop");$number_of_tests_run++;
-            } 
-            if(defined $h_tests_experiment{$row}{$exp}{DRBX} && $h_tests_experiment{$row}{$exp}{DRBX} eq $n_drbx){
-                is(1,1);$number_of_tests_run++;
-            }else{
-                is(0,1,"experiment.html - Doesnt match up! DRBX $row! $exp | $h_tests_experiment{$row}{$exp}{DRBX} ne $n_drbx");$number_of_tests_run++;
-            }
-            if(defined $h_tests_experiment{$row}{$exp}{PERDRBX} && $h_tests_experiment{$row}{$exp}{PERDRBX} eq $per_drbx){
-                is(1,1);$number_of_tests_run++;
-            }else{
-                is(0,1,"experiment.html - Doesnt match up! PERDRBX $row! $exp | $h_tests_experiment{$row}{$exp}{PERDRBX} eq $per_drbx");$number_of_tests_run++;
-            }  
-        }
-
-        $row++;
-    }
-
-    my @a_experiments    = ("0cbdf011-79d7-4a36-897e-4fa4c17ec43c","676cce41-1511-48e0-aa40-4a480d0a7198");
+    my @a_experiments    = ("Submission-1","Submission-2");
     foreach my $s_exp (@a_experiments){
 
         my $html_results     = $working."/report/".$s_exp."/results.html";

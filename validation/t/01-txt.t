@@ -174,7 +174,7 @@ foreach my $s_file (@a_files){
     }
 }
 &testDOM();
-print `rm -R report`;
+#print `rm -R report`;
 
 
 done_testing( $number_of_tests_run );
