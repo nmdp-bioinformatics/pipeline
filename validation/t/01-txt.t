@@ -9,7 +9,7 @@
 
 =head1 AUTHOR     Mike Halagan <mhalagan@nmdp.org>
     
-    Associate Bioinformatics Scientist
+    Bioinformatics Scientist
     3001 Broadway Stree NE
     Minneapolis, MN 55413
     ext. 8225
@@ -174,7 +174,7 @@ foreach my $s_file (@a_files){
     }
 }
 &testDOM();
-print `rm -R report`;
+#print `rm -R report`;
 
 
 done_testing( $number_of_tests_run );

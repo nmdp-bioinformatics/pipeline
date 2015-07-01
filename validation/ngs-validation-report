@@ -128,6 +128,18 @@
 		- Added gz test files
 		- Add ngs-imgt-db to the Makefile.PL
 
+	1.3.2 
+		- Added zcat and cat option for parsing the *.observed.gz files
+
+	1.3.3
+		- Removed the file() function so it now looks at the file ending instead
+		   * This was causing issues with nextflow because it uses symlinks
+		- Added the ability to parse UUID files
+		- Added UUID test files
+
+	1.3.4
+		- Added the ability to print out the failed and passed subjects
+		- Added a mapping table for when there are uuids
 
 =head1 TODO
 	
@@ -150,12 +162,11 @@ use warnings;
 use Data::Dumper;
 use Getopt::Long;
 use LWP::UserAgent;
-use IO::Uncompress::AnyUncompress qw(anyuncompress $AnyUncompressError);
 use vars qw($VERSION $USAGE $machine $lwp $start_time $web_template $user $working);
 BEGIN{
 
 	$start_time = time;
-	$VERSION    = '1.3.3';
+	$VERSION    = '1.4.0';
 	$working    = `pwd`;chomp($working);
 	$user       = `whoami`;chomp($user);
 	$machine    = `uname`;chomp($machine);
@@ -216,10 +227,17 @@ my %h_qc_max;            # Hash of the max number of observed seqs in the qc pag
 my %h_failed_max;        # Hash of the max number of observed seqs in the failed pages 
 my %h_qc_counts;         # Hash of the consensus sequence sounts in the qc data
 my %h_failed_subjects;   # Hash of all the subjects that didn't pass at all loci
+my %h_passed_subjects;   # Hash of all the subjects that passed at all loci
+my %h_uuid_mapping;      # Hash that maps the uuids to a submission
 my $s_subject_page = 1;  # Starting number for the subject pages
 
-our ( $s_macs_url, $s_blast_dir, $s_pop_cfg, $s_title, $s_experiment, $s_validated, $s_output, $s_expected, $s_observed, $s_directory, $s_emails, $help, $b_test, $b_failed, $b_forced, $b_verbose) = 
-	(undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, 0, 0);
+# All of the Getopt options
+our ( $s_macs_url, $s_blast_dir, $s_pop_cfg, $s_title, 
+	  $s_experiment, $s_validated, $s_output, $s_expected, 
+	  $s_observed, $s_directory, $s_emails, $help, $b_test, 
+	  $b_failed, $b_forced, $b_verbose) = 
+    ( undef, undef, undef, undef, undef, undef, undef, undef, 
+      undef, undef, undef, undef, undef, undef, 0, 0);
 
 &GetOptions("experiment|x=s" => \$s_experiment, 
 			"validated|l=s"  => \$s_validated, 
@@ -253,8 +271,10 @@ $s_output    = $working if(!defined $s_output    || $s_output    !~ /\S/); # If 
 # TODO: Make this part of the process.pm so it can be externally tested
 # TODO: Allow multiple different directories to be provided
 # TODO: Allow different file name patterns than just ex(###)_
+my $b_uuid = 0;
 if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 	if(defined $s_experiment){ 
+		$b_uuid = 1 if $s_experiment !~ /expected/;
 		my $experiment_files = $s_directory."/".$s_experiment."*";
 		my @a_ex_files  = glob "$experiment_files";
 		my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
@@ -271,16 +291,15 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		my %h_exps = map{ $_ =~ /\/(ex\d+|\w{8}-\S{4}-\S{4}-\S{12,17})/; $1 => 1 } grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
 		my @a_experiments = map{ $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/; $1 => 1 } grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
 		my $num_experiments = keys %h_experiments;
-
  		foreach my $s_exp (keys %h_exps){
  			my @a_ex_files  = glob "$s_directory/$s_exp*";
 			my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
 			my @a_expected  = grep { $_ =~ /expected|xml|hml/ } @a_ex_files;
 			my @a_validated = grep { $_ =~ /validated/ } @a_ex_files;
-			$s_observed   = (defined $a_observed[0]) ? $a_observed[0] : undef;
-			$s_expected   = (defined $a_expected[0]) ? $a_expected[0] : undef;
+			$s_observed   = (defined $a_observed[0]) ? $a_observed[0]   : undef;
+			$s_expected   = (defined $a_expected[0]) ? $a_expected[0]   : undef;
 			$s_validated  = (defined $a_validated[0]) ? $a_validated[0] : undef;
-
+			$b_uuid = 1 if $s_expected !~ /expected/;
 			if(defined $a_validated[1]){ # Getting the QC validated files if present
 				my $s_qc_validated = $a_validated[0] =~ /sbt/ ? $a_validated[0] : 
 					($a_validated[1] =~ /sbt/ ? $a_validated[1] : undef);
@@ -288,7 +307,6 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 					($a_validated[1] =~ /ngsp/ ? $a_validated[1] : undef);
 				$h_experiments{$s_exp}{VAL} = $s_ngsp_validated;
 				$h_experiments{$s_exp}{QCV} = $s_qc_validated;
-
 			}else{
 				$h_experiments{$s_exp}{VAL} = $s_validated;
 			}
@@ -317,6 +335,15 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 	$h_experiments{$s_experiment}{EXP} = $s_expected;
 }
 
+# Creating a mapping for a the uuids to a submission
+if($b_uuid){
+	my $n_exp = 1;
+	foreach my $s_exp (keys %h_experiments){
+		$h_uuid_mapping{$s_exp} = "Submission-".$n_exp++;
+		print STDERR "UUID Mapping: $s_exp\t$h_uuid_mapping{$s_exp}\n" if $b_verbose;
+	}
+}
+
 # Use email option or not
 my $b_email = (defined $s_emails && validEmail($s_emails)) ? 1 : 0; 
 
@@ -343,17 +370,17 @@ html::logHeader($log_html);
 html::helpHtml($help_html);
 &printParams(); # Prints out what parameters were used
 &loadFiles();   # Load all of the filles
-html::experimentsHtml($exp_html,\%h_counts,\%h_experiments);
+html::experimentsHtml($exp_html,\%h_counts,\%h_experiments,\%h_uuid_mapping,$b_uuid,$b_verbose);
 
 foreach my $s_exp (keys %h_experiments){
 
-	my $experiment_dir = $report_directory."/".$s_exp;
-	my $report_index   = $report_directory."/".$s_exp."/index.html";
-	my $results_index  = $report_directory."/".$s_exp."/results.html";
-	my $failed_index   = $report_directory."/".$s_exp."/fails.html";
-	my $drbx_index     = $report_directory."/".$s_exp."/drbx.html";
-	my $errors_index   = $report_directory."/".$s_exp."/errors.html";
-	my $qc_index       = $report_directory."/".$s_exp."/qc.html";
+	my $experiment_dir = $b_uuid ? $report_directory."/".$h_uuid_mapping{$s_exp} : $report_directory."/".$s_exp;
+	my $report_index   = $experiment_dir."/index.html";
+	my $results_index  = $experiment_dir."/results.html";
+	my $failed_index   = $experiment_dir."/fails.html";
+	my $drbx_index     = $experiment_dir."/drbx.html";
+	my $errors_index   = $experiment_dir."/errors.html";
+	my $qc_index       = $experiment_dir."/qc.html";
 	print `mkdir $experiment_dir`;
 
 	my %counts         = %{$h_counts{$s_exp}};           # Counts for the $s_exp experiment
@@ -387,14 +414,14 @@ foreach my $s_exp (keys %h_experiments){
 
 	# Creating the index.html file
 	open(my $index_html,">",$report_index) or die "CANT OPEN FILE $! $0";
-	html::indexHeader($index_html, $s_exp, \%h_qc_verdict, $b_drbx, $b_error, $b_fail);
+	html::indexHeader($index_html, $s_exp, \%h_qc_verdict, \%h_uuid_mapping, $b_drbx, $b_error, $b_fail, $b_uuid);
 	html::indexBody($index_html, \%counts, \%sensitivity) if !$b_test;
 	html::indexFooter($index_html);
 	close $index_html;
 
 	# Creating the results.html file
 	open(my $results_html,">",$results_index) or die "CANT OPEN FILE $! $0";
-	html::htmlHeader($results_html, $s_exp, \%h_qc_verdict, $max_results, "results", $b_drbx, $b_error, $b_fail);
+	html::htmlHeader($results_html, $s_exp, \%h_qc_verdict, \%h_uuid_mapping, $max_results, "results", $b_drbx, $b_error, $b_fail, $b_uuid);
 	html::resultsBody($results_html, $s_exp, \%loc_verdict, \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%error, \%consensus);
 	html::htmlFooter($results_html);
 	close $results_html;
@@ -402,7 +429,7 @@ foreach my $s_exp (keys %h_experiments){
 	# Creating the failed.html file
 	if($b_fail){
 		open(my $failed_html,">",$failed_index) or die "CANT OPEN FILE $! $0";
-		html::htmlHeader($failed_html, $s_exp, \%h_qc_verdict, $max_failed, "failed", $b_drbx, $b_error, $b_fail);
+		html::htmlHeader($failed_html, $s_exp, \%h_qc_verdict, \%h_uuid_mapping, $max_failed, "failed", $b_drbx, $b_error, $b_fail, $b_uuid);
 		html::failedBody($failed_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%fail, \%consensus);
 		html::htmlFooter($failed_html);
 		close $failed_html;
@@ -411,7 +438,7 @@ foreach my $s_exp (keys %h_experiments){
 	# Creating the drbx.html file
 	if($b_drbx){
 		open(my $drbx_html,">",$drbx_index) or die "CANT OPEN FILE $! $0";
-		html::htmlHeader($drbx_html, $s_exp, \%h_qc_verdict, $max_drbx, "drbx", $b_drbx, $b_error, $b_fail);
+		html::htmlHeader($drbx_html, $s_exp, \%h_qc_verdict, \%h_uuid_mapping, $max_drbx, "drbx", $b_drbx, $b_error, $b_fail, $b_uuid);
 		html::drbxBody($drbx_html, $s_exp, \%loc_verdict,  \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%drbx, \%consensus);
 		html::htmlFooter($drbx_html);
 		close $drbx_html;
@@ -420,7 +447,7 @@ foreach my $s_exp (keys %h_experiments){
 	# Creating the errors.html file
 	if($b_error){
 		open(my $errors_html,">",$errors_index) or die "CANT OPEN FILE $! $0";
-		html::htmlHeader($errors_html, $s_exp, \%h_qc_verdict, $max_errors, "error", $b_drbx, $b_error, $b_fail);
+		html::htmlHeader($errors_html, $s_exp, \%h_qc_verdict, \%h_uuid_mapping, $max_errors, "error", $b_drbx, $b_error, $b_fail, $b_uuid);
 		html::errorsBody($errors_html, $s_exp, \%loc_verdict, \%qc_verdict, \%qc_expected, \%verified, \%observed, \%subject, \%error, \%consensus);
 		html::htmlFooter($errors_html);
 		close $errors_html;
@@ -435,14 +462,14 @@ foreach my $s_exp (keys %h_experiments){
 		close $qc_html;
 	}
 
-	my $subject_dir = $s_output."/".$s_title."/".$s_exp."/subjects";
+	my $subject_dir = $experiment_dir."/subjects";
 	print `mkdir $subject_dir`;
 
 	# Creating all of the subjects html files
 	foreach my $s_ID (keys %{$h_subject_pages{$s_exp}}){
-		my $subject_page = $s_output."/".$s_title."/".$s_exp."/subjects/subject".$h_subject_pages{$s_exp}{$s_ID}.".html";
+		my $subject_page = $experiment_dir."/subjects/subject".$h_subject_pages{$s_exp}{$s_ID}.".html";
 		open(my $subject_html,">",$subject_page) or die "CANT OPEN FILE $! $0";
-		html::subjectsHeader($subject_html, $s_exp,  $s_ID, \%h_qc_verdict);
+		html::subjectsHeader($subject_html, $s_exp,  $s_ID, \%h_qc_verdict, \%h_uuid_mapping, $b_uuid);
 		html::subjectsBody($subject_html, $s_exp, $s_ID, $s_blast_dir, \%loc_verdict, \%qc_verdict, \%qc_expected, \%expected, \%observed, \%seq, \%seqids );
 		html::htmlFooter($subject_html);
 		close $subject_html;
@@ -453,7 +480,7 @@ foreach my $s_exp (keys %h_experiments){
 
 html::logFooter($log_html); # Print out the log HTML file footer
 &emailReport($s_emails) if $b_email; # Email out the report if emails are provided
-&failedSubjects()       if defined $b_failed;
+&validatedSubjects()    if defined $b_failed;
 print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
 
 ################################################################################################################
@@ -485,7 +512,6 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 			chomp($_);
 			
 			my (@a) = split(/\s+/,$_);
-			
 			if($#a == 1){
 				# Old format
 				if($_ !~ /HLA/){
@@ -909,6 +935,7 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 			# Counting up the subject pass, fail, drbx, and errors
 			if($loc_cnt == $num_typs && $n_error == 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}++;
+				$h_passed_subjects{$s_exp}{$s_ID}++;
 			}elsif($loc_cnt != 5 && $n_error == 0 && $n_drbx == 0 && $n_fail != 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}++;
 				$h_failed_subjects{$s_exp}{$s_ID}++;
@@ -1075,21 +1102,30 @@ sub validEmail{
 
 }
 ################################################################################################################
-=head2 failedSubjects
+=head2 validatedSubjects
 
-	Title:     failedSubjects
-	Usage:     failedSubjects()
+	Title:     validatedSubjects
+	Usage:     validatedSubjects()
 	Function:  
 	Returns:   
 	Args:      
 
 =cut
-sub failedSubjects{
+sub validatedSubjects{
 
+	open(my $fh_failed,">","failedSubjects.csv") or die "CANT OPEN FILE $! $0";
 	foreach my $s_exp (keys %h_failed_subjects){
 		foreach my $s_id (keys %{$h_failed_subjects{$s_exp}}){
 			my ($ID,$x) = split(/_/,$s_id);
-			print $s_exp,",",$ID,"\n";
+			print $fh_failed $s_exp,",",$ID,"\n";
+		}
+	}
+
+	open(my $fh_passed,">","passedSubjects.csv") or die "CANT OPEN FILE $! $0";
+	foreach my $s_exp (keys %h_passed_subjects){
+		foreach my $s_id (keys %{$h_passed_subjects{$s_exp}}){
+			my ($ID,$x) = split(/_/,$s_id);
+			print $fh_passed $s_exp,",",$ID,",PASS\n";
 		}
 	}
 

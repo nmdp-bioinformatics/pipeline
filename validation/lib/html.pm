@@ -63,9 +63,9 @@ use strict;
 =cut
 sub subjectsHeader{
 
-  my ( $html, $s_exp, $s_ID, $rh_qc_verdict ) = @_;
+  my ( $html, $s_exp, $s_ID, $rh_qc_verdict, $rh_uuid_map, $b_uuid ) = @_;
 
-  my $s_experiment = $s_exp;
+  my $s_experiment = $b_uuid ? $$rh_uuid_map{$s_exp} : $s_exp;
 
   my $header = qq{
     <!DOCTYPE html>
@@ -346,10 +346,10 @@ sub htmlFooter{
 =cut
 sub htmlHeader{
 
-  my ( $html, $s_exp, $rh_qc_verdict, $n_max_observed, $s_type, $b_drbx, $b_error, $b_failed  ) = @_;
+  my ( $html, $s_exp, $rh_qc_verdict, $rh_uuid_map, $n_max_observed, $s_type, $b_drbx, $b_error, $b_failed, $b_uuid  ) = @_;
 
 
-  my $s_experiment = $s_exp;
+  my $s_experiment = $b_uuid ? $$rh_uuid_map{$s_exp} : $s_exp;
 
   my $header = qq{
     <!DOCTYPE html>
@@ -494,7 +494,7 @@ my $header2 = qq{
           </div>
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
-              <li><a href="../experiment.html">Experiments</a></li>
+              <li><a href="../experiment.html">Submissions</a></li>
               <li><a href="../log.html">Log</a></li>
               <li><a href="../help.html">Help</a></li>
             </ul>
@@ -678,7 +678,7 @@ sub logHeader{
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="experiment.html">Experiments</a></li>
+            <li><a href="experiment.html">Submissions</a></li>
             <li><a href="log.html">Log</a></li>
             <li><a href="help.html">Help</a></li>
           </ul>
@@ -711,10 +711,12 @@ sub logHeader{
   Args:
 
 =cut
-sub experimentsHtml{
+sub experimentsHtml{ 
 
-  my ($html, $rh_counts, $rh_experiments, $b_verbose) = @_;
+  my ($html, $rh_counts, $rh_experiments, $rh_uuid_map, $b_uuid, $b_verbose) = @_;
 
+
+  $b_verbose = 0;
   my %h_counts = %$rh_counts;
   my %h_experiments = %$rh_experiments;
 
@@ -801,7 +803,7 @@ my $header2 = qq{
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="experiment.html">Experiments</a></li>
+            <li><a href="experiment.html">Submissions</a></li>
             <li><a href="log.html">Log</a></li>
             <li><a href="help.html">Help</a></li>
           </ul>
@@ -819,11 +821,17 @@ my $header2 = qq{
           <ul class="nav nav-sidebar">
     };
     print $html $sidebar;
-    foreach my $s_exp (sort keys %h_experiments){
-      print $html "<li><a href=\"".$s_exp."/index.html\">".$s_exp."</a></li>\n";
+    if($b_uuid){
+      foreach my $s_exp (sort keys %h_experiments){
+        print $html "<li><a href=\"".$$rh_uuid_map{$s_exp}."/index.html\">".$$rh_uuid_map{$s_exp}."</a></li>\n";
+      }
+      print $html "</ul>\n</div>\n</div>\n";
+    }else{
+      foreach my $s_exp (sort keys %h_experiments){
+        print $html "<li><a href=\"".$s_exp."/index.html\">".$s_exp."</a></li>\n";
+      }
+      print $html "</ul>\n</div>\n</div>\n";
     }
-    print $html "</ul>\n</div>\n</div>\n";
-  
 
       my $table = qq{
           <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
@@ -837,7 +845,7 @@ my $header2 = qq{
                   </ul>
                 </div>
               </div>
-            <h1 class="page-header">Experiments</h1>  
+            <h1 class="page-header">Submissions</h1>  
    };
    print $html $table;
 
@@ -850,14 +858,41 @@ my $header2 = qq{
 
      };
 
+if($b_uuid){
+
+   ########## TABLE 4 ##########
+  my $table5 = qq{
+      <div class="table-responsive">
+                <table style="width: 650px;" class="table table-striped tablesorter" id="myTable">
+                  <thead>
+                    <tr>
+                      <th>Submission ID</th>
+                      <th>UUID</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+        
+     };
+     print $html $table5;
+     foreach my $s_exp (sort keys %$rh_uuid_map){
+      print $html "\t<tr>\n";
+      print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+      print $html "\t\t<td style=\"width:400px;\">$s_exp</td>\n";
+
+    }
+    print $html $end_table;
+}
+
+
+
 
 ########## TABLE 1 ##########
 my $table2 = qq{
     <div class="table-responsive">
-              <table class="table table-striped tablesorter" id="myTable">
+              <table style="border-collapse: collapse;"  class="table table-striped tablesorter" id="myTable">
                 <thead>
                   <tr>
-                    <th>Experiment</th>
+                    <th>Submission ID</th>
                     <th># of subjects</th>
                     <th>Passed Subjects</th>
                     <th>Failed Subjects</th>
@@ -871,8 +906,13 @@ my $table2 = qq{
    print $html $table2;
 
    foreach my $s_exp (sort keys %h_experiments){
+
     print $html "\t<tr>\n";
-    print $html "\t\t<td>$s_exp</td>\n";
+    if($b_uuid){
+        print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+    }else{
+        print $html "\t\t<td style=\"width:200px;\">$s_exp</td>\n";
+    }
     for my $s_type (qw(SUBJECT LOCUS ALLELE)){
       for my $s_report_cde (qw(DRBX ERROR FAIL PASS)){
           $h_counts{$s_exp}{$s_type}{TOTAL}{$s_report_cde} = !defined $h_counts{$s_exp}{$s_type}{TOTAL}{$s_report_cde} ? 
@@ -889,37 +929,26 @@ my $table2 = qq{
     my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
       $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} + $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX};  
 
-    print $html "\t\t<td>$total_subjects</td>\n";
+    print $html "\t\t<td style=\"width:200px;\">$total_subjects</td>\n";
 
-    if($total_subjects == 0){ 
-      print $s_exp," WFT!\n";
-      print STDERR Dumper(%h_counts),"\n";
-      exit;
-    }
     #####  Subjects #####
     my $percent_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} / $total_subjects) * 100))."%)";
-    print STDERR "------\n" if $b_verbose;
-    print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed,"\n"if $b_verbose;
     $percent_passed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$percent_passed : $percent_passed;
-    print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed."</td>\n";
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}." ".$percent_passed."</td>\n";
 
     my $percent_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} / $total_subjects) * 100))."%)";
-    print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed,"\n" if $b_verbose;
     $percent_failed = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$percent_failed : $percent_failed;
-    print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed."</td>\n";
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL}." ".$percent_failed."</td>\n";
 
     my $percent_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} / $total_subjects) * 100))."%)";
-    print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}."&nbsp;&nbsp;".$percent_error,"\n" if $b_verbose;
     $percent_error = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}) == 1 ? " ".$percent_error : $percent_error;
-    print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}." ".$percent_error."</td>\n";
-    print STDERR "------\n" if $b_verbose;
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR}." ".$percent_error."</td>\n";
+
 
     my $percent_drbx = "(".sprintf("%2.1f",(($h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX} / $total_subjects) * 100))."%)";
-    print STDERR "DRBX: ",$s_exp,"\t",$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}."&nbsp;&nbsp;".$percent_drbx,"\n" if $b_verbose;
     $percent_drbx = length($h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}) == 1 ? " ".$percent_drbx : $percent_drbx;
-    print $html "\t\t<td>".$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}." ".$percent_drbx."</td>\n";
-    print STDERR "------\n" if $b_verbose;
-  
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX}." ".$percent_drbx."</td>\n";
+
 
    }
 
@@ -927,13 +956,13 @@ my $table2 = qq{
   print $html $end_table;
 
   
-  ########## TABLE 1 ##########
+  ########## TABLE 2 ##########
 my $table3 = qq{
     <div class="table-responsive">
-              <table class="table table-striped tablesorter" id="myTable">
+              <table style="border-collapse: collapse;" class="table table-striped tablesorter" id="myTable">
                 <thead>
                   <tr>
-                    <th>Experiment</th>
+                    <th>Submission ID</th>
                     <th># of Loci</th>
                     <th>Passed Locus</th>
                     <th>Failed Locus</th>
@@ -948,7 +977,12 @@ my $table3 = qq{
 
    foreach my $s_exp (sort keys %h_experiments){
     print $html "\t<tr>\n";
-    print $html "\t\t<td>$s_exp</td>\n";
+    
+    if($b_uuid){
+        print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+    }else{
+        print $html "\t\t<td style=\"width:200px;\">$s_exp</td>\n";
+    }
     my $total_subjects = $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} +
       $h_counts{$s_exp}{SUBJECT}{TOTAL}{FAIL} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{ERROR} + $h_counts{$s_exp}{SUBJECT}{TOTAL}{DRBX};;
 
@@ -958,45 +992,37 @@ my $table3 = qq{
     my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
       $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} + $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX};  
 
-    print $html "\t\t<td>$total_loci</td>\n";
+    print $html "\t\t<td style=\"width:200px;\">$total_loci</td>\n";
 
     #####  Locus #####
     my $loci_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS} / $total_loci) * 100))."%)";
-    print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed,"\n" if $b_verbose;
     $loci_passed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$loci_passed : $loci_passed;
-    print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
 
     my $loci_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL} / $total_loci) * 100))."%)";
-    print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed,"\n" if $b_verbose;
     $loci_failed = length($h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$loci_failed : $loci_failed;
-    print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{LOCUS}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
 
     my $loci_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR} / $total_loci) * 100))."%)";
-    print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error,"\n" if $b_verbose;
     $loci_error = length($h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}) == 1 ? "&nbsp;&nbsp;".$loci_error : $loci_error;
-    print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
-    print STDERR "------\n" if $b_verbose;
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{LOCUS}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
 
     my $loci_drbx = "(".sprintf("%2.1f",(($h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX} / $total_loci) * 100))."%)";
-    print STDERR "DRBX: ",$s_exp,"\t",$h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}." ".$loci_drbx,"\n" if $b_verbose;
     $loci_drbx = length($h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}) == 1 ? "&nbsp;&nbsp;".$loci_drbx : $loci_drbx;
-    print $html "\t\t<td>".$h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}." ".$loci_drbx."</td>\n";
-    print STDERR "------\n" if $b_verbose;
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}." ".$loci_drbx."</td>\n";
 
    }
-
-
-  print $html $end_table;
+   print $html $end_table;
     
   
 
- ########## TABLE 1 ##########
+ ########## TABLE 3 ##########
 my $table4 = qq{
     <div class="table-responsive">
-              <table class="table table-striped tablesorter" id="myTable">
+              <table class="table table-striped tablesorter" style="border-collapse: collapse;" id="myTable">
                 <thead>
                   <tr>
-                    <th>Experiment</th>
+                    <th>Submission ID</th>
                     <th># of Alleles</th>
                     <th>Passed Allele</th>
                     <th>Failed Allele</th>
@@ -1011,7 +1037,11 @@ my $table4 = qq{
 
    foreach my $s_exp (sort keys %h_experiments){
     print $html "\t<tr>\n";
-    print $html "\t\t<td>$s_exp</td>\n";
+    if($b_uuid){
+        print $html "\t\t<td style=\"width:200px;\">$$rh_uuid_map{$s_exp}</td>\n";
+    }else{
+        print $html "\t\t<td style=\"width:200px;\">$s_exp</td>\n";
+    }
 
     $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} = defined $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS} ? 0 : $h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS};
 
@@ -1024,37 +1054,32 @@ my $table4 = qq{
     my $total_allele = $h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} +
       $h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} + $h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} + $h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX};  
 
-    print $html "\t\t<td>$total_allele</td>\n";
+    print $html "\t\t<td style=\"width:200px;\">$total_allele</td>\n";
 
     #####  Locus #####
     my $loci_passed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{PASS} / $total_allele) * 100))."%)";
-    print STDERR "PASSED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$loci_passed,"\n" if $b_verbose;
     $loci_passed = length($h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}) == 1 ? "&nbsp;&nbsp;".$loci_passed : $loci_passed;
-    print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{ALLELE}{TOTAL}{PASS}." ".$loci_passed."</td>\n";
 
     my $loci_failed = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL} / $total_allele) * 100))."%)";
-    print STDERR "FAILED: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$loci_failed,"\n" if $b_verbose;
     $loci_failed = length($h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}) == 1 ? "&nbsp;&nbsp;".$loci_failed : $loci_failed;
-    print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{ALLELE}{TOTAL}{FAIL}." ".$loci_failed."</td>\n";
 
     my $loci_error = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR} / $total_allele) * 100))."%)";
-    print STDERR "ERROR: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$loci_error,"\n" if $b_verbose;
     $loci_error = length($h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}) == 1 ? "&nbsp;&nbsp;".$loci_error : $loci_error;
-    print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
-    print STDERR "------\n" if $b_verbose;
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{ALLELE}{TOTAL}{ERROR}." ".$loci_error."</td>\n";
 
     my $loci_drbx = "(".sprintf("%2.1f",(($h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX} / $total_allele) * 100))."%)";
-    print STDERR "DRBX: ",$s_exp,"\t",$h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}." ".$loci_drbx,"\n" if $b_verbose;
     $loci_drbx = length($h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}) == 1 ? "&nbsp;&nbsp;".$loci_drbx : $loci_drbx;
-    print $html "\t\t<td>".$h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}." ".$loci_drbx."</td>\n";
-    print STDERR "------\n" if $b_verbose;
+    print $html "\t\t<td style=\"width:200px;\">".$h_counts{$s_exp}{ALLELE}{TOTAL}{DRBX}." ".$loci_drbx."</td>\n";
 
    }
 
 
   print $html $end_table;
     
-  
+
+
   my $charts = qq{
 
             <div class="row placeholders">  
@@ -1096,8 +1121,14 @@ my $table4 = qq{
     print $html "var barChartData = {\n";
     print $html "\t\tlabels : [";
     my $label;
-    foreach my $s_exp (sort keys %h_experiments){
-      $label .= "\"$s_exp\",";
+    if($b_uuid){
+      foreach my $s_exp (sort keys %h_experiments){
+        $label .= "\"$$rh_uuid_map{$s_exp}\",";
+      }
+    }else{
+      foreach my $s_exp (sort keys %h_experiments){
+        $label .= "\"$s_exp\",";
+      }
     }
     $label =~ s/,$//;
     print $html $label."],\n";
@@ -1449,7 +1480,7 @@ sub helpHtml{
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="experiment.html">Experiments</a></li>
+            <li><a href="experiment.html">Submissions</a></li>
             <li><a href="log.html">Log</a></li>
             <li><a href="help.html">Help</a></li>
           </ul>
@@ -1714,9 +1745,10 @@ font-color:black;
 =cut
 sub indexHeader{
 
-  my ($html, $s_exp, $rh_qc_verdict, $b_drbx, $b_error, $b_failed) = @_;
+  my ($html, $s_exp, $rh_qc_verdict, $rh_uuid_map, $b_drbx, $b_error, $b_failed, $b_uuid) = @_;
 
-  my $s_experiment = $s_exp;
+  my $s_experiment = $b_uuid ? $$rh_uuid_map{$s_exp} : $s_exp;
+
   my $header = 
     qq{
 <!DOCTYPE html>
@@ -1796,7 +1828,7 @@ sub indexHeader{
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="../experiment.html">Experiments</a></li>
+            <li><a href="../experiment.html">Submissions</a></li>
             <li><a href="../log.html">Log</a></li>
             <li><a href="../help.html">Help</a></li>
           </ul>
@@ -2804,7 +2836,7 @@ my $header2 = qq{
           </div>
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
-              <li><a href="../experiment.html">Experiments</a></li>
+              <li><a href="../experiment.html">Submissions</a></li>
               <li><a href="../log.html">Log</a></li>
               <li><a href="../help.html">Help</a></li>
             </ul>

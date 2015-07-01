@@ -9,7 +9,7 @@
 
 =head1 AUTHOR     Mike Halagan <mhalagan@nmdp.org>
     
-    Associate Bioinformatics Scientist
+    Bioinformatics Scientist
     3001 Broadway Stree NE
     Minneapolis, MN 55413
     ext. 8225
