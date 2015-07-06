@@ -543,7 +543,8 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 				# 1043-5341-2	HLA-A	HLA	IMGT/HLA	3.17.0	HLA-A*11:01:01/HLA-A*24:05	ATCGATCGATCG
 				my($s_id,$s_locus,$genefamil,$db,$dbversion,$glstring,$sequence) = split(/\t/,$_);
 				my $gl = join("/",map( g2p($_), split(/\//,$glstring)));
-				print $_,"\n" if !defined $gl || $gl !~ /\S/;
+				
+				# TODO: Report these differently
 				next if !defined $gl || $gl !~ /\S/;
 				$gl =~ /HLA-(\D+\d{0,1})\*/;
 
