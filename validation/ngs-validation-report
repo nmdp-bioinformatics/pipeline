@@ -543,7 +543,10 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 				# 1043-5341-2	HLA-A	HLA	IMGT/HLA	3.17.0	HLA-A*11:01:01/HLA-A*24:05	ATCGATCGATCG
 				my($s_id,$s_locus,$genefamil,$db,$dbversion,$glstring,$sequence) = split(/\t/,$_);
 				my $gl = join("/",map( g2p($_), split(/\//,$glstring)));
+				print $_,"\n" if !defined $gl || $gl !~ /\S/;
+				next if !defined $gl || $gl !~ /\S/;
 				$gl =~ /HLA-(\D+\d{0,1})\*/;
+
 				my ($s_loc,$b_drbx) = $1 =~ /DRB[3|4|5]/ ? ("DRB1",1) : ($1,0);
 				$h_drbx{$s_exp}{$s_id}{$s_loc}++ if $b_drbx;
 
@@ -838,10 +841,10 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 
 		}
 
-		
+		my @a_loci = split(/,/,"A,B,C,DRB1,DQB1");
 		foreach my $s_ID (keys %{$h_verified{$s_exp}}){
 			my $loc_cnt = 0;my $n_error = 0;my $n_drbx = 0;my $n_fail = 0;
-			foreach my $s_loc (keys %{$h_verified{$s_exp}{$s_ID}}){
+			foreach my $s_loc (@a_loci){
 				my $n_typings = 0;my $n_qc_typings = 0;
 				foreach my $s_typing (keys %{$h_verified{$s_exp}{$s_ID}{$s_loc}}){
 					if($h_verified{$s_exp}{$s_ID}{$s_loc}{$s_typing} eq "DRBX"){
@@ -857,8 +860,13 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 					print STDERR "No Call: ",join("\t",$s_exp,$s_ID,$s_loc),"\n" if $b_verbose;
 					
 					if(defined $h_subject_pages{$s_exp}{$s_ID}){
-						my $id_link = $s_exp."/subjects/subject".$h_subject_pages{$s_exp}{$s_ID}.".html";
-						print $log_html  "No data found for $s_exp <a href=\"$id_link\" class=\"id_links\">$s_ID</a> at $s_loc!!<br>\n";
+						if(defined $h_uuid_mapping{$s_exp}){
+							my $id_link = $h_uuid_mapping{$s_exp}."/subjects/subject".$h_subject_pages{$s_exp}{$s_ID}.".html";
+							print $log_html  "No data found for $s_exp <a href=\"$id_link\" class=\"id_links\">$s_ID</a> at $s_loc!!<br>\n";
+						}else{
+							my $id_link = $s_exp."/subjects/subject".$h_subject_pages{$s_exp}{$s_ID}.".html";
+							print $log_html  "No data found for $s_exp <a href=\"$id_link\" class=\"id_links\">$s_ID</a> at $s_loc!!<br>\n";							
+						}
 					}else{
 						print $log_html  "No data found for $s_exp $s_ID at $s_loc!! **<br>\n";
 						$h_no_data{$s_exp}{$s_ID}++;
@@ -882,13 +890,11 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 				$g2 =~ /^(\D+\d{0,1})\*/;my $s_locus2 = $1;	
 
 				my $num_typings = keys %{$h_verified{$s_exp}{$s_ID}{$s_loc}};
-
 				if($n_typings == $num_typings){
 					$h_counts{$s_exp}{LOCUS}{$s_loc}{PASS}++;
 					$h_counts{$s_exp}{LOCUS}{TOTAL}{PASS}++;
 					$h_locus_verdict{$s_exp}{$s_ID}{$s_loc} = "PASS";
 					$loc_cnt++;
-
 				}elsif($s_loc eq "DRB1" && $n_drbx != 0){
 					$h_counts{$s_exp}{LOCUS}{$s_loc}{DRBX}++;
 					$h_counts{$s_exp}{LOCUS}{TOTAL}{DRBX}++;
@@ -914,7 +920,7 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 			}
 
 			my $num_typs = (keys %{$h_verified{$s_exp}{$s_ID}});
-			foreach my $s_loc (keys %{$h_verified{$s_exp}{$s_ID}}){
+			foreach my $s_loc (@a_loci){
 				foreach my $s_typing (keys %{$h_verified{$s_exp}{$s_ID}{$s_loc}}){
 					if($h_verified{$s_exp}{$s_ID}{$s_loc}{$s_typing} eq "PASS"){
 						$h_counts{$s_exp}{ALLELE}{$s_loc}{PASS}++;
@@ -933,7 +939,7 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 			}
 
 			# Counting up the subject pass, fail, drbx, and errors
-			if($loc_cnt == $num_typs && $n_error == 0){
+			if($loc_cnt == 5 && $n_error == 0){
 				$h_counts{$s_exp}{SUBJECT}{TOTAL}{PASS}++;
 				$h_passed_subjects{$s_exp}{$s_ID}++;
 			}elsif($loc_cnt != 5 && $n_error == 0 && $n_drbx == 0 && $n_fail != 0){
@@ -953,9 +959,8 @@ sub loadFiles{ # TODO: Break up this subroutine into several different ones
 		}
 
 		# TODO: Make this dynamic
-		my @a_loci = split(/,/,"A,B,C,DRB1,DQB1");
+		#my @a_loci = split(/,/,"A,B,C,DRB1,DQB1");
 		foreach my $s_l (@a_loci){
-
 			$h_counts{$s_exp}{LOCUS}{$s_l}{PASS}     = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{PASS});
 			$h_counts{$s_exp}{LOCUS}{$s_l}{FAIL}     = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{FAIL});
 			$h_counts{$s_exp}{LOCUS}{$s_l}{ERROR}    = 0 if(!defined $h_counts{$s_exp}{LOCUS}{$s_l}{ERROR});
