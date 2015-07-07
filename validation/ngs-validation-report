@@ -288,8 +288,18 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		$h_experiments{$s_experiment}{EXP} = $s_expected;
 	}else{
 		my @a_files = glob "$s_directory/*";
-		my %h_exps = map{ $_ =~ /\/(ex\d+|\w{8}-\S{4}-\S{4}-\S{12,17})/; $1 => 1 } grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
-		my @a_experiments = map{ $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/; $1 => 1 } grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
+		my %h_exps = map{ 
+			my @a_parts    = split(/\//,$_);
+			my @a_exp_file = split(/\./,$a_parts[$#a_parts]);
+			my $exp        = $a_exp_file[0];
+			if($exp =~ /_/){
+				my @a_parts2 = split(/_/,$exp);
+				$exp         = $a_parts2[0];
+			}
+			$exp => 1 
+		} 
+		grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
+
 		my $num_experiments = keys %h_experiments;
  		foreach my $s_exp (keys %h_exps){
  			my @a_ex_files  = glob "$s_directory/$s_exp*";
@@ -320,7 +330,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 			}else{
 				$h_experiments{$s_exp}{EXP} = $s_expected;
 			}
-			$s_experiment = $a_experiments[0];
+			$s_experiment = $s_exp;
 			$h_experiments{$s_exp}{OBS} = $s_observed;
  		}
 	}
