@@ -337,7 +337,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 }else{
 	# If experiment name isn't provided take it from the files
 	if(!defined $s_experiment){
-		$s_validated =~ /(ex\d+|\S{8}-\S{4}-\S{4}-\S{12})/;
+		$s_validated =~ /(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/;
 		$s_experiment = $1;
 	}
 	$h_experiments{$s_experiment}{VAL} = $s_validated;
@@ -492,7 +492,6 @@ html::logFooter($log_html); # Print out the log HTML file footer
 &emailReport($s_emails) if $b_email; # Email out the report if emails are provided
 &validatedSubjects()    if defined $b_failed;
 print STDERR "Emailed report to $s_emails\n" if($b_email && $b_verbose);
-
 ################################################################################################################
 =head2 loadFiles
 
