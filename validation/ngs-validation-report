@@ -274,7 +274,6 @@ $s_output    = $working if(!defined $s_output    || $s_output    !~ /\S/); # If 
 my $b_uuid = 0;
 if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 	if(defined $s_experiment){ 
-		$b_uuid = 1 if $s_experiment !~ /expected/;
 		my $experiment_files = $s_directory."/".$s_experiment."*";
 		my @a_ex_files  = glob "$experiment_files";
 		my @a_observed  = grep { $_ =~ /observed/ } @a_ex_files;
@@ -286,6 +285,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		$h_experiments{$s_experiment}{VAL} = $s_validated;
 		$h_experiments{$s_experiment}{OBS} = $s_observed;
 		$h_experiments{$s_experiment}{EXP} = $s_expected;
+		$b_uuid = 1 if $s_experiment !~ /expected/;
 	}else{
 		my @a_files = glob "$s_directory/*";
 		my %h_exps = map{ 
@@ -343,6 +343,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 	$h_experiments{$s_experiment}{VAL} = $s_validated;
 	$h_experiments{$s_experiment}{OBS} = $s_observed;
 	$h_experiments{$s_experiment}{EXP} = $s_expected;
+	$b_uuid = 1 if $s_expected !~ /expected/;
 }
 
 # Creating a mapping for a the uuids to a submission
