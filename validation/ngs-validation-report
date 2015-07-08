@@ -141,6 +141,18 @@
 		- Added the ability to print out the failed and passed subjects
 		- Added a mapping table for when there are uuids
 
+	1.3.5
+		- Added the ability to print out the failed and passed subjects
+		- Added a mapping table for when there are uuids
+
+	1.3.6
+		- Added the ability to print out the failed and passed subjects
+		- Added a mapping table for when there are uuids
+		
+	1.4.0
+		- Added the ability to print out the failed and passed subjects
+		- Added a mapping table for when there are uuids			
+
 =head1 TODO
 	
        - Add match grades
