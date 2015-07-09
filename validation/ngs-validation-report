@@ -109,49 +109,54 @@
        - Changed the way output from ngs-extract-expected-haploids is parsed
 
     1.2.0
-    	- Changed "which ngs-extract-expected" to "which ngs-extract-expected-haploids"
-    	- Added the (-r) flag to output the (experiment)_(type)_failed.txt files
-    	- Changed the Makefile.PL to install template files with html.pm
-    	- Changed ngs-validation-report so it now looks for the installed template files
+        - Changed "which ngs-extract-expected" to "which ngs-extract-expected-haploids"
+        - Added the (-r) flag to output the (experiment)_(type)_failed.txt files
+        - Changed the Makefile.PL to install template files with html.pm
+        - Changed ngs-validation-report so it now looks for the installed template files
 
     1.2.1
-    	- Updated the test files to work with multiple versions of perl
-    	- Made the version parsible by Makefile.PL
+        - Updated the test files to work with multiple versions of perl
+        - Made the version parsible by Makefile.PL
 
     1.2.2
-    	- Made the new observed and expected file foirmats parseable
+        - Made the new observed and expected file foirmats parseable
 
-	1.3.0  Version that works with flow-validation
-		- Broke out the tests into multiple files
-		- Changed the template folder to template-files
-		- Add the capability to parse gz files
-		- Added gz test files
-		- Add ngs-imgt-db to the Makefile.PL
+    1.3.0  Version that works with flow-validation
+        - Broke out the tests into multiple files
+        - Changed the template folder to template-files
+        - Add the capability to parse gz files
+        - Added gz test files
+        - Add ngs-imgt-db to the Makefile.PL
 
-	1.3.2 
-		- Added zcat and cat option for parsing the *.observed.gz files
+    1.3.2 
+        - Added zcat and cat option for parsing the *.observed.gz files
 
-	1.3.3
-		- Removed the file() function so it now looks at the file ending instead
+    1.3.3
+        - Removed the file() function so it now looks at the file ending instead
 		   * This was causing issues with nextflow because it uses symlinks
-		- Added the ability to parse UUID files
-		- Added UUID test files
+        - Added the ability to parse UUID files
+        - Added UUID test files
 
-	1.3.4
-		- Added the ability to print out the failed and passed subjects
-		- Added a mapping table for when there are uuids
+    1.3.4
+        - Added the ability to print out the failed and passed subjects
+        - Added a mapping table for when there are uuids
 
-	1.3.5
-		- Added the ability to print out the failed and passed subjects
-		- Added a mapping table for when there are uuids
+    1.3.5
+        - Modified the loading of the observed files so it now works with blank glstrings.
 
-	1.3.6
-		- Added the ability to print out the failed and passed subjects
-		- Added a mapping table for when there are uuids
+    1.3.6
+        - Changed the way the uuids were being taken from the files
+        - ** Was probable not needed
+
+    1.3.7
+        - Fixed the regular expression for loading the uuids
+        - Only applied to when the valided, expected, and observed are passed 
+         on the command line
 		
-	1.4.0
-		- Added the ability to print out the failed and passed subjects
-		- Added a mapping table for when there are uuids			
+    1.4.0   Version used in the first working version (v1.0) of flow-validation 2015-07-08
+    	- Added the uuid flag in for the files are being passed on the command line
+    	- Reverted the changes made by 1.3.6
+
 
 =head1 TODO
 	
@@ -301,14 +306,8 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 	}else{
 		my @a_files = glob "$s_directory/*";
 		my %h_exps = map{ 
-			my @a_parts    = split(/\//,$_);
-			my @a_exp_file = split(/\./,$a_parts[$#a_parts]);
-			my $exp        = $a_exp_file[0];
-			if($exp =~ /_/){
-				my @a_parts2 = split(/_/,$exp);
-				$exp         = $a_parts2[0];
-			}
-			$exp => 1 
+			$_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/;
+			$1 => 1
 		} 
 		grep { $_ =~ /\/(ex\d+|\S{8}-\S{4}-\S{4}-\S{12,17})/ } @a_files;
 
