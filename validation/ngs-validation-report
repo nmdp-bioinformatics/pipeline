@@ -302,7 +302,7 @@ if((!defined $s_validated || !defined $s_observed || !defined $s_expected )){
 		$h_experiments{$s_experiment}{VAL} = $s_validated;
 		$h_experiments{$s_experiment}{OBS} = $s_observed;
 		$h_experiments{$s_experiment}{EXP} = $s_expected;
-		$b_uuid = 1 if $s_experiment !~ /expected/;
+		$b_uuid = 1 if $s_expected !~ /expected/;
 	}else{
 		my @a_files = glob "$s_directory/*";
 		my %h_exps = map{ 
